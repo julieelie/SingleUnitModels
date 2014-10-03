@@ -23,7 +23,7 @@ Res = load(MatfilePath);
 % Select first sections
 Firsts = find(Res.Voc_orders == 1);
 % Need to get rid of mlnoise sections and whine sections when they
-% exist. I construc a vector of indices of the right sections
+% exist. I construct a vector of indices of the right sections
 DataSel=zeros(1,length(Firsts));
 nvoc=0;
 voctype=Res.VocType;
@@ -67,7 +67,8 @@ DataSel=DataSel(1:nvoc);
 Spectro.spec = Res.Spectro(DataSel);
 Spectro.to = Res.Spectroto(DataSel);
 Spectro.fo = Res.Spectrofo(DataSel);
-[R2A, SSres, SSexp, SStot, ModelPredict, LL, NEC, PValLRatio, HLRatio, NeuroRes, voc, Best_nbPC, Pvalue,Wins, NeuralResponse, STRF_time, STRF_to, STRF_fo, ModSem] = GrowingModels(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel), MinWin, MaxWin, Increment, ResDelay);
+%[R2A, SSres, SSexp, SStot, ModelPredict, LL, NEC, PValLRatio, HLRatio, NeuroRes, voc, Best_nbPC, Pvalue,Wins, NeuralResponse, STRF_time, STRF_to, STRF_fo, ModSem] = GrowingModels(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel), MinWin, MaxWin, Increment, ResDelay);
+[R2A, SSres, SSexp, SStot, ModelPredict, LL, NEC, PValLRatio, HLRatio, NeuroRes, voc, Best_nbPC, Pvalue,Wins, NeuralResponse, STRF_time, STRF_to, STRF_fo, ModSem] = GrowingModelsRidge(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel), MinWin, MaxWin, Increment, ResDelay);
 
 %This calculation of Global R2 needs to be revised and done as calculated in FindSemanticNeuronsFinal_encodingM 
 GlobalR2A.Acoustic = 1 - nansum(SSres.Acoustic)/nansum(SStot);
