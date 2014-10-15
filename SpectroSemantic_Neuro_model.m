@@ -63,12 +63,29 @@ for ii=1:length(Firsts);
 end
 DataSel=DataSel(1:nvoc);
 
+%% Extract Emitter ID
+Ename = cell(length(DataSel),1);
+Esex = cell(length(DataSel),1);
+Eage = cell(length(DataSel),1);
+Erelated = cell(length(DataSel),1);
+for ii=1:length(DataSel)
+    dd=DataSel(ii);
+    [Path,File,Ext] = fileparts(Res.Original_wavfiles{dd});
+    Ename{ii} = File(1:10);
+    Esex{ii} = File(12);
+    Eage{ii} = File(13);
+    Erelated{ii} = File(14);
+end
+Emitter.Ename = Ename;
+Emitter.Esex = Esex;
+Emitter.Eage = Eage;
+Emitter.Erelated = Erelated;
 %% Inject the data in the models
 Spectro.spec = Res.Spectro(DataSel);
 Spectro.to = Res.Spectroto(DataSel);
 Spectro.fo = Res.Spectrofo(DataSel);
 %[R2A, SSres, SSexp, SStot, ModelPredict, LL, NEC, PValLRatio, HLRatio, NeuroRes, voc, Best_nbPC, Pvalue,Wins, NeuralResponse, STRF_time, STRF_to, STRF_fo, ModSem] = GrowingModels(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel), MinWin, MaxWin, Increment, ResDelay);
-[R2A, SSres, SSexp, SStot, ModelPredict, LL, NEC, PValLRatio, HLRatio, NeuroRes, voc, Best_nbPC, Pvalue,Wins, NeuralResponse, STRF_time, STRF_to, STRF_fo, ModSem] = GrowingModelsRidge(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel), MinWin, MaxWin, Increment, ResDelay);
+[R2A, SSres, SSexp, SStot, ModelPredict, LL, NEC, PValLRatio, HLRatio, NeuroRes, voc, Best_nbPC, Pvalue,Wins, NeuralResponse, STRF_time, STRF_to, STRF_fo, ModSem] = GrowingModelsRidge(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel), Emitter, MinWin, MaxWin, Increment, ResDelay);
 
 %This calculation of Global R2 needs to be revised and done as calculated in FindSemanticNeuronsFinal_encodingM 
 GlobalR2A.Acoustic = 1 - nansum(SSres.Acoustic)/nansum(SStot);
