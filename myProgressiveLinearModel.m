@@ -1,4 +1,4 @@
-function [Coefficients, CoefficientsNames, NumSignifdim, SSE, SST] = myProgressiveLinearModel(y, x,Cat,RunAll,NSDim,varargin)
+function [Coefficients, CoefficientsNames, NumSignifdim, SSE, SST, R2] = myProgressiveLinearModel(y, x,Cat,RunAll,NSDim,varargin)
 %This function progressively used the columns of x as parameters in the
 %model that predict y with the categorical predictor Cat. Each column of x
 %is used with Cat to fit sucessively the residuals of the previous model.
@@ -119,7 +119,7 @@ if RunAll
     plot(1:ii,R2);
     ylabel('Rsquare on same data set');
     xlabel('Number of Dimensions of x used');
-else
+else %The progressive model stop incorporating new dimensions of x when the model is no longer significant
     while Pval<=0.05 && ii<NSDim
         ii=ii+1;
         ds3=dataset();
@@ -149,7 +149,38 @@ else
             Coeff.Int(Ind_Interaction)=mdl3.Coefficients.Estimate((Ind_Cat(end)+1):end);
             CoeffNames.Int(Ind_Interaction) = mdl3.Coefficients.Properties.ObsNames((Ind_Cat(end)+1):end);
         end
+        % Calculate SSE for the training or validating data set
+        y_predicted_X = ValSet.x(:,1:ii) * Coeff.X(1:ii,1);
+        y_predicted_Cat = nan(size(ValSet.x,1),1);
+        if Interaction==1
+            y_predicted_Int = nan(size(ValSet.x,1),1);
+            for ts=1:size(ValSet.x,1)
+                Ind_CatType = strcmp(CoeffNames.Cat,sprintf('Cattype_%s',ValSet.Cat{ts}));
+                Ind_int = zeros(size(CoeffNames.Int));
+                for nn = 1:ii
+                    Ind_int = Ind_int + strcmp(CoeffNames.Int, sprintf('DIM%d:Cattype_%s',nn,ValSet.Cat{ts}));
+                end
+                y_predicted_Cat(ts) = Coeff.Cat(1) + sum(Coeff.Cat.*Ind_CatType);
+                if sum(Ind_int)>0
+                    y_predicted_Int(ts) = ValSet.x(ts,1:ii)*Coeff.Int(find(Ind_int));
+                else
+                    y_predicted_Int(ts) = 0;
+                end
+            end
+            y_predicted = y_predicted_X + y_predicted_Cat + y_predicted_Int;
+        else
+            for ts=1:size(ValSet.x,1)
+                Ind_CatType = strcmp(CoeffNames.Cat,sprintf('Cattype_%s',ValSet.Cat{ts}));
+                y_predicted_Cat(ts) = Coeff.Cat(1) + sum(Coeff.Cat.*Ind_CatType);
+            end
+            y_predicted = y_predicted_X + y_predicted_Cat;
+        end
+        SSE(ii) = sum((ValSet.y - y_predicted).^2);
+        SST_local = sum((ValSet.y-mean(y)).^2);
+        R2(ii) = 1 - SSE(ii)./SST_local;
     end
+    SSE=SSE(1:NumSignifdim);
+    R2=R2(1:NumSignifdim);
 end
 if Interaction==1
     Coefficients=[Coeff.Cat;Coeff.X(1:NumSignifdim);Coeff.Int(1:((Ncat_local-1)*NumSignifdim))]';

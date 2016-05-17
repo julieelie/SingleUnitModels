@@ -85,7 +85,10 @@ Spectro.spec = Res.Spectro(DataSel);
 Spectro.to = Res.Spectroto(DataSel);
 Spectro.fo = Res.Spectrofo(DataSel);
 %[R2A, SSres, SSexp, SStot, ModelPredict, LL, NEC, PValLRatio, HLRatio, NeuroRes, voc, Best_nbPC, Pvalue,Wins, NeuralResponse, STRF_time, STRF_to, STRF_fo, ModSem] = GrowingModels(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel), MinWin, MaxWin, Increment, ResDelay);
-[R2A, SSres, SSexp, SStot, ModelPredict, LL, NEC, PValLRatio, HLRatio, NeuroRes, voc, Best_nbPC, Pvalue,Wins, NeuralResponse, STRF_time, STRF_to, STRF_fo, ModSem] = GrowingModelsRidge(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel), Emitter, MinWin, MaxWin, Increment, ResDelay);
+%[R2A, SSres, SSexp, SStot, ModelPredict, LL, NEC, PValLRatio, HLRatio, NeuroRes, voc, Best_nbPC, Pvalue,Wins, NeuralResponse, STRF_time, STRF_to, STRF_fo, ModSem] = GrowingModelsRidge(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel), Emitter, MinWin, MaxWin, Increment, ResDelay);
+%[R2A, SSres, SSexp, SStot, ModelPredict, LL, NEC, PValLRatio, HLRatio, NeuroRes, voc, Best_nbPC, Pvalue,Wins, NeuralResponse, STRF_time, STRF_to, STRF_fo, ModSem] = GrowingModelsPC(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel),Emitter, MinWin, MaxWin, Increment, ResDelay);
+[Deviance, NeuroRes, voc,Wins] = GrowingModelsRidgeglm(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel),Res.Trials(DataSel),Emitter, MinWin, MaxWin, Increment, ResDelay);
+
 
 %This calculation of Global R2 needs to be revised and done as calculated in FindSemanticNeuronsFinal_encodingM 
 GlobalR2A.Acoustic = 1 - nansum(SSres.Acoustic)/nansum(SStot);

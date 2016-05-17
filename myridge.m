@@ -31,7 +31,7 @@ Yridge = Y - mean(Y);
 P_num = min(find(cumsum(power(diag(W_local),2)./sum(power(diag(W_local),2)))>P_thresh));
 
 if FigFlag==1
-    figure(2)
+    figure(1)
      plot(1:size(W_local,1),cumsum(power(diag(W_local),2)./sum(power(diag(W_local),2))))
      hold on
      hline(0.99)
