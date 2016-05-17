@@ -2,6 +2,11 @@ function [R2, SSres, SSexp, SStot, ModelPredict, LL, NEC, PvalLRatio, HLRatio, N
 FIG=1; % set to 1 for some debugging figures 2 for all debugging figures
 Check=1;%set to 1 to compare ridge results with Linear model results
 BootstrapSTRF=100; %set the number of time you want to estimate the STRF at each time window
+LMSem=1; %set to 1 for linear model on Semantic and to 0 for ridge on Semantic
+LMAcSem=0; %set to 1 for Linear model on acoustic + semantic features,...
+...to 0 for ridge on Acoustic + Semantic features and...
+    ...2 for progressive linear model on acoustic + semantic features
+
 if nargin<9
     NeuroRes = 'mean';
 end
@@ -34,21 +39,36 @@ NbStim = length(VocType);
 
 
 % Initialize a bunch of output variables
-R2.Acoustic = nan(modNum,2);% R squared mean first column, sd second column
-R2.Semantic = nan(modNum,2);
-R2.AcSem = nan(modNum,2);
+R2.Acoustic = nan(modNum,3);% R squared mean first column, sd second column
+R2.Semantic = nan(modNum,3);
+R2.AcSem = nan(modNum,3);
 SSE.Acoustic = zeros(modNum,1);
 SSE.Semantic = zeros(modNum,1);
+SSE.AcSem = zeros(modNum,1);
 SST.Acoustic = zeros(modNum,1);
 SST.Semantic = zeros(modNum,1);
-SSEdim.Acoustic = cell(modNum,1);
-SSEdim.AcSem = cell(modNum,1);
-SSTdim.Acoustic = cell(modNum,1);
-SSTdim.AcSem = cell(modNum,1);
+SST.AcSem = zeros(modNum,1);
+
 PropVal.Acoustic = nan(modNum,2);
 PropVal.Sem = nan(modNum,2);
 PropVal.AcSem = nan(modNum,2);
-NDim.AcSem = nan(modNum,2);
+if LMAcSem==2
+    NDim.AcSem = nan(modNum,2);
+    SSEdim.Acoustic = cell(modNum,1);
+    SSEdim.AcSem = cell(modNum,1);
+    SSTdim.Acoustic = cell(modNum,1);
+    SSTdim.AcSem = cell(modNum,1);
+    Model.AcSem.Coefficients = cell(modNum,1);
+    Model.AcSem.CoefficientsNames = cell(modNum,1);
+elseif LMAcSem==0
+    Model.AcSem.RidgeLambdas = nan(modNum,1);
+    Model.AcSem.RidgeH = cell(modNum,1);
+    Model.AcSem.RidgeH0 = cell(modNum,1);
+    Model.AcSem.RidgeHPrime = cell(modNum,1);
+elseif LMAcSem==1;
+    Model.AcSem.Coefficients = cell(modNum,1);
+    Model.AcSem.CoefficientsNames = cell(modNum,1);
+end
 Model.Acoustic.RidgeLambdas = nan(modNum,1);
 Model.Acoustic.RidgeH = cell(modNum,1);
 Model.Acoustic.RidgeH0 = cell(modNum,1);
@@ -63,16 +83,22 @@ Model.Acoustic.RidgeHPrime = cell(modNum,1);
 % STRF_time = cell(modNum,1);
 % STRF_to = cell(modNum,1);
 % STRF_fo = cell(modNum,1);
-Model.Sem.Coefficients = cell(modNum,1);
-Model.Sem.CoefficientsNames = cell(modNum,1);
+if LMSem==1
+    Model.Sem.Coefficients = cell(modNum,1);
+    Model.Sem.CoefficientsNames = cell(modNum,1);
+elseif LMSem==0
+    Model.Sem.RidgeLambdas = nan(modNum,1);
+    Model.Sem.RidgeH = cell(modNum,1);
+    Model.Sem.RidgeH0 = cell(modNum,1);
+    Model.Sem.RidgeHPrime = cell(modNum,1);
+end
 % NbOptPC = nan(1,modNum);
 % PvalLRatio.AcAcSem = nan(modNum,1);
 % PvalLRatio.SemAcSem = nan(modNum,1);
 % HLRatio.AcAcSem = nan(modNum,1);
 % HLRatio.SemAcSem = nan(modNum,1);
 VOC = cell(modNum,1);
-Model.AcSem.Coefficients = cell(modNum,1);
-Model.AcSem.CoefficientsNames = cell(modNum,1);
+
 
 
 
@@ -88,7 +114,7 @@ Model.AcSem.CoefficientsNames = cell(modNum,1);
 for mm = 1:modNum
     fprintf(1,'%d/%d models\n', mm, modNum)
     Win = Wins(mm);
-    % define new dataset depending on the size of the window of the model
+    %% define new dataset depending on the size of the window of the model
     % loop through the stims and only keep the Win first ms of them when
     % they are longer than Win ms or disgard
     
@@ -146,7 +172,7 @@ for mm = 1:modNum
     
     
     
-    % Calculate STRF using ridge regression and cross-validation
+    %% Calculate STRF using ridge regression and cross-validation
     R2STRF=nan(BootstrapSTRF,1);
     ValProp=nan(BootstrapSTRF,1);
     LambdaIndex=nan(BootstrapSTRF,1);
@@ -155,9 +181,11 @@ for mm = 1:modNum
     RidgeH=cell(BootstrapSTRF,1);
     RidgeH0=cell(BootstrapSTRF,1);
     RidgeHPrime=cell(BootstrapSTRF,1);
-    SSEprog_sum = zeros(NbStim_local,1);
-    SSTprog_sum = zeros(NbStim_local,1);
-    P_num_min = NbStim_local;
+    if LMAcSem==2
+        SSEprog_sum = zeros(NbStim_local,1);
+        SSTprog_sum = zeros(NbStim_local,1);
+        P_num_min = NbStim_local;
+    end
     
     for bb=1:BootstrapSTRF
         % Construct a testing dataset and a validating dataset
@@ -203,25 +231,27 @@ for mm = 1:modNum
         SST.Acoustic(mm) = SST.Acoustic(mm) + sum((y(ValSet)-mean(y(TrainSet))).^2);
         R2STRF(bb)= 1 - sum(YY2)./sum((y(ValSet)-mean(y(TrainSet))).^2);
         
-        % Calculate the errror of the best ridge model as we increase the
-        % number of dimensions
-        WL =1./ (diag(W).^2 + L(ll_min));
-        WL_h = diag(WL).^(0.5);
-        x_prime =  (WL_h * V'* x(:,:)')';
-        SSEprog=nan(P_num,1);
-        for dimd=1:P_num
-            %YYPrime = y(ValSet) - (mean(y(TrainSet))+RidgeLocalHPrime(ll_min,1:dimd)*x_prime(:,1:dimd)')';
-            YYPrime = y(ValSet) - (mean(y(TrainSet))+RidgeLocalHPrime(ll_min,1:dimd)*x_prime(ValSet,1:dimd)' - RidgeLocalHPrime(ll_min,1:dimd)*mean(x_prime(:,1:dimd),1)')';
-            SSEprog(dimd) = sum(YYPrime.^2);
+        if LMAcSem==2
+            % Calculate the errror of the best ridge model as we increase the
+            % number of dimensions
+            WL =1./ (diag(W).^2 + L(ll_min));
+            WL_h = diag(WL).^(0.5);
+            x_prime =  (WL_h * V'* x(:,:)')';
+            SSEprog=nan(P_num,1);
+            for dimd=1:P_num
+                %YYPrime = y(ValSet) - (mean(y(TrainSet))+RidgeLocalHPrime(ll_min,1:dimd)*x_prime(:,1:dimd)')';
+                YYPrime = y(ValSet) - (mean(y(TrainSet))+RidgeLocalHPrime(ll_min,1:dimd)*x_prime(ValSet,1:dimd)' - RidgeLocalHPrime(ll_min,1:dimd)*mean(x_prime(:,1:dimd),1)')';
+                SSEprog(dimd) = sum(YYPrime.^2);
+            end
+            SSEprog_sum = SSEprog_sum + [SSEprog; zeros(NbStim_local-P_num,1)];
+            SSTprog=repmat(sum((y(ValSet)-mean(y(TrainSet))).^2),NbStim_local,1);
+            SSTprog_sum = SSTprog_sum + SSTprog;
+            P_num_min = min(P_num_min, P_num);
         end
-        SSEprog_sum = SSEprog_sum + [SSEprog; zeros(NbStim_local-P_num,1)];
-        SSTprog=repmat(sum((y(ValSet)-mean(y(TrainSet))).^2),NbStim_local,1);
-        SSTprog_sum = SSTprog_sum + SSTprog;
-        P_num_min = min(P_num_min, P_num);
         
         % Plot Lambda values and STRF
         if FIG>1
-            figure(3)
+            figure(2)
             plot(log(L), CostF)
             xlabel('log of Lambdas ridge parameter')
             ylabel('Ridge Cost Function')
@@ -245,7 +275,7 @@ for mm = 1:modNum
                 Fo_Indices=find(Spectro.fo{LongestStim}<=Flow);
                 To_Indices=find((1000.*Spectro.to{LongestStim})<=Win);
                 fprintf(1, 'Calculating STRF using the %d first PC of the spectro\n\n\n\n', nPC);
-                figure(4)
+                figure(3)
                 imagesc(Spectro.to{LongestStim}(To_Indices), Spectro.fo{LongestStim}(Fo_Indices), STRFM)
                 axis xy
                 title(sprintf('STRF obtained with linear model with %d PC of the spectro', nPC));
@@ -253,12 +283,12 @@ for mm = 1:modNum
             end 
             for ll=1:NbL
                 if ll==find(CostF==min(CostF))
-                    figure(5)
+                    figure(4)
                     imagesc(reshape(RidgeLocalH(ll,:),Df,Dt))
                     axis xy
                     title(sprintf('THIS IS THE ONE!!!\nSTRF log of lambda=%f\n R2A=%f',log(L(ll)),R2STRF(bb)))
                 else
-                    figure(6)
+                    figure(5)
                     imagesc(reshape(RidgeLocalH(ll,:),Df,Dt))
                     axis xy
                     title(sprintf('STRF log of lambda=%f\n',log(L(ll))))
@@ -274,12 +304,15 @@ for mm = 1:modNum
     PropVal.Acoustic(mm,2) = std(ValProp);
     R2.Acoustic(mm,1) = mean(R2STRF);
     R2.Acoustic(mm,2) = std(R2STRF);
-    SSEdim.Acoustic{mm} = SSEprog_sum(1:P_num_min);
-    SSTdim.Acoustic{mm} = SSTprog_sum(1:P_num_min);
+    R2.Acoustic(mm,3) = 1-SSE.Acoustic(mm)/SST.Acoustic(mm);
+    if LMAcSem==2
+        SSEdim.Acoustic{mm} = SSEprog_sum(1:P_num_min);
+        SSTdim.Acoustic{mm} = SSTprog_sum(1:P_num_min);
+    end
     
     if FIG>0
-        fprintf(1,'R2A= %f +/- %f\n',R2.Acoustic(mm,1), R2.Acoustic(mm,2));
-        figure(7)
+        fprintf(1,'R2= %f +/- %f or with ratio of sum of errors, R2= %f\n',R2.Acoustic(mm,1), R2.Acoustic(mm,2),R2.Acoustic(mm,3));
+        figure(6)
         subplot(1,2,1)
         hist(LambdaIndex, max(LambdaIndex))
         subplot(1,2,2)
@@ -287,26 +320,44 @@ for mm = 1:modNum
         hline(MaxErrorSum);
         xlabel('log of Lambdas ridge parameter')
         ylabel('Sum of Ridge Cost Functions')
+        title('Acoustic Model')
         vline(log(L(ll_summin)));
     end
     
     % Use the average Lambda to calculate the optimal STRF on all dataset
-    [Model.Acoustic.RidgeH{mm}, Model.Acoustic.RidgeH0{mm}, V, W, L, P_num, Model.Acoustic.RidgeHPrime{mm}] = myridge(y, x,'Lambda Indices',ll_summin);
-    Model.Acoustic.RidgeLambdas(mm) = L;
+    [Model.Acoustic.RidgeH{mm}, Model.Acoustic.RidgeH0{mm}, V_Ac, W_Ac, L_Ac, P_num_Ac, Model.Acoustic.RidgeHPrime{mm}] = myridge(y, x,'Lambda Indices',ll_summin);
+    Model.Acoustic.RidgeLambdas(mm) = L_Ac;
     if FIG>0
-        figure(8)
+        figure(7)
         subplot(1,3,1)
         imagesc(reshape(Model.Acoustic.RidgeH{mm},Df,Dt))
         axis xy
-        title(sprintf('OPTIMAL STRF calculated on whole dataset\nlog of lambda=%f\n R2A=%f+/-%f calculated with a cross vaidation\nincluding %f+/-%f %% of the data',log(L),R2.Acoustic(mm,1), R2.Acoustic(mm,2), PropVal.Acoustic(mm,1), PropVal.Acoustic(mm,2)))
+        title(sprintf('OPTIMAL STRF calculated on whole dataset\nlog of lambda=%f\n R2=%f+/-%f or R2=%f (ratio of sum of errorsfor all bootstrap)\ncross-validation including %f+/-%f %% of the data',log(L_Ac),R2.Acoustic(mm,1), R2.Acoustic(mm,2),R2.Acoustic(mm,3), PropVal.Acoustic(mm,1), PropVal.Acoustic(mm,2)))
     end
     
     
-    % Calculate the semantic model using a linear model and
-    % cross-validation
+    %% Calculate the semantic model using cross-validation
     R2Sem=nan(BootstrapSTRF,1);
     ValPropSem=nan(BootstrapSTRF,1);
     
+    if LMSem==0 || LMAcSem==0 %Get the categorical data ready to perform a ridge
+        LambdaIndex_Sem=nan(BootstrapSTRF,1);
+        CostFSum_Sem = 0;
+        MaxErrorSum_Sem=0;
+        RidgeH_Sem=cell(BootstrapSTRF,1);
+        RidgeH0_Sem=cell(BootstrapSTRF,1);
+        RidgeHPrime_Sem=cell(BootstrapSTRF,1);
+        UVOC = unique(VOC{mm});
+        X_voc = zeros(length(VOC{mm}), length(UVOC));
+        for vv=1:length(VOC{mm})
+            for uv=1:length(UVOC)
+                if strcmp(VOC{mm}(vv), UVOC{uv})
+                    X_voc(vv,uv)=1;
+                    break
+                end
+            end
+        end
+    end
     for bb=1:BootstrapSTRF
         % Construct a testing dataset and a validating dataset
         % remove one emitter per call category, if one category contain only
@@ -314,73 +365,160 @@ for mm = 1:modNum
         [ValSet, TrainSet] = create_cross_validation_sets(VOC{mm}, Emitter.Ename(Stim_local));
         ValPropSem(bb) = length(ValSet)./(length(ValSet)+length(TrainSet));
         
-        % Linear Model with training set
-        fprintf(1,'Semantic Model %d/%d\n', bb, BootstrapSTRF);
-        ds2=dataset();
-        ds2.Voctype=VOC{mm}(TrainSet);
-        ds2.y=y(TrainSet);
-        mdl2=fitlm(ds2,'CategoricalVars',1);
-        % this is equivalent to:
-        %mdl2=LinearModel.fit(ds2, 'CategoricalVars',1);
-        %mdl2=fitlm(ds2,'CategoricalVars',1);
-        %mdl2=LinearModel.fit(ds2);
-        
-        % R2 calculation with validating set
-%         CoeffEstimates=mdl2.Coefficients.Estimate(1:end);
-%         Predicted_y=CoeffEstimates + [0 ; repmat(CoeffEstimates(1), (length(CoeffEstimates)-1),1)];
-%         Predicted_y_voctype=unique(VOC{mm}(TrainSet));
-%         Predicted_yval=nan(length(ValSet),1);
-%         YY2_sum=0;
-%         for vv=1:length(ValSet)
-%             Val = ValSet(vv);
-%             Val_type = VOC{mm}(Val);
-%             YY2_sum = YY2_sum + (y(Val) - Predicted_y(find(strcmp(Predicted_y_voctype,Val_type)))).^2;
-%             Predicted_yval(vv)=Predicted_y(find(strcmp(Predicted_y_voctype,Val_type)));
-%         end
-        % Instead of for loop above, predict the response using predict or feval function
-        Predicted_yval = feval(mdl2,VOC{mm}(ValSet));
-        SSE.Semantic(mm) = SSE.Semantic(mm) + sum((y(ValSet)-Predicted_yval).^2);
-        SST.Semantic(mm) = SST.Semantic(mm) + sum((y(ValSet)-mean(y(TrainSet))).^2);
-        R2Sem(bb)= 1 - sum((y(ValSet)-Predicted_yval).^2)./sum((y(ValSet)-mean(y(TrainSet))).^2);
+        if LMSem==1 %Perform a classic linear model with semantic as a categorical variable
+            % Linear Model with training set
+            fprintf(1,'Semantic Model %d/%d\n', bb, BootstrapSTRF);
+            ds2=dataset();
+            ds2.Voctype=VOC{mm}(TrainSet);
+            ds2.y=y(TrainSet);
+            mdl2=fitlm(ds2,'CategoricalVars',1);
+            % this is equivalent to:
+            %mdl2=LinearModel.fit(ds2, 'CategoricalVars',1);
+            %mdl2=fitlm(ds2,'CategoricalVars',1);
+            %mdl2=LinearModel.fit(ds2);
+
+            % R2 calculation with validating set
+    %         CoeffEstimates=mdl2.Coefficients.Estimate(1:end);
+    %         Predicted_y=CoeffEstimates + [0 ; repmat(CoeffEstimates(1), (length(CoeffEstimates)-1),1)];
+    %         Predicted_y_voctype=unique(VOC{mm}(TrainSet));
+    %         Predicted_yval=nan(length(ValSet),1);
+    %         YY2_sum=0;
+    %         for vv=1:length(ValSet)
+    %             Val = ValSet(vv);
+    %             Val_type = VOC{mm}(Val);
+    %             YY2_sum = YY2_sum + (y(Val) - Predicted_y(find(strcmp(Predicted_y_voctype,Val_type)))).^2;
+    %             Predicted_yval(vv)=Predicted_y(find(strcmp(Predicted_y_voctype,Val_type)));
+    %         end
+            % Instead of for loop above, predict the response using predict or feval function
+            Predicted_yval = feval(mdl2,VOC{mm}(ValSet));
+            SSE.Semantic(mm) = SSE.Semantic(mm) + sum((y(ValSet)-Predicted_yval).^2);
+            SST.Semantic(mm) = SST.Semantic(mm) + sum((y(ValSet)-mean(y(TrainSet))).^2);
+            R2Sem(bb)= 1 - sum((y(ValSet)-Predicted_yval).^2)./sum((y(ValSet)-mean(y(TrainSet))).^2);
+        else % Perform a ridge regression
+            % Ridge with training set
+            fprintf(1,'Semantic Ridge %d/%d\n', bb, BootstrapSTRF);
+            [RidgeLocalH, RidgeLocalH0, V, W, L, P_num,RidgeLocalHPrime,RidgeLocalH0Prime] = myridge(y(TrainSet), X_voc(TrainSet,:));
+
+            % Cost functions
+            fprintf(1,'find Lambda with the minimum cost function\n')
+            NbL=length(L);
+            CostF = nan(NbL,1);
+            MaxError = sum((y(ValSet)-mean(y(TrainSet))).^2);
+            for ll=1:NbL
+                YY = y(ValSet)- (RidgeLocalH0(ll) + RidgeLocalH(ll,:)*X_voc(ValSet,:)')'; % Check the vector sizes
+                YY2 = YY.^2;
+                CostF(ll)=sum(YY2);
+            end
+            MaxErrorSum_Sem = MaxErrorSum_Sem + MaxError;
+            CostFSum_Sem = CostFSum_Sem + CostF;
+            ll_min=find(CostF==min(CostF));
+            ll_min=ll_min(end);
+            LambdaIndex_Sem(bb)=ll_min;
+            RidgeH_Sem{bb} = RidgeLocalH(ll_min,:);
+            RidgeH0_Sem{bb} = RidgeLocalH0(ll_min);
+            RidgeHPrime_Sem{bb} = RidgeLocalHPrime(ll_min);
+
+            % Calculate R2 and errors with all dimensions of the best ridge model
+            YY = y(ValSet)- (RidgeLocalH0(ll_min) + RidgeLocalH(ll_min,:)*X_voc(ValSet,:)')';
+            YY2 = YY.^2;
+            SSE.Semantic(mm) = SSE.Semantic(mm) + sum(YY2);
+            SST.Semantic(mm) = SST.Semantic(mm) + sum((y(ValSet)-mean(y(TrainSet))).^2);
+            R2Sem(bb)= 1 - sum(YY2)./sum((y(ValSet)-mean(y(TrainSet))).^2);
+            if FIG>1
+                figure(8)
+                plot(log(L), CostF)
+                xlabel('log of Lambdas ridge parameter for Semantic Model')
+                ylabel('Ridge Cost Function=SSE')
+                title(sprintf('training size %d validating size %d',length(TrainSet), length(ValSet)))
+                vline(log(L(ll_min)));
+                pause(1)
+            end
+        end
     end
     
     R2.Semantic(mm,1)=mean(R2Sem);
     R2.Semantic(mm,2)=std(R2Sem);
+    R2.Semantic(mm,3)=1-SSE.Semantic(mm)/SST.Semantic(mm);
     PropVal.Sem(mm,1) = mean(ValPropSem);
     PropVal.Sem(mm,2) = std(ValPropSem);
     
-    % Optimal Semantic model using all data set
-    ds2=dataset();
-    ds2.Voctype=ordinal(VOC{mm});
-    ds2.y=y;
-    mdl2=LinearModel.fit(ds2);
-    CoeffEstimates=mdl2.Coefficients.Estimate(1:end);
-    Predicted_y=CoeffEstimates + [0 ; repmat(CoeffEstimates(1), (length(CoeffEstimates)-1),1)];
-    Model.Sem.Coefficients{mm}=Predicted_y;
-    Model.Sem.CoefficientsNames{mm}=unique(VOC{mm});
-    if FIG>0
-        figure(8)
-        ss=subplot(1,3,2);
-        plot(Model.Sem.Coefficients{mm}, 1:length(Model.Sem.Coefficients{mm}));
-        title('Predicted SR with Semantic Model');
-        set(ss,'YTickLabel', Model.Sem.CoefficientsNames{mm});
+    % Optimal Semantic model using all data set and optimal ridge parameter
+    % if ridge is running
+    if LMSem==1
+        ds2=dataset();
+        ds2.Voctype=ordinal(VOC{mm});
+        ds2.y=y;
+        mdl2=LinearModel.fit(ds2);
+        CoeffEstimates=mdl2.Coefficients.Estimate(1:end);
+        Predicted_y=CoeffEstimates + [0 ; repmat(CoeffEstimates(1), (length(CoeffEstimates)-1),1)];
+        Model.Sem.Coefficients{mm}=Predicted_y;
+        Model.Sem.CoefficientsNames{mm}=unique(VOC{mm});
+        if FIG>0
+            figure(7)
+            ss=subplot(1,3,2);
+            plot(Model.Sem.Coefficients{mm}, 1:length(Model.Sem.Coefficients{mm}));
+            title('Predicted SR with Semantic Model');
+            set(ss,'YTickLabel', Model.Sem.CoefficientsNames{mm});
+        end
+    elseif LMSem==0
+        ll_summin = find(CostFSum_Sem==min(CostFSum_Sem));
+        ll_summin=ll_summin(end);
+        if FIG>0
+            fprintf(1,'R2= %f +/- %f or R2= %f when calculated as ratio of sum of errors\n',R2.Semantic(mm,1), R2.Semantic(mm,2),R2.Semantic(mm,3));
+            figure(9)
+            subplot(1,2,1)
+            hist(LambdaIndex_Sem, max(LambdaIndex_Sem))
+            subplot(1,2,2)
+            plot(log(L),CostFSum_Sem)
+            hline(MaxErrorSum_Sem);
+            xlabel('log of Lambdas ridge parameter')
+            ylabel('Sum of Ridge Cost Functions')
+            title('Semantic Model')
+            vline(log(L(ll_summin)));
+        end
+       % Use the best Lambda to calculate the optimal Semantic model on all dataset
+        [Model.Sem.RidgeH{mm}, Model.Sem.RidgeH0{mm}, V_Sem, W_Sem, L_Sem, P_num_Sem, Model.Sem.RidgeHPrime{mm}] = myridge(y, X_voc,'Lambda Indices',ll_summin);
+        Model.Sem.RidgeLambdas(mm) = L_Sem;
+        if FIG>0
+            figure(7)
+            subplot(1,3,2)
+            plot(Model.Sem.RidgeH{mm}, 1:length(Model.Sem.RidgeH{mm}));
+            title('Predicted SR with Semantic Ridge');
+            set(ss,'YTickLabel', UVOC);
+        end 
     end
     
     
-    % Calculate the model combining both Ridge STRF and Semantic labels
+    %% Calculate the model combining both Ridge STRF and Semantic labels
     % First rescale and rotate the spectrograms of the stimuli in the ridge
     % space
-    WL =1./ (diag(W).^2 + Model.Acoustic.RidgeLambdas(mm));
+    WL =1./ (diag(W_Ac).^2 + Model.Acoustic.RidgeLambdas(mm));
     WL_h = diag(WL).^(0.5);
-    x_ridge =  (WL_h * V'* x')';
+    x_ridge =  (WL_h * V_Ac'* x')';
+    
+    if LMSem==0
+        % Rescale and rotate the categorical variable of the stimuli in the ridge
+        % space
+        WL =1./ (diag(W_Sem).^2 + Model.Sem.RidgeLambdas(mm));
+        WL_h = diag(WL).^(0.5);
+        xvoc_ridge =  (WL_h * V_Sem'* X_voc')';
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     % Calculate the Full model using a linear model in the ridge space and
     % cross-validation
     R2AcSem=nan(BootstrapSTRF,1);
     ValPropAcSem=nan(BootstrapSTRF,1);
-    NumSignifEdim=nan(BootstrapSTRF,1);
-    SSEprog_sumAcSem = zeros(P_num,1);
-    SSTprog_sumAcSem = zeros(P_num,1);
+    if LMAcSem==2
+        SSEprog_sumAcSem = zeros(P_num_min,1);
+        SSTprog_sumAcSem = zeros(P_num_min,1);
+        NumSignifEdim=nan(BootstrapSTRF,1);
+    elseif LMAcSem==0
+        LambdaIndex_AcSem=nan(BootstrapSTRF,1);
+        CostFSum_AcSem=0;
+        MaxErrorSum_AcSem=0;
+    end
     
     for bb=1:BootstrapSTRF
         % Construct a testing dataset and a validating dataset
@@ -391,82 +529,210 @@ for mm = 1:modNum
         
         % Linear Model with training set
         fprintf(1,'Full Model %d/%d\n', bb, BootstrapSTRF);
-%         ds3=dataset();
-%         for ii=1:size(x_ridge, 2)
-%             ds3.(sprintf('EIGENVAL%d',ii)) = x_ridge(TrainSet,ii);
-%         end
-%         ds3.Voctype=ordinal(VOC{mm}(TrainSet));
-%         ds3.y=y(TrainSet);
-%         mdl3=LinearModel.fit(ds3);
-%         tbl3=anova(mdl3,'summary');
-%         Pvalue.Semantic(mm)=tbl3.pValue(2);
-        
-        % Progressive Linear model with training set
-        %[Coefficients, CoefficientsNames, NumSignifEdim(bb)] = myProgressiveLinearModel(y(TrainSet), x_ridge(TrainSet,:),VOC{mm}(TrainSet),0);
-        ValidatingSet.x=x_ridge(ValSet,:);
-        ValidatingSet.y=y(ValSet,:);
-        ValidatingSet.Cat = VOC{mm}(ValSet);
-        [Coefficients, CoefficientsNames, NumSignifEdim(bb),SSEAcSem, SSTAcSem] = myProgressiveLinearModel(y(TrainSet), x_ridge(TrainSet,:),VOC{mm}(TrainSet),1,size(x_ridge,2),'ValidatingSet',ValidatingSet);
-        SSEprog_sumAcSem = SSEprog_sumAcSem + [SSEAcSem; zeros(P_num - length(SSEAcSem),1)];
-        SSTprog_sumAcSem = SSTprog_sumAcSem + [SSTAcSem; zeros(P_num - length(SSTAcSem),1)];
-        
-        
-        % Calculate predicted reponse of the validating dataset with this
-        % model and R2
-        x_ValSet = x_ridge(ValSet,1:NumSignifEdim(bb));
-        Ind_strf = zeros(size(CoefficientsNames,1));
-        for nn = 1:NumSignifEdim(bb)
-            Ind_strf = Ind_strf + strcmp(CoefficientsNames, sprintf('DIM%d',nn));
-        end
-        y_predicted_STRF = x_ValSet * Coefficients(1,find(Ind_strf));
-        y_predicted_Voc = nan(length(ValSet),1);
-        y_predicted_Int = nan(length(ValSet),1);
-        for ts=1:length(ValSet)
-            Ind_vocType = strcmp(CoefficientsNames,sprintf('Cattype_%s',VOC{mm}{ValSet(ts)}));
-            Ind_int = zeros(size(CoefficientsNames));
-            for nn = 1:NumSignifEdim(bb)
-                Ind_int = Ind_int + strcmp(CoefficientsNames, sprintf('DIM%d:Cattype_%s',nn,VOC{mm}{ValSet(ts)}));
+        if LMAcSem==1 % Linear Model with acoustic and semantic features. Acoustic features are in the ridge space
+            ds3=dataset();
+            for ii=1:size(x_ridge, 2)
+                ds3.(sprintf('EIGENVAL%d',ii)) = x_ridge(TrainSet,ii);
             end
-            y_predicted_Voc(ts) = Coefficients(1) + sum(Coefficients.*Ind_vocType);
-            if sum(Ind_int)>0
-                y_predicted_Int(ts) = x_ValSet(ts,:)*Coefficients(find(Ind_int));
+            if LMSem==0 %Semantic features are in the ridge space
+                for jj=1:size(xvoc_ridge, 2)
+                    ds3.(sprintf('EIGENVALVOC%d',jj)) = xvoc_ridge(TrainSet,jj);
+                end
+                ds3.y=y(TrainSet);
+                mdl3=LinearModel.fit(ds3);
+                Predicted_yval = feval(mdl3,[x_ridge(ValSet,:) xvoc_ridge(ValSet,:)]);% predictions with validating dataset
+            elseif LMSem==1 %Semantic features are the categorical variable not regularized
+                ds3.Voctype=ordinal(VOC{mm}(TrainSet));
+                ds3.y=y;
+                mdl3=LinearModel.fit(ds3);
+                Predicted_yval = feval(mdl3,x_ridge(ValSet,:), VOC{mm}(ValSet));% predictions with validating dataset
+            end
+            tbl3=anova(mdl3,'summary');
+            Pvalue.Semantic(mm)=tbl3.pValue(2);
+            % Calculation of sum of errors of the model
+            SSE.AcSem(mm) = SSE.AcSem(mm) + sum((y(ValSet)-Predicted_yval).^2);
+            SST.AcSem(mm) = SST.AcSem(mm) + sum((y(ValSet)-mean(y(TrainSet))).^2);
+            R2AcSem(bb)= 1 - sum((y(ValSet)-Predicted_yval).^2)./sum((y(ValSet)-mean(y(TrainSet))).^2);
+
+        elseif LMAcSem==2 % Progressive Linear Model with acoustic and semantic features %Acoustic features in the ridge space, Semantic features as a categorical variable
+            if LMSem==1
+                % Progressive Linear model with training set
+                %[Coefficients, CoefficientsNames, NumSignifEdim(bb)] = myProgressiveLinearModel(y(TrainSet), x_ridge(TrainSet,:),VOC{mm}(TrainSet),0);
+                ValidatingSet.x=x_ridge(ValSet,:);
+                ValidatingSet.y=y(ValSet,:);
+                ValidatingSet.Cat = VOC{mm}(ValSet);
+                [Coefficients, CoefficientsNames, NumSignifEdim(bb),SSEAcSem, SSTAcSem, R2_local] = myProgressiveLinearModel(y(TrainSet), x_ridge(TrainSet,:),VOC{mm}(TrainSet),1,size(x_ridge,2),'ValidatingSet',ValidatingSet);
+                % Calculate the errors of the progressive model for each
+                % acoustic dimension added to compare with the Progressive
+                % ridge acoustic model
+                P_num_min=length(SSEdim.Acoustic{mm});
+                SSEprog_sumAcSem = SSEprog_sumAcSem + SSEAcSem(1:P_num_min);
+                SSTprog_sumAcSem = SSTprog_sumAcSem + SSTAcSem(1:P_num_min);
+                R2AcSem(bb)=R2_local(NumSignifEdim(bb));
+
+
+    %             % Calculate predicted reponse of the validating dataset with this
+    %             % model and R2
+    %             x_ValSet = x_ridge(ValSet,1:NumSignifEdim(bb));
+    %             Ind_strf = zeros(size(CoefficientsNames,1));
+    %             for nn = 1:NumSignifEdim(bb)
+    %                 Ind_strf = Ind_strf + strcmp(CoefficientsNames, sprintf('DIM%d',nn));
+    %             end
+    %             y_predicted_STRF = x_ValSet * Coefficients(1,find(Ind_strf));
+    %             y_predicted_Voc = nan(length(ValSet),1);
+    %             y_predicted_Int = nan(length(ValSet),1);
+    %             for ts=1:length(ValSet)
+    %                 Ind_vocType = strcmp(CoefficientsNames,sprintf('Cattype_%s',VOC{mm}{ValSet(ts)}));
+    %                 Ind_int = zeros(size(CoefficientsNames));
+    %                 for nn = 1:NumSignifEdim(bb)
+    %                     Ind_int = Ind_int + strcmp(CoefficientsNames, sprintf('DIM%d:Cattype_%s',nn,VOC{mm}{ValSet(ts)}));
+    %                 end
+    %                 y_predicted_Voc(ts) = Coefficients(1) + sum(Coefficients.*Ind_vocType);
+    %                 if sum(Ind_int)>0
+    %                     y_predicted_Int(ts) = x_ValSet(ts,:)*Coefficients(find(Ind_int));
+    %                 else
+    %                     y_predicted_Int(ts) = 0;
+    %                 end
+    %             end
+    %             y_predicted = y_predicted_STRF + y_predicted_Voc + y_predicted_Int;
+    %             R2AcSem(bb)= 1 - sum((y(ValSet)-y_predicted).^2)./sum((y(ValSet)-mean(y(ValSet))).^2);
             else
-                y_predicted_Int(ts) = 0;
+                fprintf(1,'The code cannot run a progressive model if the semantic model is not constructed as a linear model (LinearModel.fit)\n');
             end
+        elseif LMAcSem==0%Perform a ridge on the Acoustic and Semantic feature spaces
+            % Ridge with training set
+            fprintf(1,'Acoustic + Semantic Ridge %d/%d\n', bb, BootstrapSTRF);
+            if LMSem==1%Semantic features are a categorical variable
+                X_AcSem = [x_ridge X_voc];
+            elseif LMSem==0%Semantic features in the ridge space
+                X_AcSem = [x_ridge xvoc_ridge];
+            end
+                [RidgeLocalH, RidgeLocalH0, V, W, L, P_num,RidgeLocalHPrime,RidgeLocalH0Prime] = myridge(y(TrainSet), X_AcSem(TrainSet,:));
+
+                % Cost functions
+                fprintf(1,'find Lambda with the minimum cost function\n')
+                NbL=length(L);
+                CostF = nan(NbL,1);
+                MaxError = sum((y(ValSet)-mean(y(TrainSet))).^2);
+                for ll=1:NbL
+                    YY = y(ValSet)- (RidgeLocalH0(ll) + RidgeLocalH(ll,:)*X_AcSem(ValSet,:)')'; % Check the vector sizes
+                    YY2 = YY.^2;
+                    CostF(ll)=sum(YY2);
+                end
+                MaxErrorSum_AcSem = MaxErrorSum_AcSem + MaxError;
+                CostFSum_AcSem = CostFSum_AcSem + CostF;
+                ll_min=find(CostF==min(CostF));
+                ll_min=ll_min(end);
+                LambdaIndex_AcSem(bb)=ll_min;
+%                 RidgeH_AcSem{bb} = RidgeLocalH(ll_min,:);
+%                 RidgeH0_AcSem{bb} = RidgeLocalH0(ll_min);
+%                 RidgeHPrime_AcSem{bb} = RidgeLocalHPrime(ll_min);
+
+                % Calculate R2 and errors with all dimensions of the best ridge model
+                YY = y(ValSet)- (RidgeLocalH0(ll_min) + RidgeLocalH(ll_min,:)*X_AcSem(ValSet,:)')';
+                YY2 = YY.^2;
+                SSE.AcSem(mm) = SSE.AcSem(mm) + sum(YY2);
+                SST.AcSem(mm) = SST.AcSem(mm) + sum((y(ValSet)-mean(y(TrainSet))).^2);
+                R2AcSem(bb)= 1 - sum(YY2)./sum((y(ValSet)-mean(y(TrainSet))).^2);
+            if FIG>1
+                figure(10)
+                plot(log(L), CostF)
+                xlabel('log of Lambdas ridge parameter for Full Model')
+                ylabel('Ridge Cost Function=SSE')
+                title(sprintf('training size %d validating size %d',length(TrainSet), length(ValSet)))
+                vline(log(L(ll_min)));
+                pause(1)
+            end
+            
+            
         end
-        y_predicted = y_predicted_STRF + y_predicted_Voc + y_predicted_Int;
-        R2AcSem(bb)= 1 - sum((y(ValSet)-y_predicted).^2)./sum((y(ValSet)-mean(y(ValSet))).^2);
+    end
+    if LMAcSem==2
+        SSE.AcSem(mm) = SSEprog_sumAcSem(round(mean(NumSignifEdim)));
+        SST.AcSem(mm)=SSTprog_sumAcSem(round(mean(NumSignifEdim)));
     end
     R2.AcSem(mm,1)=mean(R2AcSem);
     R2.AcSem(mm,2)=std(R2AcSem);
+    R2.AcSem(mm,3)=1-SSE.AcSem(mm)/SST.AcSem(mm);
     PropVal.AcSem(mm,1) = mean(ValPropAcSem);
     PropVal.AcSem(mm,2) = std(ValPropAcSem);
-    NDim.AcSem(mm,1)=mean(NumSignifEdim);
-    NDim.AcSem(mm,2)=std(NumSignifEdim);
-    SSEdim.AcSem{mm} = SSEprog_sumAcSem;
-    SSTdim.AcSem{mm} = SSTprog_sumAcSem;
+    if LMAcSem==2
+        NDim.AcSem(mm,1)=mean(NumSignifEdim);
+        NDim.AcSem(mm,2)=std(NumSignifEdim);
+        SSEdim.AcSem{mm} = SSEprog_sumAcSem;
+        SSTdim.AcSem{mm} = SSTprog_sumAcSem;
+        figure(11)
+        subplot(1,2,1)
+        plot(SSEdim.Acoustic{mm})
+        hold on
+        plot(SSEdim.AcSem{mm},'r')
+        ylabel('SSE')
+        xlabel('Number of Acoustic Ridge Dimensions in the models');
+        legend('SSE Acoustic Model','SSE Acoustic + Semantic Model');
+        hold off
+        subplot(1,2,2)
+        plot(1-SSEdim.Acoustic{mm}./SSTdim.Acoustic{mm})
+        hold on
+        plot(1-SSEdim.AcSem{mm}./SSTdim.AcSem{mm},'r');
+        ylabel('R2')
+        xlabel('Number of Acoustic Ridge Dimensions in the models');
+        legend('R2 Acoustic Model','R2 Acoustic + Semantic Model');
+        hold off
+    end
     
-    figure(10)
-    subplot(1,2,1)
-    plot(SSEdim.Acoustic{mm})
-    hold on
-    plot(SSEdim.AcSem{mm},'r')
-    ylabel('SSE')
-    xlabel('Number of Acoustic Ridge Dimensions in the models');
-    legend('SSE Acoustic Model','SSE Acoustic + Semantic Model');
-    hold off
-    subplot(1,2,2)
-    plot(1-SSEdim.Acoustic{mm}./SSTdim.Acoustic{mm})
-    hold on
-    plot(1-SSEdim.AcSem{mm}./SSTdim.AcSem{mm},'r');
-    ylabel('R2')
-    xlabel('Number of Acoustic Ridge Dimensions in the models');
-    legend('R2 Acoustic Model','R2 Acoustic + Semantic Model');
-    hold off
+    % Optimal Acoustic + Semantic model using all data set
+    if LMAcSem==2 %Progressive linear model with significant acoustic ridge dimensions
+        [Model.AcSem.Coefficients{mm}, Model.AcSem.CoefficientsNames{mm}] = myProgressiveLinearModel(y, x_ridge,VOC{mm},0,ceil(NDim.AcSem(mm,1)));
+    elseif LMAcSem==1 %Linear Model
+        ds3=dataset();
+        for ii=1:size(x_ridge, 2)
+            ds3.(sprintf('EIGENVAL%d',ii)) = x_ridge(:,ii);
+        end
+        if LMSem==0 %Semantic features are in the ridge space
+            for jj=1:size(xvoc_ridge, 2)
+                ds3.(sprintf('EIGENVALVOC%d',jj)) = xvoc_ridge(:,jj);
+            end
+            ds3.y=y;
+            mdl3=LinearModel.fit(ds3);
+        elseif LMSem==1 %Semantic features are the categorical variable not regularized
+            ds3.Voctype=ordinal(VOC{mm});
+            ds3.y=y;
+            mdl3=LinearModel.fit(ds3);
+        end
+        Model.AcSem.Coefficients{mm}=mdl3.Coefficients.Estimates;
+        Model.AcSem.CoefficientsNames{mm}=mdl3.Coefficients.Properties.ObsNames;
+    elseif LMAcSem==0 % Ridge
+        ll_summin = find(CostFSum_AcSem==min(CostFSum_AcSem));
+        ll_summin=ll_summin(end);
+        if FIG>0
+            fprintf(1,'R2= %f +/- %f or R2= %f when calculated as ratio of sum of errors\n',R2.AcSem(mm,1), R2.AcSem(mm,2),R2.AcSem(mm,3));
+            figure(12)
+            subplot(1,2,1)
+            hist(LambdaIndex_AcSem, max(LambdaIndex_AcSem))
+            subplot(1,2,2)
+            plot(log(L),CostFSum_AcSem)
+            hline(MaxErrorSum_AcSem);
+            xlabel('log of Lambdas ridge parameter')
+            ylabel('Sum of Ridge Cost Functions')
+            title('Acoustic + Semantic Model')
+            vline(log(L(ll_summin)));
+        end
+       % Use the best Lambda to calculate the optimal Semantic model on all dataset
+        [Model.AcSem.RidgeH{mm}, Model.AcSem.RidgeH0{mm}, V_AcSem, W_AcSem, L_AcSem, P_num_Sem, Model.AcSem.RidgeHPrime{mm}] = myridge(y, X_AcSem,'Lambda Indices',ll_summin);
+        Model.AcSem.RidgeLambdas(mm) = L_AcSem;
+        if FIG>0
+            figure(7)
+            subplot(1,3,3)
+            % Go back in the stimulus space to look at how the STRF is
+            % influenced by the semantic parameters in the ridge
+            imagesc(Model.AcSem.RidgeH{mm}, 1:length(Model.AcSem.RidgeH{mm}));
+            title('Predicted SR with Ridge on Full model');
+        end 
+    end
     
     
-    % Optimal Full model using all data set
-    [Model.AcSem.Coefficients{mm}, Model.AcSem.CoefficientsNames{mm}] = myProgressiveLinearModel(y, x_ridge,VOC{mm},0,ceil(NDim.AcSem(mm,1)));
+    
+    
     
     
     % Prediction of the Acoustic Model using only the acoustic parameters in the eigenspace

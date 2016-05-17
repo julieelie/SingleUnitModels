@@ -8,7 +8,7 @@ TestSet=nan(size(VocType));
 jj=1;
 kk=1;
 for Cc=1:length(CT);
-    Ccs = CT(Cc);
+    Ccs = CT{Cc};
     Indcc = find(strcmp(VocType,Ccs));
     Em = unique(Emittername(Indcc));
     if length(Em)>1
@@ -25,7 +25,7 @@ for Cc=1:length(CT);
         TestSet(kk:(kk+length(IndccEmTes)-1))=IndccEmTes;
         kk = kk+length(IndccEmTes);
     else
-        fprintf(1, '%s is not used to calculate the model (only one emitter)', Ccs);
+        fprintf(1, '%s is not used to calculate the model (only one emitter)\n', Ccs);
     end
 end
 ValSet=ValSet(1:(jj-1));
