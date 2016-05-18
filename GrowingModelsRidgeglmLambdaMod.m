@@ -1,5 +1,5 @@
 function [LambdaChoice, Deviance, LL, Model, ParamModel, Data, PropVal, Wins] = GrowingModelsRidgeglmLambdaMod(Spectro, VocType, PSTH, Trials, Emitter, MinWin, MaxWin, Increment, ResDelay, NeuroRes, DISTR, LINK, calfilename,DoneCalc)
-FIG=1; % set to 1 for some debugging figures 2 for all debugging figures 3 for extra figures
+FIG=0; % set to 1 for some debugging figures 2 for all debugging figures 3 for extra figures
 SWITCH.AllAlpha=0; % Set to 1 if ou want to calculate cumulative information for all alphas
 SWITCH.FIG=0; % figure set up for runLassoGlmModels.m set to 1 for some debugging figures 2 for all debugging figures 3 for extra figures
 SWITCH.Check=0;%set to 1 to compare ridge results with Linear model results

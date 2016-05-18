@@ -11,7 +11,8 @@ elseif ismac()
 else %we are on strfinator or a cluster machine
     Savio = 0;
     Me = 0;
-    addpath(genpath('/auto/fhome/julie/matlab/tlab/src/h5analysis/Julie_neuralcode'));
+    addpath(genpath('/auto/fhome/julie/matlab/juliescode/SingleUnitModels'));
+    addpath(genpath('/auto/fhome/julie/matlab/juliescode/GeneralCode'));
 end
 
 TimerVal=tic;
