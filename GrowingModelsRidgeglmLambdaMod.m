@@ -4,12 +4,12 @@ SWITCH.AllAlpha=0; % Set to 1 if ou want to calculate cumulative information for
 SWITCH.FIG=0; % figure set up for runLassoGlmModels.m set to 1 for some debugging figures 2 for all debugging figures 3 for extra figures
 SWITCH.Check=0;%set to 1 to compare ridge results with Linear model results
 SWITCH.DF=0; % Set to 1 to have the exact degrees of freedom of the models being calculated
-SWITCH.AR=1; %Set to 1 to run Auto-regressive model
+SWITCH.AR=0; %Set to 1 to run Auto-regressive model
 ParamModel.ZC=0;%Set to 1 if you want to z-score bin per bin the values of the spectrograms using the training set just before performing lasso glm
-ParamModel.MeanSubstractSpec=1; % Set to 1 if you want to substract the average spectro bin per bin on all the dataset
+ParamModel.MeanSubstractSpec=0; % Set to 1 if you want to substract the average spectro bin per bin on all the dataset
 ParamModel.LAMBDARATIO=1e-4;
 ParamModel.NUMLAMBDA=10;%25?
-ParamModel.Cum_Info = 0; % set to 1 to calculate cumulative information
+ParamModel.Cum_Info = 1; % set to 1 to calculate cumulative information
 
 NbBootstrap_Lambda = 20;%20
 NbBootstrap_Deviance = 10;%10
@@ -18,7 +18,7 @@ NbBootstrap_Deviance = 10;%10
 % betweeen ridge (L2, alpha=0) and lasso (L1, alpha =1))
 Alphas=0.001; % STRFs are easier to interpret using ridge than using Lasso and deviances are similar.
 
-ParamModel.ModelChoice=[1 0 0 0 0];% This logic vector indicates which models should
+ParamModel.ModelChoice=[0 1 0 0 0];% This logic vector indicates which models should
 ...be run (Acoustic, Semantic, AcSem without Offset,AcSem Semantic Offset, 
     ...AcSem Accoustic Offset) Note that the last two models need the 
         ...calculation of the first two models
@@ -201,7 +201,7 @@ else
         Deviance.Acoustic.FitIndexAR=nan(modNum,length(Alphas));
         Deviance.Acoustic.FitIndexARVal=nan(modNum,length(Alphas));
         Deviance.Acoustic.ypredictVal = cell(modNum,length(Alphas));
-        Deviance.Speed_Acoustic = cell(modNum,length(Alphas));
+        Deviance.Acoustic.Speed = cell(modNum,length(Alphas));
         LL.Acoustic.values=cell(modNum,length(Alphas));
         LambdaChoice.Acoustic.Lambdas = cell(modNum,length(Alphas));
         LambdaChoice.Acoustic.Speed = cell(modNum,length(Alphas));
@@ -212,7 +212,9 @@ else
         Model.Acoustic.y_predict = cell(modNum,length(Alphas));
         Model.Acoustic.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
-            Model.Acoustic.cum_info = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info1 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info6 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info11 = nan(modNum,length(Alphas));
         end
         Model.Acoustic.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.Acoustic.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -230,7 +232,9 @@ else
         Model.Semantic.y_predict = cell(modNum,length(Alphas));
         Model.Semantic.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
-            Model.Semantic.cum_info = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info1 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info6 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info11 = nan(modNum,length(Alphas));
         end
         Model.Semantic.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.Semantic.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -270,7 +274,9 @@ else
         Model.AcSemAc.y_predict = cell(modNum,length(Alphas));
         Model.AcSemAc.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
-            Model.AcSemAc.cum_info = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info1 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info6 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info11 = nan(modNum,length(Alphas));
         end
         Model.AcSemAc.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.AcSemAc.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -295,7 +301,9 @@ else
         Model.AcSemSem.y_predict = cell(modNum,length(Alphas));
         Model.AcSemSem.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
-            Model.AcSemSem.cum_info = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info1 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info6 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info11 = nan(modNum,length(Alphas));
         end
         Model.AcSemSem.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.AcSemSem.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -342,17 +350,23 @@ else
     Data.InputData = cell(modNum,1);
     Data.MeanSpectroStim = cell(modNum,1);
     Model.Floor.info = nan(modNum,1);
-    Model.Floor.cum_info = nan(modNum,1);
+    Model.Floor.cum_info1 = nan(modNum,1);
+    Model.Floor.cum_info6 = nan(modNum,1);
+    Model.Floor.cum_info11 = nan(modNum,1);
     Model.Floor.y_predict = cell(modNum,1);
     Model.Floor.P_YgivenS_all1 = cell(modNum,1);
     Model.Floor.P_YgivenS_all2 = cell(modNum,1);
     Model.Ceiling.info = nan(modNum,1);
-    Model.Ceiling.cum_info = nan(modNum,1);
+    Model.Ceiling.cum_info1 = nan(modNum,1);
+    Model.Ceiling.cum_info6 = nan(modNum,1);
+    Model.Ceiling.cum_info11 = nan(modNum,1);
     Model.Ceiling.P_YgivenS_all1 = cell(modNum,1);
     Model.Ceiling.P_YgivenS_all2 = cell(modNum,1);
     if SWITCH.AR
         Model.AR.info = nan(modNum,1);
-        Model.AR.cum_info = nan(modNum,1);
+        Model.AR.cum_info1 = nan(modNum,1);
+        Model.AR.cum_info6 = nan(modNum,1);
+        Model.AR.cum_info11 = nan(modNum,1);
         Model.AR.P_YgivenS_all1 = cell(modNum,1);
         Model.AR.P_YgivenS_all2 = cell(modNum,1);
     end
@@ -1048,130 +1062,68 @@ for mm = StartWin:modNum
     
     %% Calculate cumulative information
     if ParamModel.Cum_Info
-        if mm>1
-            fprintf('Pre-process data for cumulative information calculations\n')
-            mm_local=0;
-            %Pre-process adat for a parfor loop
-            P_YgivenS_allModel = cell(10,1);
-            if ParamModel.ModelChoice(1) && ~SWITCH.AllAlpha
-                % ACoustic Model
-                mm_local=mm_local+1;
-                P_YgivenS_allModel{mm_local}=Model.Acoustic.P_YgivenS_all1(1:mm,1);
-            end
-            if ParamModel.ModelChoice(2) && ~SWITCH.AllAlpha
-                % Semantic Model
-                mm_local=mm_local+1;
-                P_YgivenS_allModel{mm_local}=Model.Semantic.P_YgivenS_all1(1:mm,1);
-            end
-            if ParamModel.ModelChoice(4) && ~SWITCH.AllAlpha
-                % AcSemAc
-                mm_local=mm_local+1;
-                P_YgivenS_allModel{mm_local}=Model.AcSemAc.P_YgivenS_all1(1:mm,1);
-            end
-            if ParamModel.ModelChoice(5) && ~SWITCH.AllAlpha
-                % AcSemSem
-                mm_local=mm_local+1;
-                P_YgivenS_allModel{mm_local}=Model.AcSemSem.P_YgivenS_all1(1:mm,1);
-            end
-            % Floor
-            mm_local=mm_local+1;
-            P_YgivenS_allModel{mm_local}=Model.Floor.P_YgivenS_all1(1:mm,1);
-            %Ceiling
-            mm_local=mm_local+1;
-            P_YgivenS_allModel{mm_local}=Model.Ceiling.P_YgivenS_all1(1:mm,1);
-
-            % AR
-            if SWITCH.AR
-                mm_local=mm_local+1;
-                P_YgivenS_allModel{mm_local}=Model.AR.P_YgivenS_all1(1:mm,1);
-            end
-
-            Cum_info = nan(mm_local,1);
-            fprintf('Calculate Cumulative information for all models\n')
-            parfor model=1:mm_local
-                fprintf('Cumulative info %d/%d\n', model, mm_local);
-                Cum_info(model) = info_cumulative_model_Calculus(P_YgivenS_allModel{model}, mm,Data.x_stim_indices_wholeset, Stim_local);
-            end
-
-            mm_local=0;
-            %Post-process data for a parfor loop
-            if ParamModel.ModelChoice(1) && ~SWITCH.AllAlpha
-                fprintf('**CumInfo on Acoustic**\n')
-                % ACoustic Model
-                mm_local=mm_local+1;
-                Model.Acoustic.cum_info(mm,1)=Cum_info(mm_local);
-            end
-            if ParamModel.ModelChoice(2) && ~SWITCH.AllAlpha
-                fprintf('**CumInfo on Semantic**\n')
-                % Semantic Model
-                mm_local=mm_local+1;
-                Model.Semantic.cum_info(mm,1)=Cum_info(mm_local);
-            end
-            if ParamModel.ModelChoice(4) && ~SWITCH.AllAlpha
-                fprintf('**CumInfo on AcSemAc**\n')
-                % AcSemAc
-                mm_local=mm_local+1;
-                Model.AcSemAc.cum_info(mm,1)=Cum_info(mm_local);
-            end
-            if ParamModel.ModelChoice(5) && ~SWITCH.AllAlpha
-                fprintf('**CumInfo on AcSemSem**\n')
-                % AcSemSem
-                mm_local=mm_local+1;
-                Model.AcSemSem.cum_info(mm,1)=Cum_info(mm_local);
-            end
-            % Floor
-            fprintf('**CumInfo on Floor**\n')
-            mm_local=mm_local+1;
-            Model.Floor.cum_info(mm)=Cum_info(mm_local);
-            %Ceiling
-            fprintf('**CumInfo on Ceiling**\n')
-            mm_local=mm_local+1;
-            Model.Ceiling.cum_info(mm)=Cum_info(mm_local);
-            % AR
-            if SWITCH.AR
-                fprintf('**CumInfo on AR**\n')
-                mm_local=mm_local+1;
-                Model.AR.cum_info(mm)=Cum_info(mm_local);
-            end
-        else
+        if mm==1 || mm==6 || mm==11
+            Firstwin=mm;
             fprintf('set CumInfo = Info for the first window\n');
             if ParamModel.ModelChoice(1) && ~SWITCH.AllAlpha
                 % Acoustic model
                 fprintf('**CumInfo on Acoustic**\n')
-                Model.Acoustic.cum_info(mm,1) = Model.Acoustic.info(mm,1);
+                Model.Acoustic.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.Acoustic.info(mm,1);
             end
 
             if ParamModel.ModelChoice(2) && ~SWITCH.AllAlpha
                 % Semantic Model
                 fprintf('**CumInfo on Semantic**\n')
-                Model.Semantic.cum_info(mm,1) = Model.Semantic.info(mm,1);
+                Model.Semantic.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.Semantic.info(mm,1);
             end
 
             if ParamModel.ModelChoice(4) && ~SWITCH.AllAlpha
                 % AcSemAc
                 fprintf('**CumInfo on AcSemAc**\n')
-                Model.AcSemAc.cum_info(mm,1) = Model.AcSemAc.info(mm,1);
+                Model.AcSemAc.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.AcSemAc.info(mm,1);
             end
 
             if ParamModel.ModelChoice(5) && ~SWITCH.AllAlpha
                 % AcSemSem
                 fprintf('**CumInfo on AcSemSem**\n')
-                Model.AcSemSem.cum_info(mm,1) = Model.AcSemSem.info(mm,1);
+                Model.AcSemSem.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.AcSemSem.info(mm,1);
             end
 
             Model.Floor.cum_info(mm) = Model.Floor.info(mm);
-            Model.Ceiling.cum_info(mm) = Model.Ceiling.info(mm);
+            Model.Ceiling.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.Ceiling.info(mm);
             if SWITCH.AR
-                Model.AR.cum_info(mm) = Model.Ceiling.info(mm);
+                Model.AR.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.Ceiling.info(mm);
             end
         end
+        if mm>1 && mm<10
+            Firstwin=1;
+            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local);
+            
+        end
+        if mm>6 && mm<15
+            Firstwin=6;
+            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local);
+        end
+        if mm>11 && mm<20
+            Firstwin=11;
+            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local);
+        end
+         
+        if mm==modNum
+            %get rid of temp folder and its content that might be
+            %created by info_cumulative_model_Calculus
+            [status]=system(sprintf('rm -rf %s','/tmp/LocalTempStorageInfo'));
+        end
+            
     end
     %% Store the average spectro if we z-scored the data with a mean and STD
     % calculated for each window only
-    if ParamModel.ZC==1
+    if ParamModel.ZC
         Data.MeanSpectroStim{mm} = reshape(MResultsOptimal.X_meanZC{1},Df,Dt);
-    else
+    elseif ParamModel.MeanSubstractSpec
         Data.MeanSpectroStim{mm} = AvSpec(1:Df, 1:Dt);
+    else
+        Data.MeanSpectroStim{mm} = 'NoMeanSpectroCalculated Ac model was likely not run';
     end
     
    

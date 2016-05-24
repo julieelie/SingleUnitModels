@@ -1,4 +1,5 @@
 function [] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, Cellname,DISTR, LINK,MinWin, MaxWin, Increment, ResDelay)
+InfoFileName=1; %Set to 1 if you want to change the name of the output file so they indicate "Info"
 getenv('HOSTNAME')
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
     Savio=1;
@@ -73,16 +74,27 @@ if Savio
     OutputDirEx_local='/global/home/users/jelie/MatFiles/ModMat';
     OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatSavio');
 elseif Me
-    OutputDir_local='/users/elie/Documents/CODE/data/matfile/ModMatAcOnly';
+    if InfoFileName
+        OutputDir_local='/users/elie/Documents/CODE/data/matfile/ModMatInfo';
+    else
+        OutputDir_local='/users/elie/Documents/CODE/data/matfile/ModMatAcOnly';
+    end
     OutputDir_final=OutputDir_local;
 else
-    OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatAcOnly');
+    if InfoFileName
+        OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatInfo');
+    else
+        OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatAcOnly');
+    end
     OutputDir_local=OutputDir_final;
 end
-%calfilename_local=fullfile(OutputDir_local,['Models_InfoPoisson_' Res.Site '.mat']);
-%calfilename_final=fullfile(OutputDir_final,['Models_InfoPoisson_' Res.Site '.mat']);
-calfilename_local=fullfile(OutputDir_local,['Models_GLMPoisson_' Res.Site '.mat']);
-calfilename_final=fullfile(OutputDir_final,['Models_GLMPoisson_' Res.Site '.mat']);
+if InfoFileName
+    calfilename_local=fullfile(OutputDir_local,['Models_InfoPoisson_' Res.Site '.mat']);
+    calfilename_final=fullfile(OutputDir_final,['Models_InfoPoisson_' Res.Site '.mat']);
+else
+    calfilename_local=fullfile(OutputDir_local,['Models_GLMPoisson_' Res.Site '.mat']);
+    calfilename_final=fullfile(OutputDir_final,['Models_GLMPoisson_' Res.Site '.mat']);
+end
 outfilename_local=fullfile(OutputDir_local,['slurm_out*' Res.Site '*.txt']);
 outfilename_final=fullfile(OutputDir_final,['slurm_out*' Res.Site '*.txt']);
 

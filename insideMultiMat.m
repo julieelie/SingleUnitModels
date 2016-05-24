@@ -7,6 +7,7 @@ if size(ThreeDDat,1)==1
     MMD_local = ThreeDDat{1};
 else
     MultiMultDat_old = insideMultiMat(ThreeDDat(1:end-1));
+    
     % Identify rows of ThreeDDat{end} that have all values above MinProb
     % calculus for the other rows is unnecessary
     NbCol = size(ThreeDDat{end},2);
@@ -35,6 +36,5 @@ end
 %% Only keep paths (rows) that give mean row>0 (average product of probabilities over stims)
 Paths2keep = find(mean(MMD_local,2) > MinProb);
 MultiMultDat = MMD_local(Paths2keep,:);
-pack
 
 end
