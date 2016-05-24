@@ -47,7 +47,7 @@ else
         end
     else
     
-        [MatDim_old, File_old] = insideMultiMat_F(ThreeDDat(1:end-1),Firstwin,StimIndices_AllWin(1:end-1), StimIndices_AllWin(end-1),modnb);
+        [MatDim_old, File_old] = insideMultiMat_F(ThreeDDat(1:end-1),Firstwin,StimIndices_AllWin(1:end-1), StimIndices_AllWin(end-1),modnb,InfMat_Storage_location);
         % Open the file from the previous matrix
         fid_old = fopen(fullfile(File_old.path,File_old.name));
         ID_ind_old = 1:MatDim_old(1);

@@ -82,8 +82,9 @@ HYgivenS = sum(sum(sum(-P_YgivenS_local_rescaled1.*log2(P_YgivenS_local_rescaled
 %% Third Strategy to calculate the exact entropy: save the matrices of probabilities on hard drive 
 % Construct the dataset of p products (all the different possible
 % combinations of possible responses for each stim) and save this to a file
-system(sprintf('mkdir %s',FolderTempInfStorage))
-[MatDim, FileMat] = insideMultiMat_F(P_YgivenS_local,Firstwin,StimIndices_AllWin, Stim_local,modnb,FolderTempInfStorage);%The dimension of this should be size(P_YgivenS{1},1),length(Stim_local) 
+FolderTempInfStorage = '/tmp/LocalTempStorageInfo'; 
+system('mkdir /tmp/LocalTempStorageInfo')
+[MatDim, FileMat] = insideMultiMat_F(P_YgivenS_local,Firstwin,StimIndices_AllWin, Stim_local,modnb,InfMat_Storage_location);%The dimension of this should be size(P_YgivenS{1},1),length(Stim_local) 
 
 % Calculating exact entropy
 fid_final=fopen(fullfile(FileMat.path,FileMat.name));
@@ -123,7 +124,7 @@ HY = sum(-P_Y_wins_rescaled.*log2(P_Y_wins_rescaled));
 % last window
 fclose(fid_final);
 if win>1 
-    system(sprintf('rm %s/Temp_CumInf%d_%d_%d', FolderTempInfStorage,modnb,Firstwin,win-1));
+    system(sprintf('rm %s/Temp_CumInf%d_%d_%d', InfMat_Storage_location,modnb,Firstwin,win-1));
 end
  
 %% Information

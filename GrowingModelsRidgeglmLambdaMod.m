@@ -11,6 +11,17 @@ ParamModel.LAMBDARATIO=1e-4;
 ParamModel.NUMLAMBDA=10;%25?
 ParamModel.Cum_Info = 1; % set to 1 to calculate cumulative information
 
+if ParamModel.Cum_Info
+    getenv('HOSTNAME')
+    if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
+        FolderTempInfStorage = '/tmp/LocalTempStorageInfo';
+    elseif ismac()
+        FolderTempInfStorage = '/tmp/LocalTempStorageInfo';
+    else %we are on strfinator or a cluster machine
+        FolderTempInfStorage = '/auto/tdrive/julie/LocalTempStorageInfo';
+    end
+end 
+
 NbBootstrap_Lambda = 20;%20
 NbBootstrap_Deviance = 10;%10
 
@@ -1097,22 +1108,22 @@ for mm = StartWin:modNum
         end
         if mm>1 && mm<10
             Firstwin=1;
-            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local);
+            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
             
         end
         if mm>6 && mm<15
             Firstwin=6;
-            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local);
+            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
         end
         if mm>11 && mm<20
             Firstwin=11;
-            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local);
+            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
         end
          
         if mm==modNum
             %get rid of temp folder and its content that might be
             %created by info_cumulative_model_Calculus
-            [status]=system(sprintf('rm -rf %s','/tmp/LocalTempStorageInfo'));
+            [status]=system(sprintf('rm -rf %s',FolderTempInfStorage));
         end
             
     end

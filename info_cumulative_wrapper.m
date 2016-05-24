@@ -1,4 +1,4 @@
-function [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,firstwin,mm,x_stim_indices_wholeset, Stim_local)
+function [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,firstwin,mm,x_stim_indices_wholeset, Stim_local,FolderTempInfStorage)
 fprintf('Pre-process data for cumulative information calculations\n')
 X_stim_indices_wholeset = x_stim_indices_wholeset(firstwin:mm);
             mm_local=0;
@@ -41,7 +41,7 @@ X_stim_indices_wholeset = x_stim_indices_wholeset(firstwin:mm);
             fprintf('Calculate Cumulative information for all models from win %d\n',firstwin)
             for modelrun=1:mm_local
                 fprintf('Cumulative info %d/%d\n', modelrun, mm_local);
-                Cum_info(modelrun) = info_cumulative_model_Calculus(P_YgivenS_allModel{modelrun},firstwin, mm,X_stim_indices_wholeset, Stim_local,modelrun);
+                Cum_info(modelrun) = info_cumulative_model_Calculus(P_YgivenS_allModel{modelrun},firstwin, mm,X_stim_indices_wholeset, Stim_local,modelrun,FolderTempInfStorage);
             end
                
             mm_local=0;
