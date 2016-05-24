@@ -39,15 +39,20 @@ else
         fid_old = fopen(fullfile(InfMat_Storage_location,File_old.name));
         fseek(fid_old, -2*8, 'eof');
         MatDim_old = fread(fid_old, 2, 'double');
-        % Identify the Stimuli for that window in the old file
-        ID_ind_old = nan(length(Stim_local),1);
-        for ss=1:length(Stim_local)
-            st = Stim_local(ss);
-            ID_ind_old(ss) = find(StimIndices_AllWin{size(ThreeDDat,1)-1}==st);
+        % Identify the Stimuli for that window in the old file if it
+        % contains more stims than the new
+        if MatDim_old(1)>length(Stim_local)
+            ID_ind_old = nan(length(Stim_local),1);
+            for ss=1:length(Stim_local)
+                st = Stim_local(ss);
+                ID_ind_old(ss) = find(StimIndices_AllWin{size(ThreeDDat,1)-1}==st);
+            end
+        else
+            ID_ind_old = 1:MatDim_old(1);
         end
     else
     
-        [MatDim_old, File_old] = insideMultiMat_F(ThreeDDat(1:end-1),Firstwin,StimIndices_AllWin(1:end-1), StimIndices_AllWin(end-1),modnb,InfMat_Storage_location);
+        [MatDim_old, File_old] = insideMultiMat_F(ThreeDDat(1:end-1),Firstwin,StimIndices_AllWin(1:end-1), Stim_local,modnb,InfMat_Storage_location);
         % Open the file from the previous matrix
         fid_old = fopen(fullfile(File_old.path,File_old.name));
         ID_ind_old = 1:MatDim_old(1);
@@ -74,7 +79,8 @@ else
     % new matrix
     MatDim1 = length(Stim_local);
     NbCol_new = size(MultiMultDat_new,2);
-    MatDim2 = nan(NbCol_new,1);
+    MatDim2 = nan(NbCol_new*length(NbCol_chunks),1);
+    jj=0;
     for yy=1:NbCol_new
         for cc=1:length(NbCol_chunks)
             % correctly position into the old file and read out chunk of
@@ -108,7 +114,8 @@ else
             end
             % Keep count of the size of the growing matrix in the new
             % output file
-            MatDim2(yy) = size(MultiMultDat,2);
+            jj=jj+1;
+            MatDim2(jj) = size(MultiMultDat,2);
 %             if NbStim~=size(MultiMultDat,1)
 %                 fprintf('Problem here, the number of rows should always be the same between all matrices!!!\n');
 %             end
