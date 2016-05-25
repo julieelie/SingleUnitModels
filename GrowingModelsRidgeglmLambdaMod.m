@@ -224,8 +224,9 @@ else
         Model.Acoustic.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
             Model.Acoustic.cum_info1 = nan(modNum,length(Alphas));
-            Model.Acoustic.cum_info6 = nan(modNum,length(Alphas));
-            Model.Acoustic.cum_info11 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info5 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info9 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info13 = nan(modNum,length(Alphas));
         end
         Model.Acoustic.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.Acoustic.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -244,8 +245,9 @@ else
         Model.Semantic.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
             Model.Semantic.cum_info1 = nan(modNum,length(Alphas));
-            Model.Semantic.cum_info6 = nan(modNum,length(Alphas));
-            Model.Semantic.cum_info11 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info5 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info9 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info13 = nan(modNum,length(Alphas));
         end
         Model.Semantic.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.Semantic.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -286,8 +288,9 @@ else
         Model.AcSemAc.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
             Model.AcSemAc.cum_info1 = nan(modNum,length(Alphas));
-            Model.AcSemAc.cum_info6 = nan(modNum,length(Alphas));
-            Model.AcSemAc.cum_info11 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info5 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info9 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info13 = nan(modNum,length(Alphas));
         end
         Model.AcSemAc.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.AcSemAc.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -313,8 +316,9 @@ else
         Model.AcSemSem.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
             Model.AcSemSem.cum_info1 = nan(modNum,length(Alphas));
-            Model.AcSemSem.cum_info6 = nan(modNum,length(Alphas));
-            Model.AcSemSem.cum_info11 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info5 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info9 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info13 = nan(modNum,length(Alphas));
         end
         Model.AcSemSem.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.AcSemSem.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -362,22 +366,25 @@ else
     Data.MeanSpectroStim = cell(modNum,1);
     Model.Floor.info = nan(modNum,1);
     Model.Floor.cum_info1 = nan(modNum,1);
-    Model.Floor.cum_info6 = nan(modNum,1);
-    Model.Floor.cum_info11 = nan(modNum,1);
+    Model.Floor.cum_info5 = nan(modNum,1);
+    Model.Floor.cum_info9 = nan(modNum,1);
+    Model.Floor.cum_info13 = nan(modNum,1);
     Model.Floor.y_predict = cell(modNum,1);
     Model.Floor.P_YgivenS_all1 = cell(modNum,1);
     Model.Floor.P_YgivenS_all2 = cell(modNum,1);
     Model.Ceiling.info = nan(modNum,1);
     Model.Ceiling.cum_info1 = nan(modNum,1);
-    Model.Ceiling.cum_info6 = nan(modNum,1);
-    Model.Ceiling.cum_info11 = nan(modNum,1);
+    Model.Ceiling.cum_info5 = nan(modNum,1);
+    Model.Ceiling.cum_info9 = nan(modNum,1);
+    Model.Ceiling.cum_info13 = nan(modNum,1);
     Model.Ceiling.P_YgivenS_all1 = cell(modNum,1);
     Model.Ceiling.P_YgivenS_all2 = cell(modNum,1);
     if SWITCH.AR
         Model.AR.info = nan(modNum,1);
         Model.AR.cum_info1 = nan(modNum,1);
-        Model.AR.cum_info6 = nan(modNum,1);
-        Model.AR.cum_info11 = nan(modNum,1);
+        Model.AR.cum_info5 = nan(modNum,1);
+        Model.AR.cum_info9 = nan(modNum,1);
+        Model.AR.cum_info13 = nan(modNum,1);
         Model.AR.P_YgivenS_all1 = cell(modNum,1);
         Model.AR.P_YgivenS_all2 = cell(modNum,1);
     end
@@ -1106,20 +1113,24 @@ for mm = StartWin:modNum
                 Model.AR.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.Ceiling.info(mm);
             end
         end
-        if mm>1 && mm<10
+        if mm>1 && mm<8
             Firstwin=1;
             [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
             
         end
-        if mm>6 && mm<15
-            Firstwin=6;
+        if mm>5 && mm<12
+            Firstwin=5;
             [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
         end
-        if mm>11 && mm<20
-            Firstwin=11;
+        if mm>9 && mm<16
+            Firstwin=9;
             [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
         end
          
+        if mm>13 && mm<20
+            Firstwin=13;
+            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
+        end
         if mm==modNum
             %get rid of temp folder and its content that might be
             %created by info_cumulative_model_Calculus
