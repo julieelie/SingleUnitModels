@@ -4,7 +4,7 @@ function [I,P_YgivenS_all1,P_YgivenS_all2]=info_model_Calculus(mu_in,mu_max, yma
 % between the values that mu can get and how widely the entropy of the model
 % can be estimated over the possible values of y. if ymax is fixed to 170
 % then mu has to be lower than 65 for now.
-% mu are the predictions from the model for every single stim and every
+% mu_in are the predictions from the model for every single stim and every
 % single trial
 % ymax is the maximum number of spike you can observed in your dataset. We
 % can indeed reasonably uperbound the calculation of entropy on all
@@ -84,7 +84,7 @@ for mm=1:Nb_mu
     %P = (mu_local .^ y_world) .* exp(-mu_local) ./ Fac_y;
     
     % Calculate log of probability
-    if sum((y_world-mu_local)==0)
+    if intersect((y_world-mu_local)==0, mu_local==0)
         Log_P= y_world.*log2(mu_local+(mu_local==0)) - log2(Fac_y) - mu_local/log(2); %ylog(y)=0 when y=0
     elseif any(mu_local < muLims)
         mu_temp = max(mu_local,muLims);
@@ -104,7 +104,7 @@ for mm=1:Nb_mu
         RescaledP = RescaledP +1;
         P_YgivenS_all1_rescaled(:,find(I_mu_unique==mm))=repmat(P',1,length(find(I_mu_unique==mm)));
     end
-    H_ymu_unique(mm) = sum(-P.*Log_P);% conditional entropy value for each unique mu (each stim) across all y of the world
+    H_ymu_unique(mm) = sum(-P.*log2(P + (P==0)));% conditional entropy value for each unique mu (each stim) across all y of the world
 end
 H_ymu = sum(H_ymu_unique(I_mu_unique))/N_pres;
 fprintf('rescaled P for %d/%d predicted mu\n',RescaledP,Nb_mu);

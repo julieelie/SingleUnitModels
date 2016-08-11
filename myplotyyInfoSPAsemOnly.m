@@ -45,7 +45,7 @@ ax(2).YTick = 0:10:max(MaxRight);
 ax(2).YTickLabel = 0:10:max(MaxRight);
 ylabel(ax(2),sprintf('Average Spike Rate (s) %s',LegendInfo.CellType))
 Xtickposition=get(ax(1),'XTick');
-set(ax(1),'XTickLabel', [0 XLabels_in(Xtickposition(2:end))])
+set(ax(1),'XTickLabel', (Xtickposition+1)*10)
 if length(h1)>5
     legend('Ceiling', 'Semantic','Null-Model','Saturated', 'Location','NorthEast')
     ylabel(ax(1),sprintf('%s',LegendInfo.YleftAxis))

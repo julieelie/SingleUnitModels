@@ -937,7 +937,11 @@ for ff=1:length(PoissonFiles)
                         LR_Filter=reshape(Logistic.PC_LR(:,vt),Logistic.nf,Logistic.nt);
                         LR_Filter_scaled = LR_Filter(1:length(Model.TickSTRFspectro.fo{mm}),pp:(pp+length(Model.TickSTRFspectro.to{mm})-1));
                         ScalingTerm = ((sum(sum(LR_Filter_scaled.^2)))^0.5)*((sum(sum(Model.Acoustic.B{mm}.^2)))^0.5);
-                        LocalProjection(pp,vt) = sum(sum(LR_Filter_scaled.*Model.Acoustic.B{mm}))/ScalingTerm;
+                        if sum(sum(Model.Acoustic.B{mm}))==0
+                            LocalProjection(pp,vt)=0;
+                        else
+                            LocalProjection(pp,vt) = sum(sum(LR_Filter_scaled.*Model.Acoustic.B{mm}))/ScalingTerm;
+                        end
                     end
                 end
                 LRProjection(mm,:)=max(LocalProjection);
@@ -977,7 +981,7 @@ for ff=1:length(PoissonFiles)
             plot(LRProjection(:,1:7),'-')
             hold on
             plot(LRProjection(:,8:end),':')
-            axis([0 8 0 0.5])
+            axis([0 15 0 0.4])
             legend(Logistic.vocTypes)
             Xtickposition=get(gca,'XTick');
             set(gca,'XTickLabel', (Xtickposition+1)*10)
@@ -1003,7 +1007,14 @@ for ff=1:length(PoissonFiles)
                 MinSTRFAc(mm) = min(min(Model.Acoustic.B{mm}));
                 Gain(mm)=max(abs(MaxSTRFAc(mm)), abs(MinSTRFAc(mm)));
             end
-            %CLim = [min(MinSTRFAc(2:2:6)) max(MaxSTRFAc(2:2:6))];
+            CLim = [min(MinSTRFAc) max(MaxSTRFAc)];
+            CLim_Norm = [min(MinSTRFAc./Gain) max(MaxSTRFAc./Gain)];
+            
+            % Initialize the MegaMatrix for STRFs
+            NfreqSTRF=size(Model.Acoustic.B{NumMod},1);
+            MegaSTRF = zeros(NumMod*(NfreqSTRF+1),size(Model.Acoustic.B{NumMod},2));
+            MegaSTRF = MegaSTRF - 999;
+            MegaSTRFNorm = MegaSTRF;
             
             % Plot the gain
             if Figure_Switch
@@ -1014,6 +1025,14 @@ for ff=1:length(PoissonFiles)
                 set(gca,'XTickLabel', (Xtickposition+1)*10)
                 xlabel('Time (ms)')
                 ylabel('Gain of the Acoustic filters')
+                figure(19)
+                plot(flip(Gain),1:length(Gain), 'k-')
+                ylim([0 16])
+                %axis([0 8 0 0.45])
+                Ytickposition=get(gca,'YTick');
+                set(gca,'YTickLabel', 180-(Ytickposition+1)*10)
+                ylabel('Time (ms)')
+                xlabel('Gain of the Acoustic filters')
             end
             for mm=1:NumMod
                 if ParamModel.ModelChoice(4) && ParamModel.ModelChoice(5) && DiffDeviance_calc
@@ -1032,6 +1051,13 @@ for ff=1:length(PoissonFiles)
                 end
                 fignum=0;
                 if ParamModel.ModelChoice(1)
+                    NTimeSTRF=size(Model.Acoustic.B{mm},2);
+                    MegaSTRF(((mm-1)*NfreqSTRF+mm) : mm*NfreqSTRF+mm-1, (end-NTimeSTRF+1):end)=flip(Model.Acoustic.B{mm},1);
+                    if Gain(mm)>0
+                        MegaSTRFNorm(((mm-1)*NfreqSTRF+mm) : mm*NfreqSTRF+mm-1, (end-NTimeSTRF+1):end)=flip(Model.Acoustic.B{mm}./Gain(mm),1);
+                    else
+                        MegaSTRFNorm(((mm-1)*NfreqSTRF+mm) : mm*NfreqSTRF+mm-1, (end-NTimeSTRF+1):end)=flip(Model.Acoustic.B{mm},1);
+                    end
                     figure(8)
                     imagesc(Model.TickSTRFspectro.to{mm},Model.TickSTRFspectro.fo{mm},Model.Acoustic.B{mm})
                     axis xy
@@ -1232,8 +1258,39 @@ for ff=1:length(PoissonFiles)
                     pause()
                 end
             end
+            figure(150)
+            imagesc(Model.TickSTRFspectro.to{end},repmat([Model.TickSTRFspectro.fo{end}; 0] ,NumMod,1),MegaSTRF,CLim)
+            colorbar()
+            map=colormap;
+            [cmin,cmax]=caxis;
+            cmin_new = cmin - 1.2*(cmax-cmin)/(size(map,1)-1);
+            caxis([cmin_new cmax])
+            map(1,:)=[1 1 1];
+            colormap(map)
+            XTick=get(gca,'XTickLabel');
+            set(gca,'XTickLabel', XTick(flip(1:length(XTick))))
+            set(gca,'YTickLabel', {})
+            xlabel('Time before spike in s')
+            ylabel('STRFs 0-8KHz')
+            title('STRFs');
             
-            
+            figure(152)
+            CoeffMap=0.6;
+            imagesc(Model.TickSTRFspectro.to{end},repmat([Model.TickSTRFspectro.fo{end}; 0] ,NumMod,1),MegaSTRFNorm, CLim_Norm)
+            colorbar()
+            map=colormap;
+            [cmin,cmax]=caxis;
+            cmin_new = cmin - 1.2*(cmax-cmin)/(size(map,1)-1);
+            caxis([cmin_new cmax])
+            %caxis(CoeffMap*[cmin cmax])
+            map(1,:)=[1 1 1];
+            colormap(map)
+            XTick=get(gca,'XTickLabel');
+            set(gca,'XTickLabel', XTick(flip(1:length(XTick))))
+            set(gca,'YTickLabel', {})
+            xlabel('Time before spike in s')
+            ylabel('Normalized STRFs 0-8 kHz')
+            title('Normalized STRFs');
         end
     end
 end

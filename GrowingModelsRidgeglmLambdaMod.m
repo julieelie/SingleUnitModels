@@ -1080,7 +1080,7 @@ for mm = StartWin:modNum
     
     %% Calculate cumulative information
     if ParamModel.Cum_Info
-        if mm==1 || mm==6 || mm==11
+        if mm==1 %|| mm==6 || mm==11
             Firstwin=mm;
             fprintf('set CumInfo = Info for the first window\n');
             if ParamModel.ModelChoice(1) && ~SWITCH.AllAlpha
@@ -1113,24 +1113,24 @@ for mm = StartWin:modNum
                 Model.AR.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.Ceiling.info(mm);
             end
         end
-        if mm>1 && mm<8
+        if mm>1 %&& mm<8
             Firstwin=1;
             [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
             
         end
-        if mm>5 && mm<12
-            Firstwin=5;
-            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
-        end
-        if mm>9 && mm<16
-            Firstwin=9;
-            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
-        end
-         
-        if mm>13 && mm<20
-            Firstwin=13;
-            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
-        end
+%         if mm>5 && mm<12
+%             Firstwin=5;
+%             [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
+%         end
+%         if mm>9 && mm<16
+%             Firstwin=9;
+%             [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
+%         end
+%          
+%         if mm>13 && mm<20
+%             Firstwin=13;
+%             [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
+%         end
         if mm==modNum
             %get rid of temp folder and its content that might be
             %created by info_cumulative_model_Calculus

@@ -1,19 +1,29 @@
-function [MultiMultDat] = insideMultiMat(ThreeDDat)
+function [MMD_local] = insideMultiMat(ThreeDDat,MinProbThresh, MinProb)
 
-% Define a minimum probability under which the proba should be considered 0
-MinProb = 1/(8*365*24*60*60*5); %1/number of 20ms bins in a life of a zebra finch in the lab
+if nargin<2
+    MinProbThresh=1;
+end
+if nargin<3
+    % Define a minimum probability under which the proba should be considered 0
+    MinProb = 1/(8*365*24*60*60*5); %1/number of 20ms bins in a life of a zebra finch in the lab
+end
 
 if size(ThreeDDat,1)==1
     MMD_local = ThreeDDat{1};
 else
-    MultiMultDat_old = insideMultiMat(ThreeDDat(1:end-1));
+    MultiMultDat_old = insideMultiMat(ThreeDDat(1:end-1), MinProbThresh, MinProb);
     
     % Identify rows of ThreeDDat{end} that have all values above MinProb
     % calculus for the other rows is unnecessary
     NbCol = size(ThreeDDat{end},2);
-    Rows2keep = find(sum((ThreeDDat{end}> MinProb), 2)>=NbCol);
-    MultiMultDat_new = ThreeDDat{end}(Rows2keep,:);
-    NbRow_end = length(Rows2keep);
+    if MinProbThresh
+        Rows2keep = find(sum((ThreeDDat{end}> MinProb), 2)>=NbCol);
+        MultiMultDat_new = ThreeDDat{end}(Rows2keep,:);
+        NbRow_end = length(Rows2keep);
+    else
+        MultiMultDat_new = ThreeDDat{end};
+        NbRow_end = size(ThreeDDat{end},1);
+    end
     NbRow_old = size(MultiMultDat_old,1);
     
     
@@ -34,7 +44,9 @@ else
 end
 
 %% Only keep paths (rows) that give mean row>0 (average product of probabilities over stims)
-Paths2keep = find(mean(MMD_local,2) > MinProb);
-MultiMultDat = MMD_local(Paths2keep,:);
+if MinProbThresh
+    Paths2keep = find(mean(MMD_local,2) > MinProb);
+    MMD_local = MMD_local(Paths2keep,:);
+end
 
 end

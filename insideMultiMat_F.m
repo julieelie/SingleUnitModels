@@ -1,12 +1,16 @@
-function [MatDim,File_new] = insideMultiMat_F(ThreeDDat,Firstwin,StimIndices_AllWin, Stim_local,modnb,InfMat_Storage_location)
+function [MatDim,File_new] = insideMultiMat_F(ThreeDDat,Firstwin,StimIndices_AllWin, Stim_local,modnb,InfMat_Storage_location,MinProbThresh, MinProb)
 % Work with all the files in a temp folder on the computer machine so that there is no traffic Jam!!!
 if nargin <6
     InfMat_Storage_location = '/tmp/LocalTempStorageInfo';
 end
+if nargin<7
+    MinProbThresh=1;
+end
 
-% Define a minimum probability under which the proba should be considered 0
-MinProb = 1/(8*365*24*60*60*5); %1/number of 20ms bins in a life of a zebra finch in the lab
-
+if nargin<8
+    % Define a minimum probability under which the proba should be considered 0
+    MinProb = 1/(8*365*24*60*60*5); %1/number of 20ms bins in a life of a zebra finch in the lab
+end
 %% First step
 if size(ThreeDDat,1)==1
     MultiMultDat = ThreeDDat{1};
@@ -52,7 +56,7 @@ else
         end
     else
     
-        [MatDim_old, File_old] = insideMultiMat_F(ThreeDDat(1:end-1),Firstwin,StimIndices_AllWin(1:end-1), Stim_local,modnb,InfMat_Storage_location);
+        [MatDim_old, File_old] = insideMultiMat_F(ThreeDDat(1:end-1),Firstwin,StimIndices_AllWin(1:end-1), Stim_local,modnb,InfMat_Storage_location,MinProbThresh, MinProb);
         % Open the file from the previous matrix
         fid_old = fopen(fullfile(File_old.path,File_old.name));
         ID_ind_old = 1:MatDim_old(1);
@@ -101,9 +105,13 @@ else
             MMD_local = MultiMultDat_old_local(ID_ind_old,:) .* repmat(MultiMultDat_new(:,yy),1,NbCol_chunks(cc));
             
             % Discard paths (columns) where all stims have a very low proba
-            BadPaths = find(sum((MMD_local < MinProb),1)==NbStim);
-            Paths2keep=setdiff(1:size(MMD_local,2), BadPaths);
-            MultiMultDat = MMD_local(:,Paths2keep);
+            if MinProbThresh
+                BadPaths = find(sum((MMD_local < MinProb),1)==NbStim);
+                Paths2keep=setdiff(1:size(MMD_local,2), BadPaths);
+                MultiMultDat = MMD_local(:,Paths2keep);
+            else
+                MultiMultDat = MMD_local;
+            end
             
             % save the output by appending to the new output file
             fseek(fid_new, 0, 'eof');
@@ -119,7 +127,7 @@ else
 %             if NbStim~=size(MultiMultDat,1)
 %                 fprintf('Problem here, the number of rows should always be the same between all matrices!!!\n');
 %             end
-            fprintf('In insideMultiLat_F computing line %d/%d of new matrix\nwith chunck %d/%d of old one\n',yy,NbCol_new,cc,length(NbCol_chunks)); 
+            %fprintf('In insideMultiMat_F computing line %d/%d of new matrix\nwith chunck %d/%d of old one\n',yy,NbCol_new,cc,length(NbCol_chunks)); 
         end
     end
 %     % check that the matrix saved in the new file is of the expected size
