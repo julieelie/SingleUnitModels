@@ -432,21 +432,22 @@ for mm = StartWin:modNum
         break
     end
     %NBPC = [1:9 10:5:(NbStim_local*0.8)]; % This is not a good solution since the R2A profile of most cells show stairs-like structure with increasing number of PC we need to apply a ridge regression after the PCA.
-    Dt = sum((1000.*Spectro.to{Stim_local(1)})<= Win);
-    Df = sum(Spectro.fo{Stim_local(1)}<= Flow);
-    InputData.Dt = Dt;
-    InputData.Df = Df;
-    x= nan(NbStim_local,Df*Dt);%this matrix will contain the vectors of spectrograms for all the stims for that window size
-    
-    % Store the ticks of the spectro and STRF
-    LongestStim = find(duration==max(duration));
-    Fo_Indices=find(Spectro.fo{LongestStim}<=Flow);
-    To_Indices=find((1000.*Spectro.to{LongestStim})<=Win);
-    Model.TickSTRFspectro.to{mm} = Spectro.to{LongestStim}(To_Indices);
-    Model.TickSTRFspectro.fo{mm} = Spectro.fo{LongestStim}(Fo_Indices);
-    TickSTRFspectro.to=Model.TickSTRFspectro.to{mm};
-    TickSTRFspectro.fo=Model.TickSTRFspectro.fo{mm};
-    
+    if any(ParamModel.ModelChoice([1,3:5]))
+        Dt = sum((1000.*Spectro.to{Stim_local(1)})<= Win);
+        Df = sum(Spectro.fo{Stim_local(1)}<= Flow);
+        InputData.Dt = Dt;
+        InputData.Df = Df;
+        x= nan(NbStim_local,Df*Dt);%this matrix will contain the vectors of spectrograms for all the stims for that window size
+
+        % Store the ticks of the spectro and STRF
+        LongestStim = find(duration==max(duration));
+        Fo_Indices=find(Spectro.fo{LongestStim}<=Flow);
+        To_Indices=find((1000.*Spectro.to{LongestStim})<=Win);
+        Model.TickSTRFspectro.to{mm} = Spectro.to{LongestStim}(To_Indices);
+        Model.TickSTRFspectro.fo{mm} = Spectro.fo{LongestStim}(Fo_Indices);
+        TickSTRFspectro.to=Model.TickSTRFspectro.to{mm};
+        TickSTRFspectro.fo=Model.TickSTRFspectro.fo{mm};
+    end
     if FIG>=4
         % Check spectro of stims
         for ss = 1:length(Spectro.spec)
@@ -480,23 +481,24 @@ for mm = StartWin:modNum
     % Getting spectro and spike trains
     for ss = 1:NbStim_local
         dd=Stim_local(ss);
-        %new spectro
-        MatSpec = reshape(Spectro.spec{dd}, length(Spectro.fo{dd}), length(Spectro.to{dd}));
-        FreqBelowFlow = find(Spectro.fo{dd}<=Flow);
-        EndFreq = FreqBelowFlow(end);
-        NFreq_local=length(FreqBelowFlow);
-        if NFreq_local~=Df
-            sprintf('WARNING!! Trouble with the size of the spectros for stim %d\n', dd);
+        if any(ParamModel.ModelChoice([1,3:5]))
+            %new spectro
+            MatSpec = reshape(Spectro.spec{dd}, length(Spectro.fo{dd}), length(Spectro.to{dd}));
+            FreqBelowFlow = find(Spectro.fo{dd}<=Flow);
+            EndFreq = FreqBelowFlow(end);
+            NFreq_local=length(FreqBelowFlow);
+            if NFreq_local~=Df
+                sprintf('WARNING!! Trouble with the size of the spectros for stim %d\n', dd);
+            end
+            TimeBelowWin = find((1000.*Spectro.to{dd})<= Win);
+            EndTime = TimeBelowWin(end);
+            NTime_local = length(TimeBelowWin);
+            if NTime_local~=Dt
+                sprintf('WARNING!! Trouble with the size of the spectros for stim %d\n', dd);
+            end
+            Newspectro=MatSpec(1:EndFreq,1:EndTime);
+            x(ss,:)=reshape(Newspectro, 1, NFreq_local*NTime_local);
         end
-        TimeBelowWin = find((1000.*Spectro.to{dd})<= Win);
-        EndTime = TimeBelowWin(end);
-        NTime_local = length(TimeBelowWin);
-        if NTime_local~=Dt
-            sprintf('WARNING!! Trouble with the size of the spectros for stim %d\n', dd);
-        end
-        Newspectro=MatSpec(1:EndFreq,1:EndTime);
-        x(ss,:)=reshape(Newspectro, 1, NFreq_local*NTime_local);
-        
         % Values of max spike rate(y), mean spike rate (y) and exact number of spike per trial (y) within the window
         % Check the distribution of responses (Gaussian or Poisson) for each stim
         if strcmp(ParamModel.NeuroRes, 'max')
@@ -534,17 +536,19 @@ for mm = StartWin:modNum
     %     fprintf(1,'Proportion of stims which response have both a normal and Poisson distribution: %f\n',sum((DistrPoisson(:,1)+DistrNormal(:,1))==0)./NbStim_local);
     %
     
-    % Take the log of the spectros
-    %and ground the output to supress -Inf values
-    % Substract the average spectro if requested
-    % Save x as input for models
-    InputData.x = 20*log10(abs(x));
-    MAXI = max(max(InputData.x));
-    InputData.x(InputData.x<(MAXI-80))=MAXI-80;
-    if ParamModel.MeanSubstractSpec
-        AvSpec_local = repmat(reshape(AvSpec(1:Df, 1:Dt), 1, Df*Dt),NbStim_local,1);
-        InputData.raw_x = InputData.x;
-        InputData.x = InputData.x - AvSpec_local;
+    if any(ParamModel.ModelChoice([1,3:5]))
+        % Take the log of the spectros
+        %and ground the output to supress -Inf values
+        % Substract the average spectro if requested
+        % Save x as input for models
+        InputData.x = 20*log10(abs(x));
+        MAXI = max(max(InputData.x));
+        InputData.x(InputData.x<(MAXI-80))=MAXI-80;
+        if ParamModel.MeanSubstractSpec
+            AvSpec_local = repmat(reshape(AvSpec(1:Df, 1:Dt), 1, Df*Dt),NbStim_local,1);
+            InputData.raw_x = InputData.x;
+            InputData.x = InputData.x - AvSpec_local;
+        end
     end
     
     % Code the categorical data about call
@@ -560,7 +564,7 @@ for mm = StartWin:modNum
     end
     InputData.X_voc=X_voc;
     
-    if FIG>=3
+    if FIG>=3 && any(ParamModel.ModelChoice([1,3:5]))
         for ss = 1:NbStim_local
             figure(11)
             subplot(1,4,1);
@@ -1062,7 +1066,9 @@ for mm = StartWin:modNum
     Data.InputData{mm} = InputData;%Maybe you want to supress this line as everything can be retrieve from the other saved data
     Data.x_stim_indices_wholeset{mm} = Stim_local;
     Data.x_stim_repetition{mm} = StimRep;
-    Data.FLow = Flow;
+    if any(ParamModel.ModelChoice([1,3:5]))
+        Data.FLow = Flow;
+    end
     %Data.x_wholeset{mm}=MResultsOptimal.XSpecVal{1};
     Data.X_voc_wholeset{mm}=MResultsOptimal.XVocVal{1};
     Data.y_wholeset{mm}=MResultsOptimal.YobsVal{1};
@@ -1138,12 +1144,14 @@ for mm = StartWin:modNum
     end
     %% Store the average spectro if we z-scored the data with a mean and STD
     % calculated for each window only
-    if ParamModel.ZC
-        Data.MeanSpectroStim{mm} = reshape(MResultsOptimal.X_meanZC{1},Df,Dt);
-    elseif ParamModel.MeanSubstractSpec
-        Data.MeanSpectroStim{mm} = AvSpec(1:Df, 1:Dt);
+    if any(ParamModel.ModelChoice([1,3:5]))
+        if ParamModel.ZC
+            Data.MeanSpectroStim{mm} = reshape(MResultsOptimal.X_meanZC{1},Df,Dt);
+        elseif ParamModel.MeanSubstractSpec
+            Data.MeanSpectroStim{mm} = AvSpec(1:Df, 1:Dt);
+        end
     else
-        Data.MeanSpectroStim{mm} = 'NoMeanSpectroCalculated Ac model was likely not run';
+        Data.MeanSpectroStim{mm} = 'NoMeanSpectroCalculated Ac model was likely not run';    
     end
     
     

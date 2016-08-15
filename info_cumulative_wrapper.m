@@ -25,8 +25,8 @@ if ParamModel.ModelChoice(5) && ~SWITCH.AllAlpha
     P_YgivenS_allModel{mm_local}=Model.AcSemSem.P_YgivenS_all1(1:mm,1);
 end
 % Floor
-mm_local=mm_local+1;
-P_YgivenS_allModel{mm_local}=Model.Floor.P_YgivenS_all1(1:mm,1);
+% mm_local=mm_local+1;
+% P_YgivenS_allModel{mm_local}=Model.Floor.P_YgivenS_all1(1:mm,1);
 %Ceiling
 mm_local=mm_local+1;
 P_YgivenS_allModel{mm_local}=Model.Ceiling.P_YgivenS_all1(1:mm,1);
@@ -39,10 +39,10 @@ end
 
 Icum_ExactMem0_5 = nan(mm_local,1);
 Icum_EstMonteCarlo10_7 = nan(2,mm_local);
-Icum_EstMarkov2 = nan(3,mm_local);
-Icum_EstMarkov3 = nan(3,mm_local);
-Icum_EstMarkov4 = nan(3,mm_local);
-Icum_EstMarkov5 = nan(3,mm_local);
+Icum_EstMarkov2 = nan(mm_local,1);
+Icum_EstMarkov3 = nan(mm_local,1);
+Icum_EstMarkov4 = nan(mm_local,1);
+Icum_EstMarkov5 = nan(mm_local,1);
 
 fprintf('Calculate Cumulative information for all models from win %d\n',1)
 NS = 10000000;
@@ -109,14 +109,14 @@ if ParamModel.ModelChoice(5) && ~SWITCH.AllAlpha
     Model.AcSemSem.cum_info_EstMarkov5(mm,1)=Icum_EstMarkov5(mm_local);
 end
 % Floor
-fprintf('**CumInfo on Floor**\n')
-mm_local=mm_local+1;
-Model.Floor.cum_info_ExactHist5(mm,1)=Icum_ExactMem0_5(mm_local);
-Model.Floor.cum_info_EstMonteCarlo10_7(mm,1:3)=Icum_EstMonteCarlo10_7(mm_local,:);
-Model.Floor.cum_info_EstMarkov2(mm,1)=Icum_EstMarkov2(mm_local);
-Model.Floor.cum_info_EstMarkov3(mm,1)=Icum_EstMarkov3(mm_local);
-Model.Floor.cum_info_EstMarkov4(mm,1)=Icum_EstMarkov4(mm_local);
-Model.Floor.cum_info_EstMarkov5(mm,1)=Icum_EstMarkov5(mm_local);
+% fprintf('**CumInfo on Floor**\n')
+% mm_local=mm_local+1;
+% Model.Floor.cum_info_ExactHist5(mm,1)=Icum_ExactMem0_5(mm_local);
+% Model.Floor.cum_info_EstMonteCarlo10_7(mm,1:3)=Icum_EstMonteCarlo10_7(mm_local,:);
+% Model.Floor.cum_info_EstMarkov2(mm,1)=Icum_EstMarkov2(mm_local);
+% Model.Floor.cum_info_EstMarkov3(mm,1)=Icum_EstMarkov3(mm_local);
+% Model.Floor.cum_info_EstMarkov4(mm,1)=Icum_EstMarkov4(mm_local);
+% Model.Floor.cum_info_EstMarkov5(mm,1)=Icum_EstMarkov5(mm_local);
 %Ceiling
 fprintf('**CumInfo on Ceiling**\n')
 mm_local=mm_local+1;
