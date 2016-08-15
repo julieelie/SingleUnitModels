@@ -175,13 +175,13 @@ if strcmp(CalculMode, 'Exact_Mem')
     
     % rescale p-values so they sum to 1
     P_Y_wins_rescaled = P_Y_wins./sum(P_Y_wins);
-    if round(sum(P_Y_wins),10)~=1 && ScaleY && ~MinProbThresh
+    if round(sum(P_Y_wins)*10^10)/10^10~=1 && ScaleY && ~MinProbThresh
         fprintf(1, 'WARNING: the distribution of joint probabilities is significantly rescaled (sum=%d) when it should not be given that the probability conditional to the stimulus wee already scales\n',sum(P_Y_wins));
-    elseif round(sum(P_Y_wins),10)~=1 && ~ScaleY && ~MinProbThresh
+    elseif round(sum(P_Y_wins)*10^10)/10^10~=1 && ~ScaleY && ~MinProbThresh
         fprintf(1, 'The distribution of joint probabilities is rescaled (sum=%d), this is expected given that the data are not scaled the same way for the response entropy and the conditional entropy\n',sum(P_Y_wins));
-    elseif round(sum(P_Y_wins),10)~=1 && ~ScaleY && MinProbThresh
+    elseif round(sum(P_Y_wins)*10^10)/10^10~=1 && ~ScaleY && MinProbThresh
         fprintf(1, 'The distribution of joint probabilities is rescaled (sum=%d), this is expected given that a threshold was applied on joint probablities to be taken into account in the calculation of the response entropy and distributions of proba are scaled differently for the calculation of the 2 entropies\n',sum(P_Y_wins));
-    elseif round(sum(P_Y_wins),10)~=1 && ScaleY && MinProbThresh
+    elseif round(sum(P_Y_wins)*10^10)/10^10~=1 && ScaleY && MinProbThresh
         fprintf(1, 'The distribution of joint probabilities is rescaled (sum=%d), this is expected given that a threshold was applied on joint probablities to be taken into account in the calculation of the response entropy\n',sum(P_Y_wins));
     end
     % entropy

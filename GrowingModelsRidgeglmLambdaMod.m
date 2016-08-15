@@ -10,6 +10,7 @@ ParamModel.MeanSubstractSpec=0; % Set to 1 if you want to substract the average 
 ParamModel.LAMBDARATIO=1e-4;
 ParamModel.NUMLAMBDA=10;%25?
 ParamModel.Cum_Info = 1; % set to 1 to calculate cumulative information
+ParamModel.NumSamples_MC_Cum_Info = 10^6; %Set the number of samples for the Monte Carlo approximation of the cumulative information
 
 if ParamModel.Cum_Info
     getenv('HOSTNAME')
@@ -224,7 +225,7 @@ else
         Model.Acoustic.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
             Model.Acoustic.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-            Model.Acoustic.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
             Model.Acoustic.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
             Model.Acoustic.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
             Model.Acoustic.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
@@ -247,7 +248,7 @@ else
         Model.Semantic.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
             Model.Semantic.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-            Model.Semantic.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
             Model.Semantic.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
             Model.Semantic.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
             Model.Semantic.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
@@ -292,7 +293,7 @@ else
         Model.AcSemAc.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
             Model.AcSemAc.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-            Model.AcSemAc.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
             Model.AcSemAc.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
             Model.AcSemAc.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
             Model.AcSemAc.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
@@ -322,7 +323,7 @@ else
         Model.AcSemSem.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
             Model.AcSemSem.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-            Model.AcSemSem.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
             Model.AcSemSem.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
             Model.AcSemSem.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
             Model.AcSemSem.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
@@ -394,7 +395,7 @@ else
     if SWITCH.AR
         Model.AR.info = nan(modNum,1);
         Model.AR.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-        Model.AR.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
+        Model.AR.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
         Model.AR.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
         Model.AR.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
         Model.AR.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
