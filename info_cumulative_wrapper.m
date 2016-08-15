@@ -38,18 +38,18 @@ if SWITCH.AR
 end
 
 Icum_ExactMem0_5 = nan(mm_local,1);
-Icum_EstMonteCarlo10_7 = nan(2,mm_local);
+Icum_EstMonteCarlo10_5 = nan(2,mm_local);
 Icum_EstMarkov2 = nan(mm_local,1);
 Icum_EstMarkov3 = nan(mm_local,1);
 Icum_EstMarkov4 = nan(mm_local,1);
 Icum_EstMarkov5 = nan(mm_local,1);
 
 fprintf('Calculate Cumulative information for all models from win %d\n',1)
-NS = 10000000;
+NS = 100000;
 for modelrun=1:mm_local
     fprintf('Cumulative info %d/%d\n', modelrun, mm_local);
     % Monte Carlo estimation with full memory
-    [Icum_EstMonteCarlo10_7(:,modelrun),~]=info_cumulative_model_Calculus(P_YgivenS_allModel{modelrun},'StimIndicesAll',X_stim_indices_wholeset,'StimIndicesLast',Stim_local,'Model#',modelrun,'CalMode','MonteCarlo', 'MCParameter',NS);
+    [Icum_EstMonteCarlo10_5(:,modelrun),~]=info_cumulative_model_Calculus(P_YgivenS_allModel{modelrun},'StimIndicesAll',X_stim_indices_wholeset,'StimIndicesLast',Stim_local,'Model#',modelrun,'CalMode','MonteCarlo', 'MCParameter',NS);
     % Exact calculation with 50 ms memory
     [Icum_ExactMem0_5(modelrun),~]=info_cumulative_model_Calculus(P_YgivenS_allModel{modelrun},'StimIndicesAll',X_stim_indices_wholeset,'StimIndicesLast',Stim_local,'Model#',modelrun,'CalMode','Exact_Mem', 'Exact_history',5);
     % Markov chain estimation 20 ms
@@ -69,7 +69,7 @@ if ParamModel.ModelChoice(1) && ~SWITCH.AllAlpha
     % ACoustic Model
     mm_local=mm_local+1;
     Model.Acoustic.cum_info_ExactHist5(mm,1)=Icum_ExactMem0_5(mm_local);
-    Model.Acoustic.cum_info_EstMonteCarlo10_7(mm,1:3)=Icum_EstMonteCarlo10_7(mm_local,:);
+    Model.Acoustic.cum_info_EstMonteCarlo10_5(mm,1:2)=Icum_EstMonteCarlo10_5(mm_local,:);
     Model.Acoustic.cum_info_EstMarkov2(mm,1)=Icum_EstMarkov2(mm_local);
     Model.Acoustic.cum_info_EstMarkov3(mm,1)=Icum_EstMarkov3(mm_local);
     Model.Acoustic.cum_info_EstMarkov4(mm,1)=Icum_EstMarkov4(mm_local);
@@ -80,7 +80,7 @@ if ParamModel.ModelChoice(2) && ~SWITCH.AllAlpha
     % Semantic Model
     mm_local=mm_local+1;
     Model.Semantic.cum_info_ExactHist5(mm,1)=Icum_ExactMem0_5(mm_local);
-    Model.Semantic.cum_info_EstMonteCarlo10_7(mm,1:3)=Icum_EstMonteCarlo10_7(mm_local,:);
+    Model.Semantic.cum_info_EstMonteCarlo10_5(mm,1:2)=Icum_EstMonteCarlo10_5(mm_local,:);
     Model.Semantic.cum_info_EstMarkov2(mm,1)=Icum_EstMarkov2(mm_local);
     Model.Semantic.cum_info_EstMarkov3(mm,1)=Icum_EstMarkov3(mm_local);
     Model.Semantic.cum_info_EstMarkov4(mm,1)=Icum_EstMarkov4(mm_local);
@@ -91,7 +91,7 @@ if ParamModel.ModelChoice(4) && ~SWITCH.AllAlpha
     % AcSemAc
     mm_local=mm_local+1;
     Model.AcSemAc.cum_info_ExactHist5(mm,1)=Icum_ExactMem0_5(mm_local);
-    Model.AcSemAc.cum_info_EstMonteCarlo10_7(mm,1:3)=Icum_EstMonteCarlo10_7(mm_local,:);
+    Model.AcSemAc.cum_info_EstMonteCarlo10_5(mm,1:2)=Icum_EstMonteCarlo10_5(mm_local,:);
     Model.AcSemAc.cum_info_EstMarkov2(mm,1)=Icum_EstMarkov2(mm_local);
     Model.AcSemAc.cum_info_EstMarkov3(mm,1)=Icum_EstMarkov3(mm_local);
     Model.AcSemAc.cum_info_EstMarkov4(mm,1)=Icum_EstMarkov4(mm_local);
@@ -102,7 +102,7 @@ if ParamModel.ModelChoice(5) && ~SWITCH.AllAlpha
     % AcSemSem
     mm_local=mm_local+1;
     Model.AcSemSem.cum_info_ExactHist5(mm,1)=Icum_ExactMem0_5(mm_local);
-    Model.AcSemSem.cum_info_EstMonteCarlo10_7(mm,1:3)=Icum_EstMonteCarlo10_7(mm_local,:);
+    Model.AcSemSem.cum_info_EstMonteCarlo10_5(mm,1:2)=Icum_EstMonteCarlo10_5(mm_local,:);
     Model.AcSemSem.cum_info_EstMarkov2(mm,1)=Icum_EstMarkov2(mm_local);
     Model.AcSemSem.cum_info_EstMarkov3(mm,1)=Icum_EstMarkov3(mm_local);
     Model.AcSemSem.cum_info_EstMarkov4(mm,1)=Icum_EstMarkov4(mm_local);
@@ -121,7 +121,7 @@ end
 fprintf('**CumInfo on Ceiling**\n')
 mm_local=mm_local+1;
 Model.Ceiling.cum_info_ExactHist5(mm,1)=Icum_ExactMem0_5(mm_local);
-Model.Ceiling.cum_info_EstMonteCarlo10_7(mm,1:3)=Icum_EstMonteCarlo10_7(mm_local,:);
+Model.Ceiling.cum_info_EstMonteCarlo10_5(mm,1:2)=Icum_EstMonteCarlo10_5(mm_local,:);
 Model.Ceiling.cum_info_EstMarkov2(mm,1)=Icum_EstMarkov2(mm_local);
 Model.Ceiling.cum_info_EstMarkov3(mm,1)=Icum_EstMarkov3(mm_local);
 Model.Ceiling.cum_info_EstMarkov4(mm,1)=Icum_EstMarkov4(mm_local);
@@ -131,7 +131,7 @@ if SWITCH.AR
     fprintf('**CumInfo on AR**\n')
     mm_local=mm_local+1;
     Model.AR.cum_info_ExactHist5(mm,1)=Icum_ExactMem0_5(mm_local);
-    Model.AR.cum_info_EstMonteCarlo10_7(mm,1:3)=Icum_EstMonteCarlo10_7(mm_local,:);
+    Model.AR.cum_info_EstMonteCarlo10_5(mm,1:2)=Icum_EstMonteCarlo10_5(mm_local,:);
     Model.AR.cum_info_EstMarkov2(mm,1)=Icum_EstMarkov2(mm_local);
     Model.AR.cum_info_EstMarkov3(mm,1)=Icum_EstMarkov3(mm_local);
     Model.AR.cum_info_EstMarkov4(mm,1)=Icum_EstMarkov4(mm_local);

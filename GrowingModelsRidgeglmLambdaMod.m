@@ -224,7 +224,7 @@ else
         Model.Acoustic.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
             Model.Acoustic.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-            Model.Acoustic.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
             Model.Acoustic.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
             Model.Acoustic.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
             Model.Acoustic.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
@@ -247,7 +247,7 @@ else
         Model.Semantic.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
             Model.Semantic.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-            Model.Semantic.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
             Model.Semantic.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
             Model.Semantic.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
             Model.Semantic.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
@@ -292,7 +292,7 @@ else
         Model.AcSemAc.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
             Model.AcSemAc.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-            Model.AcSemAc.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
             Model.AcSemAc.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
             Model.AcSemAc.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
             Model.AcSemAc.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
@@ -322,7 +322,7 @@ else
         Model.AcSemSem.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
             Model.AcSemSem.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-            Model.AcSemSem.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
             Model.AcSemSem.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
             Model.AcSemSem.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
             Model.AcSemSem.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
@@ -374,7 +374,7 @@ else
     Data.MeanSpectroStim = cell(modNum,1);
     Model.Floor.info = nan(modNum,1);
     Model.Floor.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-    Model.Floor.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+    Model.Floor.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
     Model.Floor.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
     Model.Floor.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
     Model.Floor.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
@@ -384,7 +384,7 @@ else
     Model.Floor.P_YgivenS_all2 = cell(modNum,1);
     Model.Ceiling.info = nan(modNum,1);
     Model.Ceiling.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-    Model.Ceiling.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+    Model.Ceiling.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
     Model.Ceiling.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
     Model.Ceiling.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
     Model.Ceiling.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
@@ -394,7 +394,7 @@ else
     if SWITCH.AR
         Model.AR.info = nan(modNum,1);
         Model.AR.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-        Model.AR.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+        Model.AR.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
         Model.AR.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
         Model.AR.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
         Model.AR.cum_info_EstMarkov4 = nan(modNum,length(Alphas));

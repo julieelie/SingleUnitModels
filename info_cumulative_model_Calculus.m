@@ -317,6 +317,9 @@ if strcmp(CalculMode, 'MonteCarlo')
     
     % Loop through the number of samples
     for ss=1:N_MC
+        if sum(ss==(1:10)*N_MC/10)
+            fprintf('%d/%d MC samples\n',ss,N_MC);
+        end
         % Probabilistically determine a sequence of responses using the marginal
         % probabilities
         % for each time point, take a random number from the uniform
