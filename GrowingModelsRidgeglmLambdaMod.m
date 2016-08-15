@@ -92,7 +92,7 @@ modNum = length(Wins);
 NbStim = length(VocType);
 
 %% Define the average spectro
-if ParamModel.MeanSubstractSpec
+if ParamModel.MeanSubstractSpec && any(ParamModel.ModelChoice([1,3:5]))
     % Find a stim larger than the max window of the dataset
     Duration = nan(NbStim,1);
     for st=1:NbStim
@@ -633,7 +633,11 @@ for mm = StartWin:modNum
         %% Re-run the models with the best lambda for each model to estimate the variability of the LL over NbBootstrap_Deviance bootstraps
         ParamModel.CV=1;%Set the cross-validation argument to 1 here
         ParamModel.BootstrapSTRF=NbBootstrap_Deviance;
-        [MResults]=runLassoGlmModels(Alpha,VocType,Emitter,Stim_local,SWITCH, InputData, ParamModel,PreviousWin,TickSTRFspectro);
+        if any(ParamModel.ModelChoice([1,3:5]))
+            [MResults]=runLassoGlmModels(Alpha,VocType,Emitter,Stim_local,SWITCH, InputData, ParamModel,PreviousWin,TickSTRFspectro);
+        else
+            [MResults]=runLassoGlmModels(Alpha,VocType,Emitter,Stim_local,SWITCH, InputData, ParamModel,PreviousWin);
+        end
         
         
         PropVal.mean(mm,aa) = mean(MResults.ValProp);% Store the average proportion of stims in the validating set over bootstrap for that alpha
@@ -781,7 +785,11 @@ for mm = StartWin:modNum
         %% Use the best Lambda to calculate the optimal models on all dataset
         ParamModel.CV=0;%Set the cross-validation argument to 0 here
         ParamModel.BootstrapSTRF=1;
-        [MResultsOptimal]=runLassoGlmModels1L(Alpha,VocType,Emitter,Stim_local,SWITCH, InputData, ParamModel,PreviousWin,TickSTRFspectro);
+        if any(ParamModel.ModelChoice([1,3:5]))
+            [MResultsOptimal]=runLassoGlmModels1L(Alpha,VocType,Emitter,Stim_local,SWITCH, InputData, ParamModel,PreviousWin,TickSTRFspectro);
+        else
+            [MResultsOptimal]=runLassoGlmModels1L(Alpha,VocType,Emitter,Stim_local,SWITCH, InputData, ParamModel,PreviousWin);
+        end
         clear ff
         if ParamModel.ModelChoice(1)
             Model.Acoustic.B{mm,aa}=MResultsOptimal.ModelB_Ac{1};

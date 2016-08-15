@@ -1,5 +1,7 @@
 function [MResults]=runLassoGlmModels1L(Alpha,VocType,Emitter,Stim_local,SWITCH,Data,ParamModel, PreviousWin,TickSTRFspectro)
-
+if nargin<9
+    TickSTRFspectro=[];
+end
 NbTrialStim=10;
 VOC=VocType(Stim_local);
 EEnames=Emitter.Ename(Stim_local);
