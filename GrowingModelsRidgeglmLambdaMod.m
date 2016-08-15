@@ -20,7 +20,7 @@ if ParamModel.Cum_Info
     else %we are on strfinator or a cluster machine
         FolderTempInfStorage = '/auto/tdrive/julie/LocalTempStorageInfo';
     end
-end 
+end
 
 NbBootstrap_Lambda = 20;%20
 NbBootstrap_Deviance = 10;%10
@@ -30,10 +30,10 @@ NbBootstrap_Deviance = 10;%10
 Alphas=0.001; % STRFs are easier to interpret using ridge than using Lasso and deviances are similar.
 
 ParamModel.ModelChoice=[0 1 0 0 0];% This logic vector indicates which models should
-...be run (Acoustic, Semantic, AcSem without Offset,AcSem Semantic Offset, 
-    ...AcSem Accoustic Offset) Note that the last two models need the 
-        ...calculation of the first two models
-
+...be run (Acoustic, Semantic, AcSem without Offset,AcSem Semantic Offset,
+    ...AcSem Accoustic Offset) Note that the last two models need the
+    ...calculation of the first two models
+    
 ParamModel.LINK_AR='identity';
 
 if nargin<14
@@ -74,7 +74,7 @@ if nargin<7
     MaxWin = 200; %maximum values the window of analysis can reach
 end
 if nargin<6
-    MinWin = 20; %minimum size of the window of analysis from the begining and also size of analysis of spike rate/count
+    MinWin = 10; %minimum size of the window of analysis from the begining and also size of analysis of spike rate/count (20 for STRF, 10 for Infocalulations)
 end
 Flow = 8000;%spectrograms are low passed at 8Khz for the calculations
 
@@ -116,7 +116,7 @@ if ParamModel.MeanSubstractSpec
     % autorized between highest and lowest values of power
     MAXI = max(max(max(LogSpecMat)));
     LogSpecMatcorrected = LogSpecMat;
-    LogSpecMatcorrected(LogSpecMatcorrected< (MAXI-80)) = MAXI-80; 
+    LogSpecMatcorrected(LogSpecMatcorrected< (MAXI-80)) = MAXI-80;
     AvSpec = nanmean(LogSpecMatcorrected,3);
     if FIG
         figure()
@@ -179,7 +179,7 @@ if PrevData
     if strcmp(ParamModel.NeuroRes, 'count')
         PreviousWin.y_old=cell(NbStim_local_old,1);
     else
-        PreviousWin.y_old = nan(NbStim_local_old,1);%this matrix will contain the average spike rate in spikes/ms at that precise position and for all the stims choosen for that run 
+        PreviousWin.y_old = nan(NbStim_local_old,1);%this matrix will contain the average spike rate in spikes/ms at that precise position and for all the stims choosen for that run
     end
     Win_old = Wins(StartWin - 1);
     
@@ -199,7 +199,7 @@ if PrevData
             end
         else
             fprintf('please correctly write what kind of neural response you want to predict\n %s does not make any sense!!\n', ParamModel.NeuroRes);
-    
+            
         end
     end
 else
@@ -223,10 +223,12 @@ else
         Model.Acoustic.y_predict = cell(modNum,length(Alphas));
         Model.Acoustic.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
-            Model.Acoustic.cum_info1 = nan(modNum,length(Alphas));
-            Model.Acoustic.cum_info5 = nan(modNum,length(Alphas));
-            Model.Acoustic.cum_info9 = nan(modNum,length(Alphas));
-            Model.Acoustic.cum_info13 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info_ExactHist5 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
         end
         Model.Acoustic.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.Acoustic.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -244,10 +246,12 @@ else
         Model.Semantic.y_predict = cell(modNum,length(Alphas));
         Model.Semantic.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
-            Model.Semantic.cum_info1 = nan(modNum,length(Alphas));
-            Model.Semantic.cum_info5 = nan(modNum,length(Alphas));
-            Model.Semantic.cum_info9 = nan(modNum,length(Alphas));
-            Model.Semantic.cum_info13 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info_ExactHist5 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
         end
         Model.Semantic.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.Semantic.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -269,7 +273,7 @@ else
         Model.AcSem.y_predict = cell(modNum,length(Alphas));
         Model.AcSem.info = nan(modNum,length(Alphas));
     end
-
+    
     if ParamModel.ModelChoice(4) && ParamModel.ModelChoice(1)
         Deviance.AcSemAc.values = cell(modNum,length(Alphas));
         Deviance.AcSemAc.DF = cell(modNum,length(Alphas));
@@ -287,17 +291,19 @@ else
         Model.AcSemAc.y_predict = cell(modNum,length(Alphas));
         Model.AcSemAc.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
-            Model.AcSemAc.cum_info1 = nan(modNum,length(Alphas));
-            Model.AcSemAc.cum_info5 = nan(modNum,length(Alphas));
-            Model.AcSemAc.cum_info9 = nan(modNum,length(Alphas));
-            Model.AcSemAc.cum_info13 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info_ExactHist5 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
         end
         Model.AcSemAc.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.AcSemAc.P_YgivenS_all2 = cell(modNum,length(Alphas));
     elseif ParamModel.ModelChoice(4) && ~ParamModel.ModelChoice(1)
         fprintf('WARNING: No way to calculate the AcSem model with Acoustic Offset if you do not calculate Acoustic model')
     end
-
+    
     if ParamModel.ModelChoice(5) && ParamModel.ModelChoice(2)
         Deviance.AcSemSem.values = cell(modNum,length(Alphas));
         Deviance.AcSemSem.DF = cell(modNum,length(Alphas));
@@ -315,10 +321,12 @@ else
         Model.AcSemSem.y_predict = cell(modNum,length(Alphas));
         Model.AcSemSem.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
-            Model.AcSemSem.cum_info1 = nan(modNum,length(Alphas));
-            Model.AcSemSem.cum_info5 = nan(modNum,length(Alphas));
-            Model.AcSemSem.cum_info9 = nan(modNum,length(Alphas));
-            Model.AcSemSem.cum_info13 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info_ExactHist5 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
         end
         Model.AcSemSem.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.AcSemSem.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -342,16 +350,16 @@ else
         LL.AutoRegressiveVal.values=cell(modNum,length(Alphas));
     end
     LL.Saturated.values = cell(modNum,length(Alphas));
-
-
+    
+    
     PropVal.mean = nan(modNum,length(Alphas));
     PropVal.std = nan(modNum,length(Alphas));
     PropVal.values = cell(modNum,length(Alphas));
-
+    
     Model.TickSTRFspectro.to = cell(modNum,1);
     Model.TickSTRFspectro.fo = cell(modNum,1);
     
-
+    
     Data.y_wholeset = cell(modNum,1);
     Data.x_wholeset = cell(modNum,1);
     Data.x_std_wholeset = cell(modNum,1);
@@ -365,32 +373,38 @@ else
     Data.InputData = cell(modNum,1);
     Data.MeanSpectroStim = cell(modNum,1);
     Model.Floor.info = nan(modNum,1);
-    Model.Floor.cum_info1 = nan(modNum,1);
-    Model.Floor.cum_info5 = nan(modNum,1);
-    Model.Floor.cum_info9 = nan(modNum,1);
-    Model.Floor.cum_info13 = nan(modNum,1);
+    Model.Floor.cum_info_ExactHist5 = nan(modNum,length(Alphas));
+    Model.Floor.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+    Model.Floor.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
+    Model.Floor.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
+    Model.Floor.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
+    Model.Floor.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
     Model.Floor.y_predict = cell(modNum,1);
     Model.Floor.P_YgivenS_all1 = cell(modNum,1);
     Model.Floor.P_YgivenS_all2 = cell(modNum,1);
     Model.Ceiling.info = nan(modNum,1);
-    Model.Ceiling.cum_info1 = nan(modNum,1);
-    Model.Ceiling.cum_info5 = nan(modNum,1);
-    Model.Ceiling.cum_info9 = nan(modNum,1);
-    Model.Ceiling.cum_info13 = nan(modNum,1);
+    Model.Ceiling.cum_info_ExactHist5 = nan(modNum,length(Alphas));
+    Model.Ceiling.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+    Model.Ceiling.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
+    Model.Ceiling.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
+    Model.Ceiling.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
+    Model.Ceiling.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
     Model.Ceiling.P_YgivenS_all1 = cell(modNum,1);
     Model.Ceiling.P_YgivenS_all2 = cell(modNum,1);
     if SWITCH.AR
         Model.AR.info = nan(modNum,1);
-        Model.AR.cum_info1 = nan(modNum,1);
-        Model.AR.cum_info5 = nan(modNum,1);
-        Model.AR.cum_info9 = nan(modNum,1);
-        Model.AR.cum_info13 = nan(modNum,1);
+        Model.AR.cum_info_ExactHist5 = nan(modNum,length(Alphas));
+        Model.AR.cum_info_EstMonteCarlo10_7 = nan(modNum,length(Alphas));
+        Model.AR.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
+        Model.AR.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
+        Model.AR.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
+        Model.AR.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
         Model.AR.P_YgivenS_all1 = cell(modNum,1);
         Model.AR.P_YgivenS_all2 = cell(modNum,1);
     end
-
+    
     Data.VOC = cell(modNum,1);
-
+    
     % Initialize datasets to be used as passed information by the
     % auto-regressive model
     PreviousWin.y_old=[];
@@ -460,7 +474,7 @@ for mm = StartWin:modNum
         StimRep = nan(NbStim_local,1);
         yvar=ymean;
     else
-        y = nan(NbStim_local,1);%this matrix will contain the average spike rate in spikes/ms at that precise position and for all the stims choosen for that run 
+        y = nan(NbStim_local,1);%this matrix will contain the average spike rate in spikes/ms at that precise position and for all the stims choosen for that run
     end
     
     % Getting spectro and spike trains
@@ -499,27 +513,27 @@ for mm = StartWin:modNum
             yvar(ss)=var(y{ss});
         else
             fprintf('please correctly write what kind of neural response you want to predict\n %s does not make any sense!!\n', ParamModel.NeuroRes);
-    
+            
         end
     end
     InputData.y=y;
     
-%     % Investigate how poisson or gaussian neural responses are for this
-%     % neuron
-%     MAX=max(max(yvar),max(ymean));
-%     figure()
-%     plot(yvar,ymean,'.', 'MarkerSize',10)
-%     ylabel('Variance spike counts per stim')
-%     xlabel('mean spike count per stim')
-%     hold on
-%     line([0 MAX], [0 MAX]);
-%     R2 = 1- sum(power(yvar-ymean,2))/sum(power(yvar-repmat(mean(yvar),length(yvar),1),2));
-%     fprintf(1,'Proportion of stims which response have both a normal and Poisson distribution: %f\n',sum(DistrPoisson(:,1).*DistrNormal(:,1))./NbStim_local);
-%     fprintf(1,'Proportion of stims which responses are Poisson only:%f\n',sum((DistrPoisson(:,1)-DistrNormal(:,1))==1)./NbStim_local);
-%     fprintf(1,'Proportion of stims which responses are Normal only:%f\n',sum((DistrNormal(:,1)-DistrPoisson(:,1))==1)./NbStim_local);
-%     fprintf(1,'Proportion of stims which response have both a normal and Poisson distribution: %f\n',sum((DistrPoisson(:,1)+DistrNormal(:,1))==0)./NbStim_local);
-%     
-   
+    %     % Investigate how poisson or gaussian neural responses are for this
+    %     % neuron
+    %     MAX=max(max(yvar),max(ymean));
+    %     figure()
+    %     plot(yvar,ymean,'.', 'MarkerSize',10)
+    %     ylabel('Variance spike counts per stim')
+    %     xlabel('mean spike count per stim')
+    %     hold on
+    %     line([0 MAX], [0 MAX]);
+    %     R2 = 1- sum(power(yvar-ymean,2))/sum(power(yvar-repmat(mean(yvar),length(yvar),1),2));
+    %     fprintf(1,'Proportion of stims which response have both a normal and Poisson distribution: %f\n',sum(DistrPoisson(:,1).*DistrNormal(:,1))./NbStim_local);
+    %     fprintf(1,'Proportion of stims which responses are Poisson only:%f\n',sum((DistrPoisson(:,1)-DistrNormal(:,1))==1)./NbStim_local);
+    %     fprintf(1,'Proportion of stims which responses are Normal only:%f\n',sum((DistrNormal(:,1)-DistrPoisson(:,1))==1)./NbStim_local);
+    %     fprintf(1,'Proportion of stims which response have both a normal and Poisson distribution: %f\n',sum((DistrPoisson(:,1)+DistrNormal(:,1))==0)./NbStim_local);
+    %
+    
     % Take the log of the spectros
     %and ground the output to supress -Inf values
     % Substract the average spectro if requested
@@ -590,7 +604,7 @@ for mm = StartWin:modNum
             ParamModel.BootstrapSTRF=NbBootstrap_Lambda;
             ParamModel.LAMBDA=cell(length(ParamModel.ModelChoice),1);%set to [] if you want to explore lamba values
             [MResults]=runLassoGlmModels(Alpha,VocType,Emitter,Stim_local,SWITCH, InputData, ParamModel,PreviousWin,TickSTRFspectro);
-
+            
             if ParamModel.ModelChoice(1)
                 ParamModel.LAMBDA{1}=median(MResults.Lambda_BestModel_Acoustic);
                 LambdaChoice.Acoustic.Lambdas{mm,aa} = MResults.Lambda_BestModel_Acoustic;
@@ -712,7 +726,7 @@ for mm = StartWin:modNum
         Deviance.TrainSets{mm,aa} = MResults.TrainSets;
         Deviance.ValSets{mm,aa} = MResults.ValSets;
         
-    
+        
         %% plot LogLikelihood of all models over bootstraps
         if FIG>0
             models=fieldnames(LL);
@@ -758,8 +772,8 @@ for mm = StartWin:modNum
             axis([1 ParamModel.BootstrapSTRF max(mean(Ll))-2*min(std(Ll)) 0])
             hold off
         end
-
-
+        
+        
         %% Use the best Lambda to calculate the optimal models on all dataset
         ParamModel.CV=0;%Set the cross-validation argument to 0 here
         ParamModel.BootstrapSTRF=1;
@@ -1063,80 +1077,64 @@ for mm = StartWin:modNum
     % Floor
     fprintf('**Info on Null-model**\n')
     Model.Floor.y_predict{mm} = repmat(mean(Data.y_wholeset{mm}(Data.y_ValSetFirstRep{mm})),length(Data.x_stim_repetition{mm}),1);
-    [Model.Floor.info(mm),Model.Floor.P_YgivenS_all1{mm},Model.Floor.P_YgivenS_all2{mm}] = info_model_Calculus(Model.Floor.y_predict{mm}, MaxYpredictInfo);
+    [Model.Floor.info(mm),Model.Floor.P_YgivenS_all1{mm},Model.Floor.P_YgivenS_all2{mm}] = info_model_Calculus(Model.Floor.y_predict{mm}, MaxYpredictInfo, MinWin);
     
     % Ceiling Model
     fprintf('**Info on Ceiling Model**\n')
-    [Model.Ceiling.info(mm),Model.Ceiling.P_YgivenS_all1{mm},Model.Ceiling.P_YgivenS_all2{mm}] = info_model_Calculus(Data.y_wholeset_bestGuess{mm}(Data.y_ValSetFirstRep{mm}),MaxYpredictInfo);
+    [Model.Ceiling.info(mm),Model.Ceiling.P_YgivenS_all1{mm},Model.Ceiling.P_YgivenS_all2{mm}] = info_model_Calculus(Data.y_wholeset_bestGuess{mm}(Data.y_ValSetFirstRep{mm}),MaxYpredictInfo,MinWin);
     
     % AR Model
-    if mm>1 && SWITCH.AR  
+    if mm>1 && SWITCH.AR
         fprintf('**Info on AR**\n')
-        [Model.AR.info(mm),Model.AR.P_YgivenS_all1{mm},Model.AR.P_YgivenS_all2{mm}] = info_model_Calculus(Data.y_wholeset_AR{mm}(Data.y_ValSetFirstRep{mm}),MaxYpredictInfo);
+        [Model.AR.info(mm),Model.AR.P_YgivenS_all1{mm},Model.AR.P_YgivenS_all2{mm}] = info_model_Calculus(Data.y_wholeset_AR{mm}(Data.y_ValSetFirstRep{mm}),MaxYpredictInfo,MinWin);
     elseif SWITCH.AR
         Model.AR.P_YgivenS_all1{mm}=Model.Ceiling.P_YgivenS_all1{mm}; %initializing values of probabilities of the AR models with the ones from the Ceiling model to calculate a cumulative at Win=2
-        Model.AR.info(mm) = Model.Ceiling.info(mm); 
+        Model.AR.info(mm) = Model.Ceiling.info(mm);
     end
     
     %% Calculate cumulative information
     if ParamModel.Cum_Info
-        if mm==1 %|| mm==6 || mm==11
-            Firstwin=mm;
+        if mm==1
             fprintf('set CumInfo = Info for the first window\n');
             if ParamModel.ModelChoice(1) && ~SWITCH.AllAlpha
                 % Acoustic model
                 fprintf('**CumInfo on Acoustic**\n')
-                Model.Acoustic.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.Acoustic.info(mm,1);
+                Model.Acoustic.cum_info_ExactHist5(mm,1) = Model.Acoustic.info(mm,1);
             end
-
+            
             if ParamModel.ModelChoice(2) && ~SWITCH.AllAlpha
                 % Semantic Model
                 fprintf('**CumInfo on Semantic**\n')
-                Model.Semantic.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.Semantic.info(mm,1);
+                Model.Semantic.cum_info_ExactHist5(mm,1) = Model.Semantic.info(mm,1);
             end
-
+            
             if ParamModel.ModelChoice(4) && ~SWITCH.AllAlpha
                 % AcSemAc
                 fprintf('**CumInfo on AcSemAc**\n')
-                Model.AcSemAc.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.AcSemAc.info(mm,1);
+                Model.AcSemAc.cum_info_ExactHist5(mm,1) = Model.AcSemAc.info(mm,1);
             end
-
+            
             if ParamModel.ModelChoice(5) && ~SWITCH.AllAlpha
                 % AcSemSem
                 fprintf('**CumInfo on AcSemSem**\n')
-                Model.AcSemSem.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.AcSemSem.info(mm,1);
+                Model.AcSemSem.cum_info_ExactHist5(mm,1) = Model.AcSemSem.info(mm,1);
             end
-
-            Model.Floor.cum_info(mm) = Model.Floor.info(mm);
-            Model.Ceiling.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.Ceiling.info(mm);
+            
+            Model.Floor.cum_info_ExactHist5(mm) = Model.Floor.info(mm);
+            Model.Ceiling.cum_info_ExactHist5(mm,1) = Model.Ceiling.info(mm);
             if SWITCH.AR
-                Model.AR.(sprintf('cum_info%d',mm))(mm-Firstwin+1,1) = Model.Ceiling.info(mm);
+                Model.AR.cum_info_ExactHist5(mm,1) = Model.Ceiling.info(mm);
             end
         end
-        if mm>1 %&& mm<8
-            Firstwin=1;
-            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
-            
+        if mm>1
+            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,mm,Data.x_stim_indices_wholeset, Stim_local);
         end
-%         if mm>5 && mm<12
-%             Firstwin=5;
-%             [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
-%         end
-%         if mm>9 && mm<16
-%             Firstwin=9;
-%             [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
-%         end
-%          
-%         if mm>13 && mm<20
-%             Firstwin=13;
-%             [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,Firstwin,mm,Data.x_stim_indices_wholeset, Stim_local,FolderTempInfStorage);
-%         end
-        if mm==modNum
-            %get rid of temp folder and its content that might be
-            %created by info_cumulative_model_Calculus
-            [status]=system(sprintf('rm -rf %s',FolderTempInfStorage));
-        end
-            
+        %         if mm==modNum
+        %             %get rid of temp folder and its content that might be
+        %             %created by info_cumulative_model_Calculus
+        %             [status]=system(sprintf('rm -rf %s',FolderTempInfStorage));
+        %         end
+        
     end
     %% Store the average spectro if we z-scored the data with a mean and STD
     % calculated for each window only
@@ -1148,7 +1146,7 @@ for mm = StartWin:modNum
         Data.MeanSpectroStim{mm} = 'NoMeanSpectroCalculated Ac model was likely not run';
     end
     
-   
+    
     %% keep track of the data and stim used for the next window
     PreviousWin.Stim_local_old = Stim_local;
     PreviousWin.y_old = y;
@@ -1156,15 +1154,15 @@ for mm = StartWin:modNum
     %% Save what we have for now
     if saveonline
         save(calfilename,'LambdaChoice','Deviance','LL','Model','ParamModel','Data','PropVal','Wins','-append');
-    end   
-WindowElapsed=toc(WindowTime); 
-Days = floor(WindowElapsed/(60*60*24));
-ETRem = WindowElapsed - Days*60*60*24;
-Hours = floor(ETRem/(60*60));
-ETRem = ETRem - Hours*60*60;
-Minutes = floor(ETRem/60);
-ETRem = ETRem-60*Minutes;
-fprintf(1,'********************************* Done with window %d/%d after the code run for %d days %dh %dmin and %dsec\n',mm, modNum,Days,Hours,Minutes,ETRem);
+    end
+    WindowElapsed=toc(WindowTime);
+    Days = floor(WindowElapsed/(60*60*24));
+    ETRem = WindowElapsed - Days*60*60*24;
+    Hours = floor(ETRem/(60*60));
+    ETRem = ETRem - Hours*60*60;
+    Minutes = floor(ETRem/60);
+    ETRem = ETRem-60*Minutes;
+    fprintf(1,'********************************* Done with window %d/%d after the code run for %d days %dh %dmin and %dsec\n',mm, modNum,Days,Hours,Minutes,ETRem);
 end
 
 end

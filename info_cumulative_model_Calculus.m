@@ -49,7 +49,7 @@ tic
 %                    of the entropy of the response
 %   'MinProbThresh'  set to 1 to discard probabilities lower than 1/life of
 %                    a zebra finch in the lab, set to 0 to take into
-%                    acccount all probabilities.
+%                    acccount all probabilities. Default 0.
 %   'DebugFig'      set to 1 to see some debugging figures
 %   'MinProb'       threshold of probability under which values are set to
 %                   zero. Default is 1/number of 20ms bins in a life of a
@@ -60,9 +60,12 @@ tic
 %   'ScaleY'        Set to 1 to scale the distribution of conditional
 %                   probabilities given the stimulus the same way for both
 %                   entropy calculations
+%   'Exact_history' is the number of time point in the past that should be
+%   taken into account to calculate the cumulative information at time t
+%   for the exact calculations Exact_Mem and Exact_HardDrive. It is set to the maximum by default 
 
 %% Sorting input arguments
-pnames = {'CalMode', 'FirstTimePoint','StimIndicesAll','StimIndicesLast','Model#','TempStoragePath','MarkovParameters', 'MCParameter','MinProbThresh', 'DebugFig','MinProb','HY_old','ScaleY'};
+pnames = {'CalMode', 'FirstTimePoint','StimIndicesAll','StimIndicesLast','Model#','TempStoragePath','MarkovParameters', 'MCParameter','MinProbThresh', 'DebugFig','MinProb','HY_old','ScaleY','Exact_history'};
 
 % Calculating default values of input arguments
 Stim_local = 1:size(P_YgivenS{end},2);
@@ -82,8 +85,8 @@ end
 MinProb = 1/(8*365*24*60*60*5); %1/number of 20ms bins in a life of a zebra finch in the lab
 
 % Get input arguments
-dflts  = {'Exact_Mem' 1 StimIndices_AllWin Stim_local 1 FolderTempInfStorage [5 1] 1000 1 0 MinProb [] 1};
-[CalculMode, Firstwin,StimIndices_AllWin, Stim_local,modnb,FolderTempInfStorage, Markov_history, N_MC, MinProbThresh, DebugFig, MinProb,HY_old, ScaleY] = internal.stats.parseArgs(pnames,dflts,varargin{:});
+dflts  = {'Exact_Mem' 1 StimIndices_AllWin Stim_local 1 FolderTempInfStorage [5 1] 1000 0 0 MinProb [] 1 length(P_YgivenS)};
+[CalculMode, Firstwin,StimIndices_AllWin, Stim_local,modnb,FolderTempInfStorage, Markov_history, N_MC, MinProbThresh, DebugFig, MinProb,HY_old, ScaleY,ExactMem_history] = internal.stats.parseArgs(pnames,dflts,varargin{:});
 
 %% Set some parameters
 Lastwin = length(P_YgivenS);
@@ -148,14 +151,24 @@ end
 
 
 %% Calculating conditional entropy
+if strcmp(CalculMode, 'Exact_Mem') || strcmp(CalculMode, 'Exact_HardDrive')
+    EarliestPastPoint = min(size(P_YgivenS_local_rescaled1,3)-1,ExactMem_history);
+    P_YgivenS_local_rescaled1 = P_YgivenS_local_rescaled1(:,:,(end-EarliestPastPoint) : end);
+end
 HYgivenS = sum(sum(sum(-P_YgivenS_local_rescaled1.*log2(P_YgivenS_local_rescaled1 + (P_YgivenS_local_rescaled1==0)))))/length(Stim_local);
 fprintf(1, 'Conditional entropy (entropy of the neural response given the stimulus): %f\n', HYgivenS);
 
 %% First strategy for coding the exact entropy
 if strcmp(CalculMode, 'Exact_Mem')
     fprintf(1, 'Calulation of Exact entropy(entropy of the neural response)\nusing the exact calculation and computer memory (crash down if too big)\n');
-    % Construct the dataset of p products (all the different possible combinations of possible responses for each stim)
-    P_YgivenS_perstim_wins = insideMultiMat(P_YgivenS_local,MinProbThresh, MinProb);%The dimension of this should be size(P_YgivenS{1},1),length(Stim_local)
+    if ExactMem_history==length(P_YgivenS_local)
+        fprintf(1,'The history of the calculation is set to its max, all info redundancies are investigated\n');
+    else
+        fprintf(1,'The history of the calculation is set to %d time points or %d ms\nOnly the information redundancies present in that window are taken into account\n',ExactMem_history, ExactMem_history*10);
+    end
+     % Construct the dataset of p products (all the different possible combinations of possible responses for each stim)
+    P_YgivenS_localchunked = P_YgivenS_local((end-EarliestPastPoint) : end);
+    P_YgivenS_perstim_wins = insideMultiMat(P_YgivenS_localchunked,MinProbThresh, MinProb);%The dimension of this should be size(P_YgivenS{1},1),length(Stim_local)
     
     % Calculating exact entropy
     P_Y_wins = sum(P_YgivenS_perstim_wins,2)/length(Stim_local);%The dimension of this should be size(P_YgivenS{1},1)^win,1
@@ -226,8 +239,16 @@ end
 % combinations of possible responses for each stim) and save this to a file
 if strcmp(CalculMode, 'Exact_HardDrive')
     fprintf(1, 'Calculation of Exact entropy (entropy of the neural response)\nusing the exact calculation saving temporary data on hard drive (calculation can take large space)\n');
+    if ExactMem_history==length(P_YgivenS_local)
+        fprintf(1,'The history of the calculation is set to its max, all info redundancies are investigated\n');
+    else
+        fprintf(1,'The history of the calculation is set to %d time points or %d ms\nOnly the information redundancies present in that window are taken into account\n',ExactMem_history, ExactMem_history*10);
+    end
+     % Construct the dataset of p products (all the different possible combinations of possible responses for each stim)
+    P_YgivenS_localchunked = P_YgivenS_local((end-EarliestPastPoint) : end);
+    
     system(sprintf('mkdir %s',FolderTempInfStorage))
-    [MatDim, FileMat] = insideMultiMat_F(P_YgivenS_local,Firstwin,StimIndices_AllWin, Stim_local,modnb,FolderTempInfStorage,MinProbThresh, MinProb);%The dimension of this should be size(P_YgivenS{1},1),length(Stim_local) 
+    [MatDim, FileMat] = insideMultiMat_F(P_YgivenS_localchunked,Firstwin,StimIndices_AllWin, Stim_local,modnb,FolderTempInfStorage,MinProbThresh, MinProb);%The dimension of this should be size(P_YgivenS{1},1),length(Stim_local) 
 
     % Calculating exact entropy
     fid_final=fopen(fullfile(FileMat.path,FileMat.name));
@@ -316,10 +337,23 @@ if strcmp(CalculMode, 'MonteCarlo')
     end
     % Calculate the MC estimate of the conditional response entropy to the
     % stimulus
-    HYgivenS = - sum(sum(PYgivenS_MC./repmat(QY_MC,1,4).*log2(PYgivenS_MC),1))/(N_MC*length(Stim_local));
+    %HYgivenS = - sum(sum(PYgivenS_MC./repmat(QY_MC,1,length(Stim_local)).*log2(PYgivenS_MC),1))/(N_MC*length(Stim_local));
+    HYgivenS_Weight = PYgivenS_MC./repmat(QY_MC,1,length(Stim_local));
+    HYgivenS_perMCSperStim = -HYgivenS_Weight.*log2(PYgivenS_MC);% This is the MC estimate of the entropy for each sample
+    HYgivenS_perStim = sum(HYgivenS_perMCSperStim,1)/N_MC;
+    HYgivenS = sum(HYgivenS_perStim)/length(Stim_local);
     % Calculate the MC estimate of the response entropy
     % Weights
-    HY = sum(-PY_MC./QY_MC.*log2(PY_MC))/N_MC;
+    %HY = sum(-PY_MC./QY_MC.*log2(PY_MC))/N_MC;
+    HY_Weight = PY_MC./QY_MC;% This is the MC estimate of the entropy for each sample
+    HY = sum(-HY_Weight.*log2(PY_MC))/N_MC;
+    % Estimate the Error on MC estimates (based on the asymptotics method
+    % of Koehler et al. 2009 Am. Stat.
+    %HYgivenS_MCE = ((sum((sum(HYgivenS_perMCSperStim,2)./length(Stim_local) - HYgivenS).^2))^0.5)/N_MC;
+    HYgivenS_MCE = sum(sum(HYgivenS_Weight.*((-log2(PYgivenS_MC) - repmat(HYgivenS_perStim,N_MC,1)).^2).^0.5))/(N_MC*length(Stim_local));
+    HY_MCE = sum(HY_Weight.*((-log2(PY_MC) - HY).^2).^0.5)/N_MC;
+    %HY_MCE = sum(((-HY_Weight.*log2(PY_MC) - HY).^2).^0.5)/N_MC;
+    Icum_MCE =HYgivenS_MCE +  HY_MCE;
     if DebugFig
         figure()
         plot(1:100, QY_MC(1:100), 1:100,PY_MC(1:100))
@@ -330,10 +364,14 @@ if strcmp(CalculMode, 'MonteCarlo')
     %HY = sum(-PY_MC./QY_MC.*log2(PY_MC))./sum(PY_MC);
     %HY = sum(-PY_MC./QY_MC.*log2(PY_MC));
     fprintf(1, 'Exact entropy (entropy of the neural response)\nusing the Monte Carlo estimation with %d samples: %f\n',N_MC, HY);
+    Icum=nan(2,1);
+    Icum(2) = Icum_MCE;
+    HYgivenS(2) = HYgivenS_MCE;
+    HY(2) = HY_MCE;
 end
- 
+
 %% Information
-Icum = (HY - HYgivenS);
+Icum(1) = (HY(1) - HYgivenS(1));
 fprintf(1,'Cumulative information = %f bits\n',Icum);
 ElapsedTime = toc;
 fprintf(1,'info_cumulative_model_Calculus run for %d seconds\n',ElapsedTime);

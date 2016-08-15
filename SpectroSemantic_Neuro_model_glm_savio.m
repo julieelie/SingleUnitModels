@@ -32,7 +32,7 @@ if nargin<6
     MaxWin = 200; %150 maximum values the window of analysis can reach
 end
 if nargin<5
-    MinWin = 20; %minimum size of the window of analysis from the begining Choose 20ms according to coherence cutoffFrequency calculation
+    MinWin = 10; %minimum size of the window of analysis from the begining Choose 20ms according to coherence cutoffFrequency calculation
 end
 
 if nargin<4
