@@ -38,7 +38,7 @@ if SWITCH.AR
 end
 
 Icum_ExactMem0_5 = nan(mm_local,1);
-Icum_EstMonteCarlo10_7 = nan(3,mm_local);
+Icum_EstMonteCarlo10_7 = nan(2,mm_local);
 Icum_EstMarkov2 = nan(3,mm_local);
 Icum_EstMarkov3 = nan(3,mm_local);
 Icum_EstMarkov4 = nan(3,mm_local);
