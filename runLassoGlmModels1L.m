@@ -135,35 +135,38 @@ ValSets{bb} = ValSet;
 TrainSets{bb} = TrainSet;
 
 %% z-score the spectrograms with the mean and STD of the training dataset if demanded
-if ParamModel.ZC==1
-    % z-score spectrogram data
-    x_Train_mean = mean(Data.x(TrainSet,:));
-    x_Train_std = std(Data.x(TrainSet,:));
-    x_Train = (Data.x(TrainSet,:)-repmat(x_Train_mean,length(TrainSet),1))./repmat(x_Train_std,length(TrainSet),1);
-    x_Train(:,x_Train_std==0)=0;%set these parameters to zero as they do not cary any information and would give Inf or NaN
-    x_Val = (Data.x(ValSet,:)-repmat(x_Train_mean,length(ValSet),1))./repmat(x_Train_std,length(ValSet),1);
-    x_Val(:,x_Train_std==0)=0;%set these parameters to zero as they do not cary any information and would give Inf or NaN
-    if SWITCH.FIG>1
-        for ss = 1:length(TrainSet)
-            figure(315)
-            STIM=reshape(x_Train(ss,:), length(TickSTRFspectro.fo), length(TickSTRFspectro.to));
-            imagesc(TickSTRFspectro.to*1000,TickSTRFspectro.fo, STIM)
-            axis xy
-            xlabel('Time (ms)')
-            ylabel('Frequencies')
-            title('TrainStim after z-score')
-            pause(0.5)
+if any(ParamModel.ModelChoice([1,3:5]))
+    if ParamModel.ZC==1
+        % z-score spectrogram data
+        x_Train_mean = mean(Data.x(TrainSet,:));
+        x_Train_std = std(Data.x(TrainSet,:));
+        x_Train = (Data.x(TrainSet,:)-repmat(x_Train_mean,length(TrainSet),1))./repmat(x_Train_std,length(TrainSet),1);
+        x_Train(:,x_Train_std==0)=0;%set these parameters to zero as they do not cary any information and would give Inf or NaN
+        x_Val = (Data.x(ValSet,:)-repmat(x_Train_mean,length(ValSet),1))./repmat(x_Train_std,length(ValSet),1);
+        x_Val(:,x_Train_std==0)=0;%set these parameters to zero as they do not cary any information and would give Inf or NaN
+        if SWITCH.FIG>1
+            for ss = 1:length(TrainSet)
+                figure(315)
+                STIM=reshape(x_Train(ss,:), length(TickSTRFspectro.fo), length(TickSTRFspectro.to));
+                imagesc(TickSTRFspectro.to*1000,TickSTRFspectro.fo, STIM)
+                axis xy
+                xlabel('Time (ms)')
+                ylabel('Frequencies')
+                title('TrainStim after z-score')
+                pause(0.5)
+            end
         end
+    else
+        x_Train = Data.x(TrainSet,:);
+        x_Val = Data.x(ValSet,:);
     end
-else
-    x_Train = Data.x(TrainSet,:);
-    x_Val = Data.x(ValSet,:);
 end
-
 %% construct the vector of responses, the vectors of spectrograms, vocalization types and previous spike count for the training dataset
 if strcmp(ParamModel.NeuroRes, 'count')
     yy=0;
-    x_Train_new = nan(NbTrialStim.*length(TrainSet),size(x_Train,2));
+    if any(ParamModel.ModelChoice([1,3:5]))
+        x_Train_new = nan(NbTrialStim.*length(TrainSet),size(x_Train,2));
+    end
     X_voc_Train = nan(NbTrialStim.*length(TrainSet),size(Data.X_voc,2));
     y_Train=nan(NbTrialStim.*length(TrainSet),1);
     if ~isempty(PreviousWin.y_old)
@@ -174,7 +177,9 @@ if strcmp(ParamModel.NeuroRes, 'count')
         for tt=1:length(YT)
             yy=yy+1;
             y_Train(yy) = YT(tt);
-            x_Train_new(yy,:)=x_Train(TS,:);
+            if any(ParamModel.ModelChoice([1,3:5]))
+                x_Train_new(yy,:)=x_Train(TS,:);
+            end
             X_voc_Train(yy,:) = Data.X_voc(TrainSet(TS),:);
             if ~isempty(PreviousWin.y_old)
                 Local_trialset=YT;
@@ -189,7 +194,9 @@ if strcmp(ParamModel.NeuroRes, 'count')
             end
         end
     end
-    x_Train=x_Train_new(1:yy,:);
+    if any(ParamModel.ModelChoice([1,3:5]))
+        x_Train=x_Train_new(1:yy,:);
+    end
     X_voc_Train=X_voc_Train(1:yy,:);
     y_Train=y_Train(1:yy);
     if ~isempty(PreviousWin.y_old)
