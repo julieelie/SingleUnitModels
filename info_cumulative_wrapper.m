@@ -46,7 +46,7 @@ Icum_EstMarkov5 = nan(3,mm_local);
 
 fprintf('Calculate Cumulative information for all models from win %d\n',1)
 NS = 10000000;
-for modelrun=1:mm_local
+parfor modelrun=1:mm_local
     fprintf('Cumulative info %d/%d\n', modelrun, mm_local);
     % Monte Carlo estimation with full memory
     [Icum_EstMonteCarlo10_7(:,modelrun),~]=info_cumulative_model_Calculus(P_YgivenS_allModel{modelrun},'StimIndicesAll',X_stim_indices_wholeset,'StimIndicesLast',Stim_local,'Model#',modelrun,'CalMode','MonteCarlo', 'MCParameter',NS);
