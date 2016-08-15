@@ -789,20 +789,28 @@ parfor bb=1:ParamModel.BootstrapSTRF
     end
     if strcmp(ParamModel.NeuroRes, 'count')
         VocTypeTrial=cell(length(ValSet).*NbTrialStim,1);
-        xValperTrial=nan(length(ValSet).*NbTrialStim,size(x_Val,2));
+        if any(ParamModel.ModelChoice([1,3:5]))
+            xValperTrial=nan(length(ValSet).*NbTrialStim,size(x_Val,2));
+        end
         yy=0;
         for vv=1:length(ValSet)
             for tt=1:length(Data.y{ValSet(vv)})
                 yy=yy+1;
                 VocTypeTrial{yy}=VOC{ValSet(vv)};
-                xValperTrial(yy,:)=x_Val(vv,:);
+                if any(ParamModel.ModelChoice([1,3:5]))
+                    xValperTrial(yy,:)=x_Val(vv,:);
+                end
             end
         end
         XVocVal{bb}=VocTypeTrial(1:yy,:);
-        XSpecVal{bb} = xValperTrial(1:yy,:);
+        if any(ParamModel.ModelChoice([1,3:5]))
+            XSpecVal{bb} = xValperTrial(1:yy,:);
+        end
     else
         XVocVal{bb} = VOC{ValSet};
-        XSpecVal{bb} = x_Val;
+        if any(ParamModel.ModelChoice([1,3:5]))
+            XSpecVal{bb} = x_Val;
+        end
     end
     
     %% Calculate degress of freedom for each model
@@ -1442,15 +1450,17 @@ MResults.LL_WorseGuess = LL_WorseGuess;
 MResults.YobsVal = YobsVal;
 MResults.YCeilModelVal = YCeilModelVal;
 MResults.Ypredict_Floor = Ypredict_Floor;
-MResults.XSpecVal = XSpecVal;
 MResults.XVocVal = XVocVal;
 MResults.ValProp = ValProp;
 MResults.ValSize = ValSize;
 MResults.ValSets = ValSets;
 MResults.TrainSets = TrainSets;
 MResults.NumStimTrials = NumStimTrials;
-if ParamModel.ZC==1
-    MResults.X_meanZC = X_meanZC;
-    MResults.X_stdZC = X_stdZC;
+if any(ParamModel.ModelChoice([1,3:5]))
+    MResults.XSpecVal = XSpecVal;
+    if ParamModel.ZC==1
+        MResults.X_meanZC = X_meanZC;
+        MResults.X_stdZC = X_stdZC;
+    end
 end
 
