@@ -1,7 +1,7 @@
-function myplotyyInfoSPAsemOnly(MatrixPlot_x_left,MatrixPlot_y_left,Plot_x_right,Plot_y_right,LegendInfo,XLabels_in, YLim,Transp)
-fprintf('enlarge figure window \n')
-pause()
-if nargin<8
+function myplotyyInfoSPAsemOnly(MatrixPlot_x_left,MatrixPlot_y_left,Plot_x_right,Plot_y_right,LegendInfo, YLim,Transp)
+% fprintf('enlarge figure window \n')
+% pause()
+if nargin<7
     Transp=1;
 end
 
@@ -31,7 +31,7 @@ for ee=1:ElementNum
             h1(4).Color = [0.5 0.5 0.5 Transp];
         end
 end
-if nargin<7
+if nargin<6
     YLim=[0 max(MaxLeft)];
 end
 
@@ -45,7 +45,7 @@ ax(2).YTick = 0:10:max(MaxRight);
 ax(2).YTickLabel = 0:10:max(MaxRight);
 ylabel(ax(2),sprintf('Average Spike Rate (s) %s',LegendInfo.CellType))
 Xtickposition=get(ax(1),'XTick');
-set(ax(1),'XTickLabel', (Xtickposition+1)*10)
+set(ax(1),'XTickLabel', Xtickposition*10)
 if length(h1)>5
     legend('Ceiling', 'Semantic','Null-Model','Saturated', 'Location','NorthEast')
     ylabel(ax(1),sprintf('%s',LegendInfo.YleftAxis))

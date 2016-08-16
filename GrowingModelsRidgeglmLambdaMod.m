@@ -10,7 +10,7 @@ ParamModel.MeanSubstractSpec=0; % Set to 1 if you want to substract the average 
 ParamModel.LAMBDARATIO=1e-4;
 ParamModel.NUMLAMBDA=10;%25?
 ParamModel.Cum_Info = 1; % set to 1 to calculate cumulative information
-ParamModel.NumSamples_MC_Cum_Info = 10^7; %Set the number of samples for the Monte Carlo approximation of the cumulative information
+ParamModel.NumSamples_MC_Cum_Info = 10^6; %Set the number of samples for the Monte Carlo approximation of the cumulative information 10^7 takes too much memory prefers lower numbers
 
 if ParamModel.Cum_Info
     getenv('HOSTNAME')
@@ -69,13 +69,13 @@ if nargin<9
     ResDelay = 10; %predict the neural response with a 10ms delay after the end of the stimulus
 end
 if nargin<8
-    Increment = 10; %increase the size of the spectro window with a 5ms pace
+    Increment = 20; %increase the size of the spectro window with a 5ms pace
 end
 if nargin<7
     MaxWin = 200; %maximum values the window of analysis can reach
 end
 if nargin<6
-    MinWin = 10; %minimum size of the window of analysis from the begining and also size of analysis of spike rate/count (20 for STRF, 10 for Infocalulations)
+    MinWin = 20; %minimum size of the window of analysis from the begining and also size of analysis of spike rate/count (20 for STRF, 10 for Infocalulations)
 end
 Flow = 8000;%spectrograms are low passed at 8Khz for the calculations
 
