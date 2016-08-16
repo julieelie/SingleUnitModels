@@ -10,7 +10,7 @@ ParamModel.MeanSubstractSpec=0; % Set to 1 if you want to substract the average 
 ParamModel.LAMBDARATIO=1e-4;
 ParamModel.NUMLAMBDA=10;%25?
 ParamModel.Cum_Info = 1; % set to 1 to calculate cumulative information
-ParamModel.NumSamples_MC_Cum_Info = 10^6; %Set the number of samples for the Monte Carlo approximation of the cumulative information
+ParamModel.NumSamples_MC_Cum_Info = 10^7; %Set the number of samples for the Monte Carlo approximation of the cumulative information
 
 if ParamModel.Cum_Info
     getenv('HOSTNAME')
