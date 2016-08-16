@@ -89,8 +89,8 @@ else
     OutputDir_local=OutputDir_final;
 end
 if InfoFileName
-    calfilename_local=fullfile(OutputDir_local,['Models_InfoPoisson_' Res.Site '_MarkovHistory9_2.mat']);
-    calfilename_final=fullfile(OutputDir_final,['Models_InfoPoisson_' Res.Site '_MarkovHistory9_2.mat']);
+    calfilename_local=fullfile(OutputDir_local,['Models_InfoPoisson_' Res.Site '.mat']);
+    calfilename_final=fullfile(OutputDir_final,['Models_InfoPoisson_' Res.Site '.mat']);
 else
     calfilename_local=fullfile(OutputDir_local,['Models_GLMPoisson_' Res.Site '.mat']);
     calfilename_final=fullfile(OutputDir_final,['Models_GLMPoisson_' Res.Site '.mat']);
