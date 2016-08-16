@@ -1025,7 +1025,7 @@ for mm = StartWin:modNum
         if ParamModel.ModelChoice(1)
             % Acoustic model
             fprintf('**Info on Acoustic**\n')
-            [Model.Acoustic.info(mm,aa),Model.Acoustic.P_YgivenS_all1{mm,aa},Model.Acoustic.P_YgivenS_all2{mm,aa}] = info_model_Calculus(Model.Acoustic.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1}),MaxYpredictInfo);
+            [Model.Acoustic.info(mm,aa),Model.Acoustic.P_YgivenS_all1{mm,aa},Model.Acoustic.P_YgivenS_all2{mm,aa}] = info_model_Calculus(Model.Acoustic.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1}),MaxYpredictInfo,MinWin);
             if mm>1 && SWITCH.AllAlpha
                 [Model.Acoustic.cum_info(mm,aa)]=info_cumulative_model_Calculus(Model.Acoustic.P_YgivenS_all1(1:mm,aa), mm,Data.x_stim_indices_wholeset, Stim_local);
             elseif SWITCH.AllAlpha
@@ -1036,7 +1036,7 @@ for mm = StartWin:modNum
         if ParamModel.ModelChoice(2)
             % Semantic Model
             fprintf('**Info on Semantic**\n')
-            [Model.Semantic.info(mm,aa),Model.Semantic.P_YgivenS_all1{mm,aa},Model.Semantic.P_YgivenS_all2{mm,aa}]  = info_model_Calculus(Model.Semantic.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1}),MaxYpredictInfo);
+            [Model.Semantic.info(mm,aa),Model.Semantic.P_YgivenS_all1{mm,aa},Model.Semantic.P_YgivenS_all2{mm,aa}]  = info_model_Calculus(Model.Semantic.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1}),MaxYpredictInfo,MinWin);
             if mm>1 && SWITCH.AllAlpha
                 [Model.Semantic.cum_info(mm,aa)]=info_cumulative_model_Calculus(Model.Semantic.P_YgivenS_all1(1:mm,aa), mm,Data.x_stim_indices_wholeset, Stim_local);
             elseif SWITCH.AllAlpha
@@ -1047,7 +1047,7 @@ for mm = StartWin:modNum
         if ParamModel.ModelChoice(4)
             % AcSemAc
             fprintf('**Info on AcSemAc**\n')
-            [Model.AcSemAc.info(mm,aa),Model.AcSemAc.P_YgivenS_all1{mm,aa},Model.AcSemAc.P_YgivenS_all2{mm,aa}] = info_model_Calculus(Model.AcSemAc.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1}),MaxYpredictInfo);
+            [Model.AcSemAc.info(mm,aa),Model.AcSemAc.P_YgivenS_all1{mm,aa},Model.AcSemAc.P_YgivenS_all2{mm,aa}] = info_model_Calculus(Model.AcSemAc.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1}),MaxYpredictInfo,MinWin);
             if mm>1 && SWITCH.AllAlpha
                 [Model.AcSemAc.cum_info(mm,aa)]=info_cumulative_model_Calculus(Model.AcSemAc.P_YgivenS_all1(1:mm,aa), mm,Data.x_stim_indices_wholeset, Stim_local);
             elseif SWITCH.AllAlpha
@@ -1058,7 +1058,7 @@ for mm = StartWin:modNum
         if ParamModel.ModelChoice(5)
             % AcSemSem
             fprintf('**Info on AcSemSem**\n')
-            [Model.AcSemSem.info(mm,aa),Model.AcSemSem.P_YgivenS_all1{mm,aa},Model.AcSemSem.P_YgivenS_all2{mm,aa}] = info_model_Calculus(Model.AcSemSem.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1}),MaxYpredictInfo);
+            [Model.AcSemSem.info(mm,aa),Model.AcSemSem.P_YgivenS_all1{mm,aa},Model.AcSemSem.P_YgivenS_all2{mm,aa}] = info_model_Calculus(Model.AcSemSem.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1}),MaxYpredictInfo,MinWin);
             if mm>1 && SWITCH.AllAlpha
                 [Model.AcSemSem.cum_info(mm,aa)]=info_cumulative_model_Calculus(Model.AcSemSem.P_YgivenS_all1(1:mm,aa), mm,Data.x_stim_indices_wholeset, Stim_local);
             elseif SWITCH.AllAlpha
