@@ -368,14 +368,17 @@ else
     Data.X_voc_wholeset = cell(modNum,1);
     Data.x_stim_indices_wholeset = cell(modNum,1);
     Data.x_stim_repetition = cell(modNum,1);
+    Data.stim_entropy = nan(modNum,1);
+    Data.semanticcategory_entropy = nan(modNum,1);
     Data.y_wholeset_bestGuess = cell(modNum,1);
     Data.y_wholeset_Floor = cell(modNum,1);
     Data.y_wholeset_AR = cell(modNum,1);
     Data.InputData = cell(modNum,1);
     Data.MeanSpectroStim = cell(modNum,1);
+    Data.stim_entropy = nan(modNum,1);
     Model.Floor.info = nan(modNum,1);
     Model.Floor.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-    Model.Floor.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
+    Model.Floor.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
     Model.Floor.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
     Model.Floor.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
     Model.Floor.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
@@ -385,7 +388,7 @@ else
     Model.Floor.P_YgivenS_all2 = cell(modNum,1);
     Model.Ceiling.info = nan(modNum,1);
     Model.Ceiling.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-    Model.Ceiling.cum_info_EstMonteCarlo10_5 = nan(modNum,length(Alphas));
+    Model.Ceiling.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
     Model.Ceiling.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
     Model.Ceiling.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
     Model.Ceiling.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
@@ -428,6 +431,7 @@ for mm = StartWin:modNum
     end
     Stim_local = find(duration >= (Win+ResDelay));% here we add ResDelay because we need to get sounds with corresponding psth that go ResDelay beyond the spectrogram of size Win
     NbStim_local = length(Stim_local);
+    Data.stim_entropy(mm) = log2(NbStim_local);
     if NbStim_local<20
         sprintf('Only %d stims long enough to run the model: no model is run with window size %dms\n', NbStim_local, Win);
         break
@@ -564,6 +568,13 @@ for mm = StartWin:modNum
         end
     end
     InputData.X_voc=X_voc;
+    
+    % Calculate the entropy of the categories
+    NbCallperCat = sum(X_voc,1);
+    NbCallperCatall = [NbCallperCat length(Data.VOC{mm})-sum(NbCallperCat)];
+    PCallperCat = NbCallperCatall./length(Data.VOC{mm});
+    Data.semanticcategory_entropy(mm) = -sum(PCallperCat.*log2(PCallperCat));
+    
     
     if FIG>=3 && any(ParamModel.ModelChoice([1,3:5]))
         for ss = 1:NbStim_local

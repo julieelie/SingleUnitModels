@@ -340,23 +340,32 @@ if strcmp(CalculMode, 'MonteCarlo')
     end
     % Calculate the MC estimate of the conditional response entropy to the
     % stimulus
-    %HYgivenS = - sum(sum(PYgivenS_MC./repmat(QY_MC,1,length(Stim_local)).*log2(PYgivenS_MC),1))/(N_MC*length(Stim_local));
-    HYgivenS_Weight = PYgivenS_MC./repmat(QY_MC,1,length(Stim_local));
-    HYgivenS_perMCSperStim = -HYgivenS_Weight.*log2(PYgivenS_MC);% This is the MC estimate of the entropy for each sample
-    HYgivenS_perStim = sum(HYgivenS_perMCSperStim,1)/N_MC;
-    HYgivenS = sum(HYgivenS_perStim)/length(Stim_local);
+    HYgivenS = - sum(sum(PYgivenS_MC./repmat(QY_MC,1,length(Stim_local)).*log2(PYgivenS_MC),1))/(N_MC*length(Stim_local));
+%     HYgivenS_Weight = PYgivenS_MC./repmat(QY_MC,1,length(Stim_local));
+%     HYgivenS_perMCSperStim = -HYgivenS_Weight.*log2(PYgivenS_MC);% This is the MC estimate of the entropy for each sample
+%     HYgivenS_perStim = sum(HYgivenS_perMCSperStim,1)/N_MC;
+%     HYgivenS = sum(HYgivenS_perStim)/length(Stim_local);
     % Calculate the MC estimate of the response entropy
     % Weights
-    %HY = sum(-PY_MC./QY_MC.*log2(PY_MC))/N_MC;
-    HY_Weight = PY_MC./QY_MC;% This is the MC estimate of the entropy for each sample
-    HY = sum(-HY_Weight.*log2(PY_MC))/N_MC;
+    HY = sum(-PY_MC./QY_MC.*log2(PY_MC))/N_MC;
+%     HY_Weight = PY_MC./QY_MC;% This is the MC estimate of the entropy for each sample
+%     HY = sum(-HY_Weight.*log2(PY_MC))/N_MC;
+    Icum=nan(2,1);
+    Icum(1) = HY-HYgivenS;
+
     % Estimate the Error on MC estimates (based on the asymptotics method
     % of Koehler et al. 2009 Am. Stat.
     %HYgivenS_MCE = ((sum((sum(HYgivenS_perMCSperStim,2)./length(Stim_local) - HYgivenS).^2))^0.5)/N_MC;
-    HYgivenS_MCE = sum(sum(HYgivenS_Weight.*((-log2(PYgivenS_MC) - repmat(HYgivenS_perStim,N_MC,1)).^2).^0.5))/(N_MC*length(Stim_local));
-    HY_MCE = sum(HY_Weight.*((-log2(PY_MC) - HY).^2).^0.5)/N_MC;
-    %HY_MCE = sum(((-HY_Weight.*log2(PY_MC) - HY).^2).^0.5)/N_MC;
-    Icum_MCE =HYgivenS_MCE +  HY_MCE;
+    %HYgivenS_MCE = sum(sum(HYgivenS_Weight.*((-log2(PYgivenS_MC) - repmat(HYgivenS_perStim,N_MC,1)).^2).^0.5))/(N_MC*length(Stim_local));
+    %HY_MCE = sum(HY_Weight.*((-log2(PY_MC) - HY).^2).^0.5)/N_MC;
+    %HY_MCE = sum((HY_Weight.*(-log2(PY_MC) - HY).^2).^0.5)/N_MC;
+    %Icum_MCE = HY_MCE -HYgivenS_MCE;
+    
+    PYgivenS_MC_PY = PYgivenS_MC./repmat(PY_MC, 1,length(Stim_local));
+    Icum_supp = sum(PY_MC./QY_MC.*sum(PYgivenS_MC_PY.*log2(PYgivenS_MC_PY),2))/(length(Stim_local)*N_MC);
+    Icum_MCE = ((sum(PY_MC./QY_MC.*(sum(PYgivenS_MC_PY.*log2(PYgivenS_MC_PY),2)./length(Stim_local) - Icum(1)).^2)).^0.5)/N_MC;
+    
+    
     if DebugFig
         figure()
         plot(1:100, QY_MC(1:100), 1:100,PY_MC(1:100))
@@ -367,10 +376,8 @@ if strcmp(CalculMode, 'MonteCarlo')
     %HY = sum(-PY_MC./QY_MC.*log2(PY_MC))./sum(PY_MC);
     %HY = sum(-PY_MC./QY_MC.*log2(PY_MC));
     fprintf(1, 'Exact entropy (entropy of the neural response)\nusing the Monte Carlo estimation with %d samples: %f\n',N_MC, HY);
-    Icum=nan(2,1);
+    
     Icum(2) = Icum_MCE;
-    HYgivenS(2) = HYgivenS_MCE;
-    HY(2) = HY_MCE;
 end
 
 %% Information

@@ -26,13 +26,13 @@ if nargin<8
     ResDelay = 10; %predict the neural response with a 10ms delay after the end of the stimulus
 end
 if nargin<7
-    Increment = 20; %increase the size of the spectro window with a 10ms pace
+    Increment = 10; %increase the size of the spectro window with a 10ms pace
 end
 if nargin<6
     MaxWin = 200; %150 maximum values the window of analysis can reach
 end
 if nargin<5
-    MinWin = 20; %minimum size of the window of analysis from the begining Choose 20ms according to coherence cutoffFrequency calculation
+    MinWin = 10; %minimum size of the window of analysis from the begining Choose 20ms according to coherence cutoffFrequency calculation
 end
 
 if nargin<4
