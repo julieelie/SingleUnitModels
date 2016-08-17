@@ -1100,14 +1100,27 @@ for mm = StartWin:modNum
     Data.y_ValSetFirstRep{mm} = MResultsOptimal.ValSetFirstRep{1};
     
     %% Calculate the information for models that do not depend on alpha (Floor, Ceiling, AR, Semantic)
-    % Floor
-    fprintf('**Info on Null-model**\n')
-    Model.Floor.y_predict{mm} = repmat(mean(Data.y_wholeset{mm}(Data.y_ValSetFirstRep{mm})),length(Data.x_stim_repetition{mm}),1);
-    [Model.Floor.info(mm),Model.Floor.P_YgivenS_all1{mm},Model.Floor.P_YgivenS_all2{mm}] = info_model_Calculus(Model.Floor.y_predict{mm}, MaxYpredictInfo, MinWin);
-    
     % Ceiling Model
     fprintf('**Info on Ceiling Model**\n')
-    [Model.Ceiling.info(mm),Model.Ceiling.P_YgivenS_all1{mm},Model.Ceiling.P_YgivenS_all2{mm}] = info_model_Calculus(Data.y_wholeset_bestGuess{mm}(Data.y_ValSetFirstRep{mm}),MaxYpredictInfo,MinWin);
+    %[Model.Ceiling.info(mm),Model.Ceiling.P_YgivenS_all1{mm},Model.Ceiling.P_YgivenS_all2{mm}] = info_model_Calculus(Data.y_wholeset_bestGuess{mm}(Data.y_ValSetFirstRep{mm}),MaxYpredictInfo,MinWin);
+    % The input data above makes sense more or less to compare with the AR
+    % model (I'm not sure to understand while I did not take the average of
+    % the predictions over trials instead of only taking the first one here
+    % though....)
+    % As of today 08/17/2016 I propose to work with the average observed
+    % spike count over trials
+    Data.y_wholeset_AvObsDataperStim{mm} = ymean;
+    [Model.Ceiling.info(mm),Model.Ceiling.P_YgivenS_all1{mm},Model.Ceiling.P_YgivenS_all2{mm}] = info_model_Calculus(Data.y_wholeset_AvObsData{mm},MaxYpredictInfo,MinWin);
+    
+    % Floor
+    fprintf('**Info on Null-model**\n')
+    %Model.Floor.y_predict{mm} = repmat(mean(Data.y_wholeset{mm}(Data.y_ValSetFirstRep{mm})),length(Data.x_stim_repetition{mm}),1);
+    % The input data above does not make much sense, why taking only the
+    % first trial of each stim to calculate the average response??
+    % As of today 08/17/2016 I propose something else:
+    Data.y_wholeset_AvObsData(mm) = mean(ymean);
+    [Model.Floor.info(mm),Model.Floor.P_YgivenS_all1{mm},Model.Floor.P_YgivenS_all2{mm}] = info_model_Calculus(repmat(Data.y_wholeset_AvObsData(mm),NbStim_local), MaxYpredictInfo, MinWin);
+    
     
     % AR Model
     if mm>1 && SWITCH.AR
