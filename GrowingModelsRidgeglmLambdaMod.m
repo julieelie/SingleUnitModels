@@ -204,7 +204,12 @@ if PrevData
         end
     end
 else
-    
+    cum_info.ExactHist5 = nan(modNum,length(Alphas));
+    cum_info.EstMonteCarlo = nan(modNum,length(Alphas));
+    cum_info.EstMarkov2 = nan(modNum,length(Alphas));
+    cum_info.EstMarkov3 = nan(modNum,length(Alphas));
+    cum_info.EstMarkov4 = nan(modNum,length(Alphas));
+    cum_info.EstMarkov5 = nan(modNum,length(Alphas));
     if ParamModel.ModelChoice(1)
         Deviance.Acoustic.DF = cell(modNum,length(Alphas));
         Deviance.Acoustic.values = cell(modNum,length(Alphas));
@@ -224,12 +229,7 @@ else
         Model.Acoustic.y_predict = cell(modNum,length(Alphas));
         Model.Acoustic.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
-            Model.Acoustic.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-            Model.Acoustic.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
-            Model.Acoustic.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
-            Model.Acoustic.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
-            Model.Acoustic.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
-            Model.Acoustic.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
+            Model.Acoustic.cum_info=cum_info;
         end
         Model.Acoustic.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.Acoustic.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -246,16 +246,15 @@ else
         Model.Semantic.B0 = cell(modNum,length(Alphas));
         Model.Semantic.y_predict = cell(modNum,length(Alphas));
         Model.Semantic.info = nan(modNum,length(Alphas));
+        Model.Semantic.info_enddataset = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
-            Model.Semantic.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-            Model.Semantic.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
-            Model.Semantic.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
-            Model.Semantic.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
-            Model.Semantic.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
-            Model.Semantic.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
+            Model.Semantic.cum_info.current_dataset=cum_info;
+            Model.Semantic.cum_info.end_dataset=cum_info;
         end
         Model.Semantic.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.Semantic.P_YgivenS_all2 = cell(modNum,length(Alphas));
+        Model.Semantic.P_YgivenS_all1_enddataset = cell(modNum,length(Alphas));
+        Model.Semantic.P_YgivenS_all2_enddataset = cell(modNum,length(Alphas));
     end
     if ParamModel.ModelChoice(3)
         Deviance.AcSem.values = cell(modNum,length(Alphas));
@@ -292,12 +291,7 @@ else
         Model.AcSemAc.y_predict = cell(modNum,length(Alphas));
         Model.AcSemAc.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
-            Model.AcSemAc.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-            Model.AcSemAc.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
-            Model.AcSemAc.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
-            Model.AcSemAc.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
-            Model.AcSemAc.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
-            Model.AcSemAc.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
+            Model.AcSemAc.cum_info = cum_info;
         end
         Model.AcSemAc.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.AcSemAc.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -322,12 +316,7 @@ else
         Model.AcSemSem.y_predict = cell(modNum,length(Alphas));
         Model.AcSemSem.info = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
-            Model.AcSemSem.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-            Model.AcSemSem.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
-            Model.AcSemSem.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
-            Model.AcSemSem.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
-            Model.AcSemSem.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
-            Model.AcSemSem.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
+            Model.AcSemSem.cum_info=cum_info;
         end
         Model.AcSemSem.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.AcSemSem.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -362,6 +351,7 @@ else
     
     
     Data.y_wholeset = cell(modNum,1);
+    Data.y_wholeset_AvObsDataperStim = cell(modNum,1);
     Data.x_wholeset = cell(modNum,1);
     Data.x_std_wholeset = cell(modNum,1);
     Data.x_mean_wholeset = cell(modNum,1);
@@ -377,32 +367,21 @@ else
     Data.MeanSpectroStim = cell(modNum,1);
     Data.stim_entropy = nan(modNum,1);
     Model.Floor.info = nan(modNum,1);
-    Model.Floor.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-    Model.Floor.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
-    Model.Floor.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
-    Model.Floor.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
-    Model.Floor.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
-    Model.Floor.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
+    Model.Floor.cum_info = cum_info;
     Model.Floor.y_predict = cell(modNum,1);
     Model.Floor.P_YgivenS_all1 = cell(modNum,1);
     Model.Floor.P_YgivenS_all2 = cell(modNum,1);
     Model.Ceiling.info = nan(modNum,1);
-    Model.Ceiling.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-    Model.Ceiling.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
-    Model.Ceiling.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
-    Model.Ceiling.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
-    Model.Ceiling.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
-    Model.Ceiling.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
+    Model.Ceiling.info_enddataset = nan(modNum,1);
+    Model.Ceiling.cum_info.current_dataset=cum_info;
+    Model.Ceiling.cum_info.end_dataset=cum_info;
+    Model.Ceiling.P_YgivenS_all1_enddataset = cell(modNum,1);
+    Model.Ceiling.P_YgivenS_all2_enddataset = cell(modNum,1);
     Model.Ceiling.P_YgivenS_all1 = cell(modNum,1);
     Model.Ceiling.P_YgivenS_all2 = cell(modNum,1);
     if SWITCH.AR
         Model.AR.info = nan(modNum,1);
-        Model.AR.cum_info_ExactHist5 = nan(modNum,length(Alphas));
-        Model.AR.cum_info_EstMonteCarlo = nan(modNum,length(Alphas));
-        Model.AR.cum_info_EstMarkov2 = nan(modNum,length(Alphas));
-        Model.AR.cum_info_EstMarkov3 = nan(modNum,length(Alphas));
-        Model.AR.cum_info_EstMarkov4 = nan(modNum,length(Alphas));
-        Model.AR.cum_info_EstMarkov5 = nan(modNum,length(Alphas));
+        Model.AR.cum_info = cum_info;
         Model.AR.P_YgivenS_all1 = cell(modNum,1);
         Model.AR.P_YgivenS_all2 = cell(modNum,1);
     end
@@ -431,6 +410,7 @@ for mm = StartWin:modNum
     end
     Stim_local = find(duration >= (Win+ResDelay));% here we add ResDelay because we need to get sounds with corresponding psth that go ResDelay beyond the spectrogram of size Win
     NbStim_local = length(Stim_local);
+    Stim_local_end = find(duration >= (Wins(end)+ResDelay));% here are the stims that are used until the last window
     Data.stim_entropy(mm) = log2(NbStim_local);
     if NbStim_local<20
         sprintf('Only %d stims long enough to run the model: no model is run with window size %dms\n', NbStim_local, Win);
@@ -1047,7 +1027,14 @@ for mm = StartWin:modNum
         if ParamModel.ModelChoice(2)
             % Semantic Model
             fprintf('**Info on Semantic**\n')
-            [Model.Semantic.info(mm,aa),Model.Semantic.P_YgivenS_all1{mm,aa},Model.Semantic.P_YgivenS_all2{mm,aa}]  = info_model_Calculus(Model.Semantic.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1}),MaxYpredictInfo,MinWin);
+            AllStims_data=Model.Semantic.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1});
+            [Model.Semantic.info(mm,aa),Model.Semantic.P_YgivenS_all1{mm,aa},Model.Semantic.P_YgivenS_all2{mm,aa}]  = info_model_Calculus(AllStims_data,MaxYpredictInfo,MinWin);
+            EndStims_data=nan(length(Stim_local_end),1);
+            for ss = 1:length(Stim_local_end)
+                EndStims_data(ss) = AllStims_data(find(Stim_local==Stim_local_end(ss)));
+            end
+            [Model.Semantic.info_enddataset(mm,aa),Model.Semantic.P_YgivenS_all1_enddataset{mm,aa},Model.Semantic.P_YgivenS_all2_enddataset{mm,aa}]  = info_model_Calculus(EndStims_data,MaxYpredictInfo,MinWin);
+            
             if mm>1 && SWITCH.AllAlpha
                 [Model.Semantic.cum_info(mm,aa)]=info_cumulative_model_Calculus(Model.Semantic.P_YgivenS_all1(1:mm,aa), mm,Data.x_stim_indices_wholeset, Stim_local);
             elseif SWITCH.AllAlpha
@@ -1085,6 +1072,7 @@ for mm = StartWin:modNum
     %Data.x_mean_wholeset{mm}=MResultsOptimal.X_meanZC{1};
     Data.InputData{mm} = InputData;%Maybe you want to supress this line as everything can be retrieve from the other saved data
     Data.x_stim_indices_wholeset{mm} = Stim_local;
+    Data.x_stim_indices_wholeset{end} = Stim_local_end;
     Data.x_stim_repetition{mm} = StimRep;
     if any(ParamModel.ModelChoice([1,3:5]))
         Data.FLow = Flow;
@@ -1110,7 +1098,14 @@ for mm = StartWin:modNum
     % As of today 08/17/2016 I propose to work with the average observed
     % spike count over trials
     Data.y_wholeset_AvObsDataperStim{mm} = ymean;
-    [Model.Ceiling.info(mm),Model.Ceiling.P_YgivenS_all1{mm},Model.Ceiling.P_YgivenS_all2{mm}] = info_model_Calculus(Data.y_wholeset_AvObsData{mm},MaxYpredictInfo,MinWin);
+    [Model.Ceiling.info(mm),Model.Ceiling.P_YgivenS_all1{mm},Model.Ceiling.P_YgivenS_all2{mm}] = info_model_Calculus(Data.y_wholeset_AvObsDataperStim{mm},MaxYpredictInfo,MinWin);
+    % Calculating the info using only the dataset that is present until the
+    % last window
+    EndStims_data=nan(length(Stim_local_end),1);
+    for ss = 1:length(Stim_local_end)
+        EndStims_data(ss) = ymean(find(Stim_local==Stim_local_end(ss)));
+    end
+    [Model.Ceiling.info_enddataset(mm),Model.Ceiling.P_YgivenS_all1_enddataset{mm},Model.Ceiling.P_YgivenS_all2_enddataset{mm}] = info_model_Calculus(EndStims_data,MaxYpredictInfo,MinWin);
     
     % Floor
     fprintf('**Info on Null-model**\n')
@@ -1119,7 +1114,7 @@ for mm = StartWin:modNum
     % first trial of each stim to calculate the average response??
     % As of today 08/17/2016 I propose something else:
     Data.y_wholeset_AvObsData(mm) = mean(ymean);
-    [Model.Floor.info(mm),Model.Floor.P_YgivenS_all1{mm},Model.Floor.P_YgivenS_all2{mm}] = info_model_Calculus(repmat(Data.y_wholeset_AvObsData(mm),NbStim_local), MaxYpredictInfo, MinWin);
+    [Model.Floor.info(mm),Model.Floor.P_YgivenS_all1{mm},Model.Floor.P_YgivenS_all2{mm}] = info_model_Calculus(repmat(Data.y_wholeset_AvObsData(mm),NbStim_local,1), MaxYpredictInfo, MinWin);
     
     
     % AR Model
@@ -1135,38 +1130,58 @@ for mm = StartWin:modNum
     if ParamModel.Cum_Info
         if mm==1
             fprintf('set CumInfo = Info for the first window\n');
+            infofields = fieldnames(cum_info);
             if ParamModel.ModelChoice(1) && ~SWITCH.AllAlpha
                 % Acoustic model
                 fprintf('**CumInfo on Acoustic**\n')
-                Model.Acoustic.cum_info_ExactHist5(mm,1) = Model.Acoustic.info(mm,1);
+                for fn=1:numel(infofields)
+                    Model.Acoustic.cum_info.(infofields{fn})(mm,1) = Model.Acoustic.info(mm,1);
+                end
             end
             
             if ParamModel.ModelChoice(2) && ~SWITCH.AllAlpha
                 % Semantic Model
                 fprintf('**CumInfo on Semantic**\n')
-                Model.Semantic.cum_info_ExactHist5(mm,1) = Model.Semantic.info(mm,1);
+                for fn=1:numel(infofields)
+                    Model.Semantic.cum_info.current_dataset.(infofields{fn})(mm,1) = Model.Semantic.info(mm,1);
+                    Model.Semantic.cum_info.end_dataset.(infofields{fn})(mm,1) = Model.Semantic.info(mm,1);
+                end
             end
             
             if ParamModel.ModelChoice(4) && ~SWITCH.AllAlpha
                 % AcSemAc
                 fprintf('**CumInfo on AcSemAc**\n')
-                Model.AcSemAc.cum_info_ExactHist5(mm,1) = Model.AcSemAc.info(mm,1);
+                for fn=1:numel(infofields)
+                    Model.AcSemAc.cum_info.(infofields{fn})(mm,1) = Model.AcSemAc.info(mm,1);
+                end
             end
             
             if ParamModel.ModelChoice(5) && ~SWITCH.AllAlpha
                 % AcSemSem
                 fprintf('**CumInfo on AcSemSem**\n')
-                Model.AcSemSem.cum_info_ExactHist5(mm,1) = Model.AcSemSem.info(mm,1);
+                for fn=1:numel(infofields)
+                    Model.AcSemSem.cum_info.(infofields{fn})(mm,1) = Model.AcSemSem.info(mm,1);
+                end
             end
             
-            Model.Floor.cum_info_ExactHist5(mm) = Model.Floor.info(mm);
-            Model.Ceiling.cum_info_ExactHist5(mm,1) = Model.Ceiling.info(mm);
+            %Floor
+            for fn=1:numel(infofields)
+                Model.Floor.cum_info.(infofields{fn})(mm,1) = Model.Floor.info(mm,1);
+            end
+            
+            %Ceiling
+            for fn=1:numel(infofields)
+                Model.Ceiling.cum_info.current_dataset.(infofields{fn})(mm,1) = Model.Ceiling.info(mm,1);
+                Model.Ceiling.cum_info.end_dataset.(infofields{fn})(mm,1) = Model.Ceiling.info(mm,1);
+            end
             if SWITCH.AR
-                Model.AR.cum_info_ExactHist5(mm,1) = Model.Ceiling.info(mm);
+                for fn=1:numel(infofields)
+                    Model.AR.cum_info.(infofields{fn})(mm,1) = Model.AR.info(mm,1);
+                end
             end
         end
         if mm>1
-            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,mm,Data.x_stim_indices_wholeset, Stim_local);
+            [Model] = info_cumulative_wrapper(ParamModel,SWITCH,Model,mm,Data.x_stim_indices_wholeset);
         end
         %         if mm==modNum
         %             %get rid of temp folder and its content that might be
