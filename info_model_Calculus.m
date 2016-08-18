@@ -146,8 +146,12 @@ I = (H_y - H_ymu);
 P_YgivenS_all1 = zeros(length(y_world),length(mu_in));
 P_YgivenS_all1(:,OkPredict) = P_YgivenS_all1_local;
 
-P_YgivenS_all2 = zeros(length(y_world),length(mu_in));
-P_YgivenS_all2(:,OkPredict) = P_YgivenS_all2_local;
+if ~SameDataScaleEntropy
+    P_YgivenS_all2 = zeros(length(y_world),length(mu_in));
+    P_YgivenS_all2(:,OkPredict) = P_YgivenS_all2_local;
+else
+    P_YgivenS_all2=[];
+end
 
 %% Calculate H(y) using the actual dataset
 if Yhist_Flag
