@@ -84,14 +84,12 @@ for mm=1:Nb_mu
     %P = (mu_local .^ y_world) .* exp(-mu_local) ./ Fac_y;
     
     % Calculate log of probability
-    if intersect((y_world-mu_local)==0, mu_local==0)
-        Log_P= y_world.*log2(mu_local+(mu_local==0)) - log2(Fac_y) - mu_local/log(2); %ylog(y)=0 when y=0
-    elseif any(mu_local < muLims)
-        mu_temp = max(mu_local,muLims);
-        Log_P= y_world.*log2(mu_temp) - log2(Fac_y) - mu_local/log(2);   %threshold mu so the log calculation does not blow up when mu=0
-    else
-        Log_P= y_world.*log2(mu_local) -log2(Fac_y) - mu_local/log(2);
-    end
+    % identify indices for which ylog(y)=0 when y=0
+    mu_temp = mu_local;
+    mu_temp(intersect((y_world-mu_local)==0, mu_local==0)) = 1;
+    %apply a minimum value for mu, cannot be equal to zero
+    mu_temp = max(mu_temp,muLims);
+    Log_P= y_world.*log2(mu_temp) - log2(Fac_y) - mu_local/log(2);   %threshold mu so the log calculation does not blow up when mu=0
     
     P = 2.^(Log_P);
     P_YgivenS_all1_local(:,find(I_mu_unique==mm))=repmat(P',1,length(find(I_mu_unique==mm)));
