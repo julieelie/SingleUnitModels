@@ -29,6 +29,8 @@ function [I,P_YgivenS_all1,P_YgivenS_all2]=info_model_Calculus(mu_in,mu_max, yma
 % In glmfit and here if no scale is provided, other choice because they don't know the
 % natural scale of mu. Their choice keeps mu^4 from underflowing.No upper limit.
 
+SameDataScaleEntropy=1; %set this to zero if you prefer to scale data differently but that sounds weird!!
+
 if nargin<2
     mu_max = 100*median(mu_in);
 end
@@ -79,6 +81,7 @@ H_ymu_unique = nan(size(mu_unique));
 Fac_y = factorial(y_world);
 RescaledP=0;
 P_YgivenS_all1_local = nan(length(y_world),N_pres);
+P_YgivenS_all1_rescaled = nan(length(y_world),N_pres);
 for mm=1:Nb_mu
     mu_local = repmat(mu_unique(mm),size(y_world));
     %P = (mu_local .^ y_world) .* exp(-mu_local) ./ Fac_y;
@@ -97,38 +100,42 @@ for mm=1:Nb_mu
     
     % Check that sum(P) sum to 1 and rescale if not to have a more
     % realistic distribution.
-    if sum(P)~=1
-        P = P ./sum(P);
-        RescaledP = RescaledP +1;
-        P_YgivenS_all1_rescaled(:,find(I_mu_unique==mm))=repmat(P',1,length(find(I_mu_unique==mm)));
-    end
+    P = P ./sum(P);
+    P_YgivenS_all1_rescaled(:,find(I_mu_unique==mm))=repmat(P',1,length(find(I_mu_unique==mm)));
     H_ymu_unique(mm) = sum(-P.*log2(P + (P==0)));% conditional entropy value for each unique mu (each stim) across all y of the world
 end
 H_ymu = sum(H_ymu_unique(I_mu_unique))/N_pres;
-fprintf('rescaled P for %d/%d predicted mu\n',RescaledP,Nb_mu);
+%H_ymu = sum(sum(-P_YgivenS_all1_rescaled.*log2(P_YgivenS_all1_rescaled+(P_YgivenS_all1_rescaled==0))))/N_pres;
 
 %% Calculate the entropy of y based on Poisson distributions
-P_YgivenS_all2_local = nan(length(y_world),N_pres);
-for ii=1:(ymax +1)
-    yy = y_world(ii);
-    y_local = repmat(yy,size(mu_in_checked));
-    Fac_y = repmat(factorial(yy),size(mu_in_checked));
-    if any(mu_in_checked < muLims) % This is just to be consistent with the rules regarding mu that were applied higher
-        mu_temp = max(mu_in_checked,muLims);
-        P_YgivenS_all2_local(ii,:) = (mu_temp.^y_local) .* exp(-mu_temp) ./ Fac_y;
-    else
-        P_YgivenS_all2_local(ii,:) = (mu_in_checked.^y_local) .* exp(-mu_in_checked) ./ Fac_y;
+% This calculation is not using the data as scaled per stim as used for the
+% calculation of the exact entropy
+if ~SameDataScaleEntropy
+    P_YgivenS_all2_local = nan(length(y_world),N_pres);
+    for ii=1:(ymax +1)
+        yy = y_world(ii);
+        y_local = repmat(yy,size(mu_in_checked));
+        Fac_y = repmat(factorial(yy),size(mu_in_checked));
+        if any(mu_in_checked < muLims) % This is just to be consistent with the rules regarding mu that were applied higher
+            mu_temp = max(mu_in_checked,muLims);
+            P_YgivenS_all2_local(ii,:) = (mu_temp.^y_local) .* exp(-mu_temp) ./ Fac_y;
+        else
+            P_YgivenS_all2_local(ii,:) = (mu_in_checked.^y_local) .* exp(-mu_in_checked) ./ Fac_y;
+        end
     end
+    
+    P_y_i = sum(P_YgivenS_all2_local,2)./N_pres;
+    % Check that sum(P) sum to 1 and rescale if not to have a more
+    % realistic distribution.
+    if sum(P_y_i)~=1
+        P_y_i = P_y_i ./sum(P_y_i);
+        fprintf('rescaled the distribution of y\n');
+    end
+    
+else
+    % Calculation using the same data as for the conditional entropy
+    P_y_i = sum(P_YgivenS_all1_rescaled,2)./N_pres;
 end
-
-P_y_i = sum(P_YgivenS_all2_local,2)./N_pres;
-% Check that sum(P) sum to 1 and rescale if not to have a more
-% realistic distribution.
-if sum(P_y_i)~=1
-    P_y_i = P_y_i ./sum(P_y_i);
-    fprintf('rescaled the distribution of y\n');
-end
-
 % Calculate log probability
 H_y = sum(-P_y_i.*log2(P_y_i + (P_y_i==0)));% conditional entropy value for each unique y of the world across all mu of the model
 

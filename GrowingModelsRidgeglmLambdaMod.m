@@ -10,7 +10,7 @@ ParamModel.MeanSubstractSpec=0; % Set to 1 if you want to substract the average 
 ParamModel.LAMBDARATIO=1e-4;
 ParamModel.NUMLAMBDA=10;%25?
 ParamModel.Cum_Info = 1; % set to 1 to calculate cumulative information
-ParamModel.NumSamples_MC_Cum_Info = 10^6; %Set the number of samples for the Monte Carlo approximation of the cumulative information 10^7 takes too much memory prefers lower numbers
+ParamModel.NumSamples_MC_Cum_Info = [10^6 10^4 10^3 10^2]; %Set the number of samples for the Monte Carlo approximation of the cumulative information 10^7 takes too much memory prefers lower numbers
 
 if ParamModel.Cum_Info
     getenv('HOSTNAME')
@@ -206,6 +206,9 @@ if PrevData
 else
     cum_info.ExactHist5 = nan(modNum,length(Alphas));
     cum_info.EstMonteCarlo = nan(modNum,length(Alphas));
+    cum_info.EstMonteCarlo2 = nan(modNum,length(Alphas));
+    cum_info.EstMonteCarlo3 = nan(modNum,length(Alphas));
+    cum_info.EstMonteCarlo4 = nan(modNum,length(Alphas));
     cum_info.EstMarkov2 = nan(modNum,length(Alphas));
     cum_info.EstMarkov3 = nan(modNum,length(Alphas));
     cum_info.EstMarkov4 = nan(modNum,length(Alphas));
@@ -246,10 +249,10 @@ else
         Model.Semantic.B0 = cell(modNum,length(Alphas));
         Model.Semantic.y_predict = cell(modNum,length(Alphas));
         Model.Semantic.info = nan(modNum,length(Alphas));
-        Model.Semantic.info_enddataset = nan(modNum,length(Alphas));
+%         Model.Semantic.info_enddataset = nan(modNum,length(Alphas));
         if ParamModel.Cum_Info
             Model.Semantic.cum_info.current_dataset=cum_info;
-            Model.Semantic.cum_info.end_dataset=cum_info;
+%             Model.Semantic.cum_info.end_dataset=cum_info;
         end
         Model.Semantic.P_YgivenS_all1 = cell(modNum,length(Alphas));
         Model.Semantic.P_YgivenS_all2 = cell(modNum,length(Alphas));
@@ -372,9 +375,9 @@ else
     Model.Floor.P_YgivenS_all1 = cell(modNum,1);
     Model.Floor.P_YgivenS_all2 = cell(modNum,1);
     Model.Ceiling.info = nan(modNum,1);
-    Model.Ceiling.info_enddataset = nan(modNum,1);
+%     Model.Ceiling.info_enddataset = nan(modNum,1);
     Model.Ceiling.cum_info.current_dataset=cum_info;
-    Model.Ceiling.cum_info.end_dataset=cum_info;
+%     Model.Ceiling.cum_info.end_dataset=cum_info;
     Model.Ceiling.P_YgivenS_all1_enddataset = cell(modNum,1);
     Model.Ceiling.P_YgivenS_all2_enddataset = cell(modNum,1);
     Model.Ceiling.P_YgivenS_all1 = cell(modNum,1);
@@ -1029,12 +1032,12 @@ for mm = StartWin:modNum
             fprintf('**Info on Semantic**\n')
             AllStims_data=Model.Semantic.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1});
             [Model.Semantic.info(mm,aa),Model.Semantic.P_YgivenS_all1{mm,aa},Model.Semantic.P_YgivenS_all2{mm,aa}]  = info_model_Calculus(AllStims_data,MaxYpredictInfo,MinWin);
-            EndStims_data=nan(length(Stim_local_end),1);
-            for ss = 1:length(Stim_local_end)
-                EndStims_data(ss) = AllStims_data(find(Stim_local==Stim_local_end(ss)));
-            end
-            [Model.Semantic.info_enddataset(mm,aa),Model.Semantic.P_YgivenS_all1_enddataset{mm,aa},Model.Semantic.P_YgivenS_all2_enddataset{mm,aa}]  = info_model_Calculus(EndStims_data,MaxYpredictInfo,MinWin);
-            
+%             EndStims_data=nan(length(Stim_local_end),1);
+%             for ss = 1:length(Stim_local_end)
+%                 EndStims_data(ss) = AllStims_data(find(Stim_local==Stim_local_end(ss)));
+%             end
+%             [Model.Semantic.info_enddataset(mm,aa),Model.Semantic.P_YgivenS_all1_enddataset{mm,aa},Model.Semantic.P_YgivenS_all2_enddataset{mm,aa}]  = info_model_Calculus(EndStims_data,MaxYpredictInfo,MinWin);
+%             
             if mm>1 && SWITCH.AllAlpha
                 [Model.Semantic.cum_info(mm,aa)]=info_cumulative_model_Calculus(Model.Semantic.P_YgivenS_all1(1:mm,aa), mm,Data.x_stim_indices_wholeset, Stim_local);
             elseif SWITCH.AllAlpha
@@ -1101,11 +1104,11 @@ for mm = StartWin:modNum
     [Model.Ceiling.info(mm),Model.Ceiling.P_YgivenS_all1{mm},Model.Ceiling.P_YgivenS_all2{mm}] = info_model_Calculus(Data.y_wholeset_AvObsDataperStim{mm},MaxYpredictInfo,MinWin);
     % Calculating the info using only the dataset that is present until the
     % last window
-    EndStims_data=nan(length(Stim_local_end),1);
-    for ss = 1:length(Stim_local_end)
-        EndStims_data(ss) = ymean(find(Stim_local==Stim_local_end(ss)));
-    end
-    [Model.Ceiling.info_enddataset(mm),Model.Ceiling.P_YgivenS_all1_enddataset{mm},Model.Ceiling.P_YgivenS_all2_enddataset{mm}] = info_model_Calculus(EndStims_data,MaxYpredictInfo,MinWin);
+%     EndStims_data=nan(length(Stim_local_end),1);
+%     for ss = 1:length(Stim_local_end)
+%         EndStims_data(ss) = ymean(find(Stim_local==Stim_local_end(ss)));
+%     end
+%     [Model.Ceiling.info_enddataset(mm),Model.Ceiling.P_YgivenS_all1_enddataset{mm},Model.Ceiling.P_YgivenS_all2_enddataset{mm}] = info_model_Calculus(EndStims_data,MaxYpredictInfo,MinWin);
     
     % Floor
     fprintf('**Info on Null-model**\n')
@@ -1144,7 +1147,7 @@ for mm = StartWin:modNum
                 fprintf('**CumInfo on Semantic**\n')
                 for fn=1:numel(infofields)
                     Model.Semantic.cum_info.current_dataset.(infofields{fn})(mm,1) = Model.Semantic.info(mm,1);
-                    Model.Semantic.cum_info.end_dataset.(infofields{fn})(mm,1) = Model.Semantic.info(mm,1);
+%                     Model.Semantic.cum_info.end_dataset.(infofields{fn})(mm,1) = Model.Semantic.info(mm,1);
                 end
             end
             
@@ -1172,7 +1175,7 @@ for mm = StartWin:modNum
             %Ceiling
             for fn=1:numel(infofields)
                 Model.Ceiling.cum_info.current_dataset.(infofields{fn})(mm,1) = Model.Ceiling.info(mm,1);
-                Model.Ceiling.cum_info.end_dataset.(infofields{fn})(mm,1) = Model.Ceiling.info(mm,1);
+%                 Model.Ceiling.cum_info.end_dataset.(infofields{fn})(mm,1) = Model.Ceiling.info(mm,1);
             end
             if SWITCH.AR
                 for fn=1:numel(infofields)
