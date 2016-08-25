@@ -1,5 +1,5 @@
 function [] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, Cellname,DISTR, LINK,MinWin, MaxWin, Increment, ResDelay)
-InfoFileName=1; %Set to 1 if you want to change the name of the output file so they indicate "Info"
+InfoCal=1; %Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
 getenv('HOSTNAME')
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
     Savio=1;
@@ -74,21 +74,21 @@ if Savio
     OutputDirEx_local='/global/home/users/jelie/MatFiles/ModMat';
     OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatSavio');
 elseif Me
-    if InfoFileName
+    if InfoCal
         OutputDir_local='/users/elie/Documents/CODE/data/matfile/ModMatInfo';
     else
         OutputDir_local='/users/elie/Documents/CODE/data/matfile/ModMatAcOnly';
     end
     OutputDir_final=OutputDir_local;
 else
-    if InfoFileName
+    if InfoCal
         OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatInfo');
     else
         OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatAcOnly');
     end
     OutputDir_local=OutputDir_final;
 end
-if InfoFileName
+if InfoCal
     calfilename_local=fullfile(OutputDir_local,['Models_InfoPoisson_' Res.Site '.mat']);
     calfilename_final=fullfile(OutputDir_final,['Models_InfoPoisson_' Res.Site '.mat']);
 else
@@ -153,48 +153,53 @@ if ~ PrevData
 end
 
 %% Get the data ready
-% Select first sections
-Firsts = find(Res.Voc_orders == 1);
-% Need to get rid of mlnoise sections and whine sections when they
-% exist. I construct a vector of indices of the right sections
-DataSel=zeros(1,length(Firsts));
-nvoc=0;
-voctype=Res.VocType;
-for ii=1:length(Firsts);
-    dd = Firsts(ii);
-    if strcmp(voctype{dd}, 'Ag')
-        nvoc=nvoc+1;
-        DataSel(nvoc)=dd;
-    elseif strcmp(voctype{dd}, 'Be')
-        nvoc=nvoc+1;
-        DataSel(nvoc)=dd;
-    elseif strcmp(voctype{dd}, 'DC')
-        nvoc=nvoc+1;
-        DataSel(nvoc)=dd;
-    elseif strcmp(voctype{dd}, 'Di')
-        nvoc=nvoc+1;
-        DataSel(nvoc)=dd;
-    elseif strcmp(voctype{dd}, 'LT')
-        nvoc=nvoc+1;
-        DataSel(nvoc)=dd;
-    elseif strcmp(voctype{dd}, 'Ne')
-        nvoc=nvoc+1;
-        DataSel(nvoc)=dd;
-    elseif strcmp(voctype{dd}, 'Te')
-        nvoc=nvoc+1;
-        DataSel(nvoc)=dd;
-    elseif strcmp(voctype{dd}, 'Th')
-        nvoc=nvoc+1;
-        DataSel(nvoc)=dd;
-    elseif strcmp(voctype{dd}, 'song')
-        nvoc=nvoc+1;
-        DataSel(nvoc)=dd;
-%     elseif strcmp(voctype{dd}, 'Wh')
-%         nvoc=nvoc+1;
-%         DataSel(nvoc)=dd;
+if ~InfoCal
+    % Select first sections
+    Firsts = find(Res.Voc_orders == 1);
+    % Need to get rid of mlnoise sections and whine sections when they
+    % exist. I construct a vector of indices of the right sections
+    DataSel=zeros(1,length(Firsts));
+    nvoc=0;
+    voctype=Res.VocType;
+    for ii=1:length(Firsts);
+        dd = Firsts(ii);
+        if strcmp(voctype{dd}, 'Ag')
+            nvoc=nvoc+1;
+            DataSel(nvoc)=dd;
+        elseif strcmp(voctype{dd}, 'Be')
+            nvoc=nvoc+1;
+            DataSel(nvoc)=dd;
+        elseif strcmp(voctype{dd}, 'DC')
+            nvoc=nvoc+1;
+            DataSel(nvoc)=dd;
+        elseif strcmp(voctype{dd}, 'Di')
+            nvoc=nvoc+1;
+            DataSel(nvoc)=dd;
+        elseif strcmp(voctype{dd}, 'LT')
+            nvoc=nvoc+1;
+            DataSel(nvoc)=dd;
+        elseif strcmp(voctype{dd}, 'Ne')
+            nvoc=nvoc+1;
+            DataSel(nvoc)=dd;
+        elseif strcmp(voctype{dd}, 'Te')
+            nvoc=nvoc+1;
+            DataSel(nvoc)=dd;
+        elseif strcmp(voctype{dd}, 'Th')
+            nvoc=nvoc+1;
+            DataSel(nvoc)=dd;
+        elseif strcmp(voctype{dd}, 'song')
+            nvoc=nvoc+1;
+            DataSel(nvoc)=dd;
+            %     elseif strcmp(voctype{dd}, 'Wh')
+            %         nvoc=nvoc+1;
+            %         DataSel(nvoc)=dd;
+        end
     end
+    DataSel=DataSel(1:nvoc);
+else
+    DataSel = 1:length(Res.VocType);
 end
-DataSel=DataSel(1:nvoc);
+
 
 %% Select the spectrograms of the selected stims
 Spectro.spec = Res.Spectro(DataSel);
@@ -252,9 +257,9 @@ end
 %return
 %% Inject the data in the models
 if PrevData
-    [LambdaChoice, Deviance, LL, Model, ParamModel, Data, PropVal, Wins] = GrowingModelsRidgeglmLambdaMod( Spectro, Res.VocType(DataSel), Res.PSTH(DataSel),Res.Trials(DataSel),Emitter, MinWin, MaxWin, Increment, ResDelay,'count',DISTR,LINK,calfilename_local, DoneCalc);
+    [LambdaChoice, Deviance, LL, Model, ParamModel, Data, PropVal, Wins] = GrowingModelsRidgeglmLambdaMod( Spectro, Res.VocType(DataSel), Res.PSTH_GaussFiltered(DataSel),Res.Trials(DataSel),Emitter, MinWin, MaxWin, Increment, ResDelay,'count',DISTR,LINK,calfilename_local, DoneCalc);
 else
-    [LambdaChoice, Deviance, LL, Model, ParamModel, Data, PropVal, Wins] = GrowingModelsRidgeglmLambdaMod( Spectro, Res.VocType(DataSel), Res.PSTH(DataSel),Res.Trials(DataSel),Emitter, MinWin, MaxWin, Increment, ResDelay,'count',DISTR,LINK,calfilename_local);
+    [LambdaChoice, Deviance, LL, Model, ParamModel, Data, PropVal, Wins] = GrowingModelsRidgeglmLambdaMod( Spectro, Res.VocType(DataSel), Res.PSTH_GaussFiltered(DataSel),Res.Trials(DataSel),Emitter, MinWin, MaxWin, Increment, ResDelay,'count',DISTR,LINK,calfilename_local);
 end
 
 ElapsedTime = toc(TimerVal);

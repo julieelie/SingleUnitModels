@@ -198,6 +198,11 @@ if PrevData
             for tt=1:length(Trials{dd})
                 PreviousWin.y_old{ss}(tt)=sum((Trials{dd}{tt}>(Win_old-MinWin+ResDelay)).*(Trials{dd}{tt}<(Win_old+ResDelay)));
             end
+ % REVISE FRON HERE!!       elseif strcmp(ParamModel.NeuroRes, 'count_gaussfiltered')
+            PreviousWin.y_old{ss}=nan(length(Trials{dd}),1);
+            for tt=1:length(Trials{dd})
+                PreviousWin.y_old{ss}(tt)=sum((Trials{dd}{tt}>(Win_old-MinWin+ResDelay)).*(Trials{dd}{tt}<(Win_old+ResDelay)));
+            end
         else
             fprintf('please correctly write what kind of neural response you want to predict\n %s does not make any sense!!\n', ParamModel.NeuroRes);
             
