@@ -127,60 +127,61 @@ end
 outfilename_local=fullfile(OutputDir_local,['slurm_out*' Res.Site '*.txt']);
 outfilename_final=fullfile(OutputDir_final,['slurm_out*' Res.Site '*.txt']);
 
-PrevData=0;
-if Savio
-    try
-        DoneCalc=loadfromTdrive_savio(calfilename_final, OutputDir_local,1);
-        fprintf('Found some data for this unit\n')
-            if isfield(DoneCalc, 'Deviance') && isfield(DoneCalc, 'LL') && isfield(DoneCalc, 'LambdaChoice') && isfield(DoneCalc, 'Model') && isfield(DoneCalc, 'PropVal') && isfield(DoneCalc, 'Data') && isfield(DoneCalc, 'Wins') && ~isempty(DoneCalc.Model.MeanSpectroStim{1})
-                PrevData = 1;
-            else
-                frpintf('Data are not complete enough to be used\n')
-                system(['rm ' calfilename_local]);
-                clear 'DoneCalc'
-                PrevData = 0;
-            end
+if SWITCH.Models
+    PrevData=0;
+    if Savio
+        try
+            DoneCalc=loadfromTdrive_savio(calfilename_final, OutputDir_local,1);
+            fprintf('Found some data for this unit\n')
+                if isfield(DoneCalc, 'Deviance') && isfield(DoneCalc, 'LL') && isfield(DoneCalc, 'LambdaChoice') && isfield(DoneCalc, 'Model') && isfield(DoneCalc, 'PropVal') && isfield(DoneCalc, 'Data') && isfield(DoneCalc, 'Wins') && ~isempty(DoneCalc.Model.MeanSpectroStim{1})
+                    PrevData = 1;
+                else
+                    frpintf('Data are not complete enough to be used\n')
+                    system(['rm ' calfilename_local]);
+                    clear 'DoneCalc'
+                    PrevData = 0;
+                end
 
-        
-    catch err
-        fprintf('No Previous Data available or complete, working from the first window\nThe error is %s\n',err.identifier, err.message);
-        PrevData = 0;
+
+        catch err
+            fprintf('No Previous Data available or complete, working from the first window\nThe error is %s\n',err.identifier, err.message);
+            PrevData = 0;
+        end
+    %         if strcmp(err.identifier, 'MATLAB:load:couldNotReadFile')
+    %             fprintf('No previous Data working from the first window\n');
+    %             PrevData = 0;
+    %         elseif strcmp(err.identifier, 'MATLAB:load:cantReadFile')
+    %             fprintf('Previous Data File corrupted working from the first window\n');
+    %             PrevData = 0;
+    %         else
+    %             fprintf('Error loading previous Data: %s\nworking from the first window\n',err.identifier);
+    %             PrevData = 0;
+    %         end
+    else
+        try
+            DoneCalc=load(calfilename_final);
+            fprintf('Found some data for this unit\n')
+                if isfield(DoneCalc, 'Deviance') && isfield(DoneCalc, 'LL') && isfield(DoneCalc, 'LambdaChoice') && isfield(DoneCalc, 'Model') && isfield(DoneCalc, 'PropVal') && isfield(DoneCalc, 'Data') && isfield(DoneCalc, 'Wins') && ~isempty(DoneCalc.Data.MeanSpectroStim{1})
+                    PrevData = 1;
+                else
+                    fprintf('Data are not complete enough to be used\n')
+                    system(['rm ' calfilename_local]);
+                    clear 'DoneCalc'
+                    PrevData = 0;
+                end
+
+
+        catch err
+            fprintf('No Previous Data available or complete, working from the first window\nThe error is %s\n',err.identifier, err.message);
+            PrevData = 0;
+        end
     end
-%         if strcmp(err.identifier, 'MATLAB:load:couldNotReadFile')
-%             fprintf('No previous Data working from the first window\n');
-%             PrevData = 0;
-%         elseif strcmp(err.identifier, 'MATLAB:load:cantReadFile')
-%             fprintf('Previous Data File corrupted working from the first window\n');
-%             PrevData = 0;
-%         else
-%             fprintf('Error loading previous Data: %s\nworking from the first window\n',err.identifier);
-%             PrevData = 0;
-%         end
-else
-    try
-        DoneCalc=load(calfilename_final);
-        fprintf('Found some data for this unit\n')
-            if isfield(DoneCalc, 'Deviance') && isfield(DoneCalc, 'LL') && isfield(DoneCalc, 'LambdaChoice') && isfield(DoneCalc, 'Model') && isfield(DoneCalc, 'PropVal') && isfield(DoneCalc, 'Data') && isfield(DoneCalc, 'Wins') && ~isempty(DoneCalc.Data.MeanSpectroStim{1})
-                PrevData = 1;
-            else
-                fprintf('Data are not complete enough to be used\n')
-                system(['rm ' calfilename_local]);
-                clear 'DoneCalc'
-                PrevData = 0;
-            end
 
-        
-    catch err
-        fprintf('No Previous Data available or complete, working from the first window\nThe error is %s\n',err.identifier, err.message);
-        PrevData = 0;
+    % save the path for now if no previous file
+    if ~ PrevData
+        save(calfilename_local,'MatfilePath', '-append')
     end
 end
-    
-% save the path for now if no previous file
-if ~ PrevData
-    save(calfilename_local,'MatfilePath', '-append')
-end
-
 %% Get the data ready
 if SWITCH.Models % For models we use vocalization sections, only the first element of each vocalization sequence
     % Select first sections
