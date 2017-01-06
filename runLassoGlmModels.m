@@ -163,7 +163,7 @@ parfor bb=1:ParamModel.BootstrapSTRF
     end
     
     %% construct the vector of responses, the vectors of spectrograms, vocalization types and previous spike count for the training dataset
-    if strcmp(ParamModel.NeuroRes, 'count')
+    if strcmp(ParamModel.NeuroRes, 'count') || strcmp(ParamModel.NeuroRes, 'count_gaussfiltered')
         yy=0;
         if any(ParamModel.ModelChoice([1,3:5]))
             x_Train_new = nan(NbTrialStim.*length(TrainSet),size(x_Train,2));
@@ -299,7 +299,7 @@ parfor bb=1:ParamModel.BootstrapSTRF
     
     
     %% Create vector of obeserved values of the validating set, and predicted responses for Floor and ceiling model
-    if strcmp(ParamModel.NeuroRes, 'count')
+    if strcmp(ParamModel.NeuroRes, 'count') || strcmp(ParamModel.NeuroRes, 'count_gaussfiltered')
         % construct the vector of responses for the validating
         % dataset (actual values, best guess and worse guess)
         yy=0;
@@ -407,7 +407,7 @@ parfor bb=1:ParamModel.BootstrapSTRF
         NbL_Ac=length(FitInfo_Ac.Lambda);% number of lambdas tested
         Deviance_M_Ac= nan(NbL_Ac,1);
         LL_Ac= nan(NbL_Ac,1);
-        if strcmp(ParamModel.NeuroRes, 'count')
+        if strcmp(ParamModel.NeuroRes, 'count') || strcmp(ParamModel.NeuroRes, 'count_gaussfiltered')
             % Construct the vector of the predicted response using the
             % Acoustic model
             ypred_Ac=nan(length(ValSet).*NbTrialStim,NbL_Ac);
@@ -455,7 +455,7 @@ parfor bb=1:ParamModel.BootstrapSTRF
         NbL_AcSem=length(FitInfo_AcSem.Lambda);% number of lambdas tested
         Deviance_M_AcSem= nan(NbL_AcSem,1);
         LL_AcSem=nan(NbL_AcSem,1);
-        if strcmp(ParamModel.NeuroRes, 'count')
+        if strcmp(ParamModel.NeuroRes, 'count') || strcmp(ParamModel.NeuroRes, 'count_gausfiltered')
             % Construct the vector of predicted responses using the
             % AcSem1 model
             ypred_AcSem=nan(length(ValSet).*NbTrialStim,NbL_AcSem);
@@ -497,7 +497,7 @@ parfor bb=1:ParamModel.BootstrapSTRF
     if ParamModel.ModelChoice(2)
         fprintf(1,'Semantic model: Calculate deviance on the validating dataset\n');
         ypred_Sem_temp = glmval(MDL_Sem.Coefficients.Estimate,Data.X_voc(ValSet,:),ParamModel.LINK);
-        if strcmp(ParamModel.NeuroRes, 'count')
+        if strcmp(ParamModel.NeuroRes, 'count') || strcmp(ParamModel.NeuroRes, 'count_gausfiltered')
             % construct the vector of predicted responses using the semantic model
             yy=0;
             ypred_Sem=nan(length(ValSet).*NbTrialStim,1);
@@ -530,7 +530,7 @@ parfor bb=1:ParamModel.BootstrapSTRF
         NbL_AcSemSem=length(FitInfo_AcSemSem.Lambda);% number of lambdas tested
         Deviance_M_AcSemSem= nan(NbL_AcSemSem,1);
         LL_AcSemSem=nan(NbL_AcSemSem,1);
-        if strcmp(ParamModel.NeuroRes, 'count')
+        if strcmp(ParamModel.NeuroRes, 'count') || strcmp(ParamModel.NeuroRes, 'count_gausfiltered')
             % Construct the vector of predicted responses using the
             % AcSemSem model
             ypred_AcSemSem=nan(length(ValSet).*NbTrialStim,NbL_AcSemSem);
@@ -707,7 +707,7 @@ parfor bb=1:ParamModel.BootstrapSTRF
         NbL_AcSemAc=length(FitInfo_AcSemAc.Lambda);% number of lambdas tested
         Deviance_M_AcSemAc= nan(NbL_AcSemAc,1);
         LL_AcSemAc = nan(NbL_AcSemAc,1);
-        if strcmp(ParamModel.NeuroRes, 'count')
+        if strcmp(ParamModel.NeuroRes, 'count') || strcmp(ParamModel.NeuroRes, 'count_gausfiltered')
             ypred_AcSemAc=nan(length(ValSet).*NbTrialStim,NbL_AcSemAc);
             for ll=1:NbL_AcSemAc
                 ypred_AcSem2_temp = glmval([FitInfo_AcSemAc.Intercept(ll); B_AcSemAc(:,ll)],[Data.X_voc(ValSet,:) x_Val],ParamModel.LINK);
@@ -787,7 +787,7 @@ parfor bb=1:ParamModel.BootstrapSTRF
         X_meanZC{bb} = x_Train_mean;
         X_stdZC{bb} = x_Train_std;
     end
-    if strcmp(ParamModel.NeuroRes, 'count')
+    if strcmp(ParamModel.NeuroRes, 'count') || strcmp(ParamModel.NeuroRes, 'count_gausfiltered')
         VocTypeTrial=cell(length(ValSet).*NbTrialStim,1);
         if any(ParamModel.ModelChoice([1,3:5]))
             xValperTrial=nan(length(ValSet).*NbTrialStim,size(x_Val,2));

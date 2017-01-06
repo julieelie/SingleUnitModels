@@ -1,4 +1,4 @@
-function [entropy,Mat_Num_stim] = Markov_entropy(P_YgivenS_AllWin, MarkovHistory,MinProbThresh, MinProb,entropy_old)
+function [entropy,Mat_Num_stim] = Markov_entropy(P_YgivenS_AllWin, MarkovHistory,MinProbThresh, MinProb,entropy_old, Verbose)
 
 if nargin<2
     MarkovHistory=[1 1];% first element is the number of past events used, the second is the sampling, second has to be smaller than the first(e.g. 6 and 2 would be looking at t-2 t-4 and t-6)
@@ -13,7 +13,9 @@ end
 if nargin < 5
     entropy_old = [];
 end
-
+if nargin < 6
+    Verbose=0; % set to 1 to see more outputs
+end
 
 if size(P_YgivenS_AllWin,1)==1
     %% initilize entropy
@@ -23,7 +25,9 @@ if size(P_YgivenS_AllWin,1)==1
     % realistic distribution.
     if sum(P_y_i)~=1
         P_y_i = P_y_i ./sum(P_y_i);
-        fprintf('rescaled the distribution of y for Hy0 calculation in Markov_entropy\n');
+        if Verbose
+            fprintf('rescaled the distribution of y for Hy0 calculation in Markov_entropy\n');
+        end
     end
     
     % Calculate log probability
@@ -34,7 +38,7 @@ else
     ...(e.g. for MarkovHistory=1 H(t-1)/H(t-2), H(t-2)/H(t-3)) of the...
         ...previous time points
     if isempty(entropy_old)||isnan(entropy_old)
-        [entropy_old,Mat_Num_stim_old] = Markov_entropy(P_YgivenS_AllWin(1:end-1),MarkovHistory,MinProbThresh, MinProb);
+        [entropy_old,Mat_Num_stim_old] = Markov_entropy(P_YgivenS_AllWin(1:end-1),MarkovHistory,MinProbThresh, MinProb,[], Verbose);
     end
     
     if MarkovHistory(1)>0
@@ -68,11 +72,11 @@ else
         PY_Cond = PY_Cond.*log2(PY_Cond + (PY_Cond==0));
         PY_Cond = sum(PY_Cond,ndims(PY_Cond)); % here we sum over probabilities over yt which are along the last dimension
         if sum(size(PY_Cond)>1) ~= (length(pastpoints)-1)
-            fprintf('Something wrong: the dimension of PY_cond is %d when it should be %d the same as or smaller than the markov history of %d with a step of%d\n', ndims(PY_Cond),length(pastpoints), MarkovHistory(1),MarkovHistory(2))
+            fprintf('Something wrong in Markov_entropy: the dimension of PY_cond is %d when it should be %d the same as or smaller than the markov history of %d with a step of%d\n', ndims(PY_Cond),length(pastpoints), MarkovHistory(1),MarkovHistory(2))
         end
         
         if sum(size(PY_Cond) ~= size(Mat_PastPoints))
-            fprintf('PY_Cond and Mat_PastPoints should have the same sizes and dimensions\nTheir dimensions %d (PY_Cond) and %d (Mat_PastPoints) should be that of Markov history %d\nTheir sizes should be that of yt-MarkovHistory... yt-1\n', ndims(PY_Cond), ndims(Mat_PastPoints), MarkovHistory);
+            fprintf('in Markov_entropy PY_Cond and Mat_PastPoints should have the same sizes and dimensions\nTheir dimensions %d (PY_Cond) and %d (Mat_PastPoints) should be that of Markov history %d\nTheir sizes should be that of yt-MarkovHistory... yt-1\n', ndims(PY_Cond), ndims(Mat_PastPoints), MarkovHistory);
         end
         
         % Multiply the entropy of the conditional probability by the joint
@@ -93,7 +97,9 @@ else
         % realistic distribution.
         if sum(P_y_i)~=1
             P_y_i = P_y_i ./sum(P_y_i);
-            fprintf('rescaled the distribution of y for Hy calculation in Markov_entropy\n');
+            if Verbose
+                fprintf('rescaled the distribution of y for Hy calculation in Markov_entropy\n');
+            end
         end
         
         % Calculate log probability
@@ -103,7 +109,7 @@ else
         entropy = entropy_local + entropy_old;
 
     else
-        fprintf(1,'The markov history value is not valid it needs to be a positive integer');
+        fprintf(1,'in Markov_entropy: The markov history value is not valid it needs to be a positive integer');
         return 
     end
 end

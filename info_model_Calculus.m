@@ -1,4 +1,4 @@
-function [I,P_YgivenS_all1,P_YgivenS_all2]=info_model_Calculus(mu_in,mu_max, ymax,y,Scale)
+function [I,P_YgivenS_all1,P_YgivenS_all2]=info_model_Calculus(mu_in, ymax,y,Scale)
 %% This function calculate how much information there is in the prediction of a model
 % Note that there is a trade off in the information value calculation
 % between the values that mu can get and how widely the entropy of the model
@@ -31,18 +31,19 @@ function [I,P_YgivenS_all1,P_YgivenS_all2]=info_model_Calculus(mu_in,mu_max, yma
 
 SameDataScaleEntropy=1; %set this to zero if you prefer to scale data differently but that sounds weird!!
 
-if nargin<2
-    mu_max = 100*median(mu_in);
-end
-
-if any(mu_in>(10*mu_max))
-    OkPredict = find(mu_in<(10*mu_max));% These are the mu that give information the others are abberant predictions that are non informative
-    mu_in_checked = mu_in(OkPredict); 
-    fprintf('%d/%d mu were suppressed from the entry as those are abberant\n',length(mu_in) - length(mu_in_checked),length(mu_in));
-else
-    mu_in_checked = mu_in;
-    OkPredict = 1:length(mu_in);
-end
+% if nargin<2
+%     mu_max = 100*median(mu_in);
+% end
+% 
+% if any(mu_in>(10*mu_max))
+%     OkPredict = find(mu_in<(10*mu_max));% These are the mu that give information the others are abberant predictions that are non informative
+%     mu_in_checked = mu_in(OkPredict); 
+%     fprintf('%d/%d mu were suppressed from the entry as those are abberant\n',length(mu_in) - length(mu_in_checked),length(mu_in));
+% else
+    %I'm not checking anymore the mean spike rate of poisson distribution for the different stims. I assume that these predictions should be fine (11/29/2016)
+     mu_in_checked = mu_in;
+     OkPredict = 1:length(mu_in);
+% end
 
 if nargin<4
 %     dataClass = superiorfloat(mu,y);
@@ -54,13 +55,13 @@ else
     muLims = 1/Scale;%exp(-log(Win))
 end
 
-if nargin<4
+if nargin<3
     Yhist_Flag = 0;
 else
     Yhist_Flag=1;
 end
 
-if nargin<3
+if nargin<2
     ymax = 20; % For julie's data spike count are within 20ms windows!!
     %ymax = ceil(max(mu_in_checked*10));
 end

@@ -1,5 +1,5 @@
-function [] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, Cellname,DISTR, LINK,MinWin, MaxWin, Increment, ResDelay)
-InfoCal=1; %Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
+function [OptimalCoherenceWinsize] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+%% Get the environment to figure out on which machine/cluster we are
 getenv('HOSTNAME')
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
     Savio=1;
@@ -9,41 +9,70 @@ elseif ismac()
     Me = 1;
     addpath(genpath('/Users/elie/Documents/CODE/SingleUnitModels'));
     addpath(genpath('/Users/elie/Documents/CODE/GeneralCode'));
+    addpath(genpath('/Users/elie/Documents/CODE/STRFLab/trunk'));
 else %we are on strfinator or a cluster machine
     Savio = 0;
     Me = 0;
-    addpath(genpath('/auto/fhome/julie/matlab/juliescode/SingleUnitModels'));
-    addpath(genpath('/auto/fhome/julie/matlab/juliescode/GeneralCode'));
+    addpath(genpath('/auto/fhome/julie/Code/SingleUnitModels'));
+    addpath(genpath('/auto/fhome/julie/Code/GeneralCode'));
+    addpath(genpath('/auto/fhome/julie/Code/strflab'));
 end
 
+%% Start a timer for the function
 TimerVal=tic;
-% restaure if SWITCH set to 1: function
-%[FanoFactor_mean,MinWin,MaxWin,Increment,ResDelay,OptimalCoherenceWinsize]
-%= SpectroSemantic_Neuro_model_glm(MatfilePath, Cellname,DISTR, LINK,MinWin, MaxWin, Increment, ResDelay)
-SWITCH.FanoFactor=0;
-SWITCH.BestBin=0;
-if nargin<8
-    ResDelay = 10; %predict the neural response with a 10ms delay after the end of the stimulus
-end
-if nargin<7
-    Increment = 10; %increase the size of the spectro window with a 10ms pace
-end
-if nargin<6
-    MaxWin = 200; %150 maximum values the window of analysis can reach
-end
-if nargin<5
-    MinWin = 10; %minimum size of the window of analysis from the begining Choose 20ms according to coherence cutoffFrequency calculation
-end
 
-if nargin<4
-    LINK = 'log';
+%% Deal with input parameters
+if nargin<2
+    SWITCH = struct();
+end
+if ~isfield(SWITCH,'FanoFactor') || isempty(ParamModel.FanoFactor)
+    SWITCH.FanoFactor=0;
+end
+if ~isfield(SWITCH,'BestBin') || isempty(ParamModel.BestBin)
+    SWITCH.BestBin=1;
+end
+if ~isfield(SWITCH,'Models') || isempty(ParamModel.Models)
+    SWITCH.Models=0;
+end
+if ~isfield(SWITCH,'InfoCal') || isempty(ParamModel.InfoCal)
+    SWITCH.InfoCal=0;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
 end
 
 if nargin<3
-    DISTR = 'poisson';
+    ParamModel = struct();
+end
+if ~isfield(ParamModel,'LINK') || isempty(ParamModel.LINK)
+    ParamModel.LINK='log'; %'identity'
+end
+if ~isfield(ParamModel,'DISTR') || isempty(ParamModel.DISTR)
+    ParamModel.DISTR='poisson';%'normal'
+end
+if ~isfield(ParamModel,'NeuroRes') || isempty(ParamModel.NeuroRes)
+    ParamModel.NeuroRes = 'count_gaussfiltered';
+end
+if  ~isfield(ParamModel,'MinWin') || isempty(ParamModel.MinWin)
+    ParamModel.MinWin = 10; % end point of the first analysis window (spectrogram and neural response)
+end
+if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
+    ParamModel.MaxWin = 1000; %end point of the last anaysis window for...
+    ... neural response and end point of the largest analysis window for...
+        ... spectrogram
+end
+if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
+    ParamModel.Increment = 10; %increase the size of the spectro window with a Xms pace
+end
+if ~isfield(ParamModel,'NeuroBin') || isempty(ParamModel.NeuroBin)
+    ParamModel.NeuroBin = 10; % size of the window (ms) within which the neural response is analyzed
+                               % The end of the window of analysis is
+                               % determined by the Increment and ResDelay (see below).
+end
+if ~isfield(ParamModel,'ResDelay') || isempty(ParamModel.ResDelay)
+    ParamModel.ResDelay = 0; % Delay in ms between the end of the...
+    ... spectrogram window and the end of the neural response window
 end
 
-if nargin<2
+
+if nargin<4
     [path,Cellname,ext]=fileparts(MatfilePath);
 end
 
@@ -55,7 +84,7 @@ if Savio %savio Cluster
     Dir_local='/global/scratch/jelie/MatFiles/';
     Res=loadfromTdrive_savio(MatfilePath, Dir_local);
 elseif Me
-    Dir_local='/Users/elie/Documents/CODE/data/matfile/WholeVocMat/';
+    Dir_local='/Users/elie/Documents/CODE/data/matfile/FirstVoc1sMat/';
     if ~exist('ext','var')
         [path,Cellname,ext]=fileparts(MatfilePath);
     end
@@ -74,23 +103,23 @@ if Savio
     OutputDirEx_local='/global/home/users/jelie/MatFiles/ModMat';
     OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatSavio');
 elseif Me
-    if InfoCal
+    if SWITCH.InfoCal || SWITCH.BestBin
         OutputDir_local='/users/elie/Documents/CODE/data/matfile/ModMatInfo';
     else
         OutputDir_local='/users/elie/Documents/CODE/data/matfile/ModMatAcOnly';
     end
     OutputDir_final=OutputDir_local;
 else
-    if InfoCal
+    if SWITCH.InfoCal || SWITCH.BestBin
         OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatInfo');
     else
         OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatAcOnly');
     end
     OutputDir_local=OutputDir_final;
 end
-if InfoCal
-    calfilename_local=fullfile(OutputDir_local,['Models_InfoPoisson_' Res.Site '.mat']);
-    calfilename_final=fullfile(OutputDir_final,['Models_InfoPoisson_' Res.Site '.mat']);
+if SWITCH.InfoCal || SWITCH.BestBin
+    calfilename_local=fullfile(OutputDir_local,['InfoPoissonGF_' Res.Site '.mat']);
+    calfilename_final=fullfile(OutputDir_final,['InfoPoissonGF_' Res.Site '.mat']);
 else
     calfilename_local=fullfile(OutputDir_local,['Models_GLMPoisson_' Res.Site '.mat']);
     calfilename_final=fullfile(OutputDir_final,['Models_GLMPoisson_' Res.Site '.mat']);
@@ -134,7 +163,7 @@ else
             if isfield(DoneCalc, 'Deviance') && isfield(DoneCalc, 'LL') && isfield(DoneCalc, 'LambdaChoice') && isfield(DoneCalc, 'Model') && isfield(DoneCalc, 'PropVal') && isfield(DoneCalc, 'Data') && isfield(DoneCalc, 'Wins') && ~isempty(DoneCalc.Data.MeanSpectroStim{1})
                 PrevData = 1;
             else
-                frpintf('Data are not complete enough to be used\n')
+                fprintf('Data are not complete enough to be used\n')
                 system(['rm ' calfilename_local]);
                 clear 'DoneCalc'
                 PrevData = 0;
@@ -149,11 +178,11 @@ end
     
 % save the path for now if no previous file
 if ~ PrevData
-    save(calfilename_local,'MatfilePath')
+    save(calfilename_local,'MatfilePath', '-append')
 end
 
 %% Get the data ready
-if ~InfoCal
+if SWITCH.Models % For models we use vocalization sections, only the first element of each vocalization sequence
     % Select first sections
     Firsts = find(Res.Voc_orders == 1);
     % Need to get rid of mlnoise sections and whine sections when they
@@ -202,48 +231,42 @@ end
 
 
 %% Select the spectrograms of the selected stims
-Spectro.spec = Res.Spectro(DataSel);
-Spectro.to = Res.Spectroto(DataSel);
-Spectro.fo = Res.Spectrofo(DataSel);
+if SWITCH.Models
+    Spectro.spec = Res.Spectro(DataSel);
+    Spectro.to = Res.Spectroto(DataSel);
+    Spectro.fo = Res.Spectrofo(DataSel);
 
-if ~PrevData
-    % save the Stimuli Spectrograms for now if not done previously
-    save(calfilename_local,'Spectro')
-end
-
-%% Extract Emitter ID
-Ename = cell(length(DataSel),1);
-Esex = cell(length(DataSel),1);
-Eage = cell(length(DataSel),1);
-Erelated = cell(length(DataSel),1);
-for ii=1:length(DataSel)
-    dd=DataSel(ii);
-    [Path,File,Ext] = fileparts(Res.Original_wavfiles{dd});
-    Ename{ii} = File(1:10);
-    Esex{ii} = File(12);
-    Eage{ii} = File(13);
-    Erelated{ii} = File(14);
-end
-Emitter.Ename = Ename;
-Emitter.Esex = Esex;
-Emitter.Eage = Eage;
-Emitter.Erelated = Erelated;
-
-%% Estimate Poisson assumption for data
-if SWITCH.FanoFactor
-    FanoFactor_mean=nan(length(MinWin),1);
-    for MW=1:length(MinWin)
-        [NeuroRes, PG_Index,FanoFactor_Index, Wins] = PoissonGaussianNeuralResponses(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel), Res.Trials(DataSel),Cellname,MinWin(MW), MaxWin, Increment, ResDelay);
-        % According to PoissonGaussianNeuralResponses, neural responses are more
-        % poisson than gaussian.
-        FanoFactor_mean(MW) = mean(FanoFactor_Index);
+    if ~PrevData
+        % save the Stimuli Spectrograms for now if not done previously
+        save(calfilename_local,'Spectro')
     end
 end
 
-%% Compute coherence to determine the optimal window to calculate psth
+%% Extract Emitter ID
+if SWITCH.Models
+    Ename = cell(length(DataSel),1);
+    Esex = cell(length(DataSel),1);
+    Eage = cell(length(DataSel),1);
+    Erelated = cell(length(DataSel),1);
+    for ii=1:length(DataSel)
+        dd=DataSel(ii);
+        [Path,File,Ext] = fileparts(Res.Original_wavfiles{dd});
+        Ename{ii} = File(1:10);
+        Esex{ii} = File(12);
+        Eage{ii} = File(13);
+        Erelated{ii} = File(14);
+    end
+    Emitter.Ename = Ename;
+    Emitter.Esex = Esex;
+    Emitter.Eage = Eage;
+    Emitter.Erelated = Erelated;
+end
+
+%% Compute coherence to determine the optimal window size, the scale at which neural response information is maximized
 if SWITCH.BestBin
+    
     %Data processing
-    [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials(DataSel),Spectro,MaxWin,ResDelay);
+    [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials_GaussFiltered(DataSel),Res.PSTH_GaussFiltered(DataSel),ParamModel);
     % compute coherence
     SampleRate=1000; %bin size =1ms so sample Rate = 1000Hz
     [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,SampleRate);
@@ -252,16 +275,29 @@ if SWITCH.BestBin
     % fig BestPSTHBin.fig
     % At that window size, the values of the FanoFactor over cells is very
     % close to 1. see fig PoissonFanoFactor.fig
+    save(calfilename_local,'MatfilePath', 'OptimalCoherenceWinsize','-append');
+end
+
+%% Estimate Poisson assumption for data at the choosen bining
+if SWITCH.FanoFactor
+    FanoFactor_mean=nan(length(Bins),1);
+    for MW=1:length(Bins)
+        [NeuroRes, PG_Index,FanoFactor_Index, Wins] = PoissonGaussianNeuralResponses(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel), Res.Trials(DataSel),Cellname,Bins(MW), MaxWin, Increment, ResDelay);
+        % According to PoissonGaussianNeuralResponses, neural responses are more
+        % poisson than gaussian.
+        FanoFactor_mean(MW) = mean(FanoFactor_Index);
+    end
+    save(calfilename_local,'MatfilePath', 'FanoFactor_mean','-append');
 end
 
 %return
 %% Inject the data in the models
-if PrevData
-    [LambdaChoice, Deviance, LL, Model, ParamModel, Data, PropVal, Wins] = GrowingModelsRidgeglmLambdaMod( Spectro, Res.VocType(DataSel), Res.PSTH_GaussFiltered(DataSel),Res.Trials(DataSel),Emitter, MinWin, MaxWin, Increment, ResDelay,'count',DISTR,LINK,calfilename_local, DoneCalc);
-else
-    [LambdaChoice, Deviance, LL, Model, ParamModel, Data, PropVal, Wins] = GrowingModelsRidgeglmLambdaMod( Spectro, Res.VocType(DataSel), Res.PSTH_GaussFiltered(DataSel),Res.Trials(DataSel),Emitter, MinWin, MaxWin, Increment, ResDelay,'count',DISTR,LINK,calfilename_local);
-end
-
+if SWITCH.Models
+    if PrevData
+        [LambdaChoice, Deviance, LL, Model, ParamModel, Data, PropVal, Wins] = GrowingModelsRidgeglmLambdaMod( Spectro, Res.VocType(DataSel), Res.PSTH_GaussFiltered(DataSel),Res.Trials_GaussFiltered(DataSel),Emitter, ParamModel,calfilename_local, DoneCalc);
+    else
+        [LambdaChoice, Deviance, LL, Model, ParamModel, Data, PropVal, Wins] = GrowingModelsRidgeglmLambdaMod( Spectro, Res.VocType(DataSel), Res.PSTH_GaussFiltered(DataSel),Res.Trials_GaussFiltered(DataSel),Emitter, ParamModel,calfilename_local);
+    end
 ElapsedTime = toc(TimerVal);
 Days = floor(ElapsedTime/(60*60*24));
 ETRem = ElapsedTime - Days*60*60*24;
@@ -273,6 +309,7 @@ fprintf(1,'Corrected Code run for %d days %dh %dmin and %dsec\n',Days,Hours,Minu
 fprintf(1,'Good calculation of AcSemAc\n');
 fprintf(1,'Threshold for coordinate descent corrected: relying on L2Norm of the parameters''vector\n');
 save(calfilename_local,'MatfilePath', 'LambdaChoice', 'Deviance','LL','Model','ParamModel','Data','PropVal','Wins','ElapsedTime','-append');
+end
 
 if Savio
     [Status1]=transfertoTdrive_savio(calfilename_local,calfilename_final);
@@ -281,6 +318,7 @@ if Savio
         system(['mv ' OutputDirEx_local '/JobToDoSavio/Ex*' Res.Site '*.txt ' OutputDirEx_local '/JobDoneSavio/'])
     end
 end
+
 fprintf(1,'Ready to quit');
 quit
 

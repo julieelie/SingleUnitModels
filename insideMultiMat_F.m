@@ -11,6 +11,8 @@ if nargin<8
     % Define a minimum probability under which the proba should be considered 0
     MinProb = 1/(8*365*24*60*60*5); %1/number of 20ms bins in a life of a zebra finch in the lab
 end
+
+    
 %% First step
 if size(ThreeDDat,1)==1
     MultiMultDat = ThreeDDat{1};
@@ -97,7 +99,7 @@ else
                 fseek(fid_old,-2*8,'eof');%Here minus 2 because we use two doubles to code the size of the matrix
                 Endoffile_p = ftell(fid_old); 
                 if Current_p ~=Endoffile_p
-                    fprintf('Issue here!! the columns if the matrix %s where not all used for the calculation\n',File_old.name);
+                    fprintf('Issue here!! in insideMuliMat_F\nthe columns if the matrix %s where not all used for the calculation\n',File_old.name);
                 end
             end
             % multiply each column of the chunk of the old matrix with a column
@@ -117,7 +119,7 @@ else
             fseek(fid_new, 0, 'eof');
             NBE=fwrite(fid_new, MultiMultDat,'double');
             if NBE~=size(MultiMultDat,1)*size(MultiMultDat,2)
-                fprintf('Error in write here! Nb of elements written=%d when %d should be written %d\n',NBE,size(MultiMultDat,1)*size(MultiMultDat,2));
+                fprintf('Error in write here! in insideMuliMat_F\nNb of elements written=%d when %d should be written %d\n',NBE,size(MultiMultDat,1)*size(MultiMultDat,2));
                 fprintf('The last Error message of the file is %s\n', ferror(fid_new));
             end
             % Keep count of the size of the growing matrix in the new

@@ -12,16 +12,7 @@ ParamModel.NUMLAMBDA=10;%25?
 ParamModel.Cum_Info = 1; % set to 1 to calculate cumulative information
 ParamModel.NumSamples_MC_Cum_Info = [10^6 10^4 10^3 10^2]; %Set the number of samples for the Monte Carlo approximation of the cumulative information 10^7 takes too much memory prefers lower numbers
 
-if ParamModel.Cum_Info
-    getenv('HOSTNAME')
-    if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
-        FolderTempInfStorage = '/tmp/LocalTempStorageInfo';
-    elseif ismac()
-        FolderTempInfStorage = '/tmp/LocalTempStorageInfo';
-    else %we are on strfinator or a cluster machine
-        FolderTempInfStorage = '/auto/tdrive/julie/LocalTempStorageInfo';
-    end
-end
+
 
 NbBootstrap_Lambda = 20;%20
 NbBootstrap_Deviance = 10;%10
@@ -72,7 +63,7 @@ if nargin<8
     Increment = 20; %increase the size of the spectro window with a 5ms pace
 end
 if nargin<7
-    MaxWin = 200; %maximum values the window of analysis can reach
+    MaxWin = 1000; %maximum values the window of analysis can reach
 end
 if nargin<6
     MinWin = 20; %minimum size of the window of analysis from the begining and also size of analysis of spike rate/count (20 for STRF, 10 for Infocalulations)
@@ -198,10 +189,12 @@ if PrevData
             for tt=1:length(Trials{dd})
                 PreviousWin.y_old{ss}(tt)=sum((Trials{dd}{tt}>(Win_old-MinWin+ResDelay)).*(Trials{dd}{tt}<(Win_old+ResDelay)));
             end
- % REVISE FRON HERE!!       elseif strcmp(ParamModel.NeuroRes, 'count_gaussfiltered')
+        elseif strcmp(ParamModel.NeuroRes, 'count_gaussfiltered')
             PreviousWin.y_old{ss}=nan(length(Trials{dd}),1);
             for tt=1:length(Trials{dd})
-                PreviousWin.y_old{ss}(tt)=sum((Trials{dd}{tt}>(Win_old-MinWin+ResDelay)).*(Trials{dd}{tt}<(Win_old+ResDelay)));
+                FirstTimePoint = Win_old-MinWin+ResDelay +1;
+                LastTimePoint = Win_old+ResDelay;
+                PreviousWin.y_old{ss}(tt)=sum(Trials(tt,FirstTimePoint:LastTimePoint));
             end
         else
             fprintf('please correctly write what kind of neural response you want to predict\n %s does not make any sense!!\n', ParamModel.NeuroRes);
@@ -408,17 +401,21 @@ for mm = StartWin:modNum
     fprintf(1,'********************************%d/%d models********************\n', mm, modNum);
     WindowTime = tic;
     Win = Wins(mm);
-    %% define new dataset depending on the size of the window of the model
+    %% define new dataset depending on the size of the window of the model if we are running STRFs
     % loop through the stims and only keep the Win first ms of them when
     % they are longer than Win ms or disgard
-    
-    duration = nan(NbStim,1);
-    for ss = 1:NbStim
-        duration(ss)=Spectro.to{ss}(end)*1000; %converting s in ms here
+    if any(ParamModel.ModelChoice([1,3:5]))
+        duration = nan(NbStim,1);
+        for ss = 1:NbStim
+            duration(ss)=Spectro.to{ss}(end)*1000; %converting s in ms here
+        end
+        Stim_local = find(duration >= (Win+ResDelay));% here we add ResDelay because we need to get sounds with corresponding psth that go ResDelay beyond the spectrogram of size Win
+        NbStim_local = length(Stim_local);
+        Stim_local_end = find(duration >= (Wins(end)+ResDelay));% here are the stims that are used until the last window
+    else
+        Stim_local = 1:NbStim;
+        NbStim_local=NbStim;
     end
-    Stim_local = find(duration >= (Win+ResDelay));% here we add ResDelay because we need to get sounds with corresponding psth that go ResDelay beyond the spectrogram of size Win
-    NbStim_local = length(Stim_local);
-    Stim_local_end = find(duration >= (Wins(end)+ResDelay));% here are the stims that are used until the last window
     Data.stim_entropy(mm) = log2(NbStim_local);
     if NbStim_local<20
         sprintf('Only %d stims long enough to run the model: no model is run with window size %dms\n', NbStim_local, Win);
@@ -462,7 +459,7 @@ for mm = StartWin:modNum
     
     % Initializing outputs
     Data.VOC{mm} = VocType(Stim_local);
-    if strcmp(ParamModel.NeuroRes, 'count')
+    if strcmp(ParamModel.NeuroRes, 'count')||strcmp(ParamModel.NeuroRes, 'count_gaussfiltered')
         y=cell(NbStim_local,1);
         ymean=nan(NbStim_local,1);
         StimRep = nan(NbStim_local,1);
@@ -503,6 +500,14 @@ for mm = StartWin:modNum
             StimRep(ss) = length(Trials{dd});
             for tt=1:length(Trials{dd})
                 y{ss}(tt)=sum((Trials{dd}{tt}>(Win-MinWin+ResDelay)).*(Trials{dd}{tt}<(Win+ResDelay)));
+            end
+            ymean(ss)=mean(y{ss});
+            yvar(ss)=var(y{ss});
+        elseif strcmp(ParamModel.NeuroRes, 'count_gaussfiltered')
+             y{ss}=nan(size(Trials{dd},1),1);
+            StimRep(ss) = size(Trials{dd},1);
+            for tt=1:size(Trials{dd},1)
+                y{ss}(tt)=sum(Trials{dd}(tt,(Win-MinWin+ResDelay):(Win+ResDelay)));
             end
             ymean(ss)=mean(y{ss});
             yvar(ss)=var(y{ss});
@@ -1024,7 +1029,11 @@ for mm = StartWin:modNum
         if ParamModel.ModelChoice(1)
             % Acoustic model
             fprintf('**Info on Acoustic**\n')
-            [Model.Acoustic.info(mm,aa),Model.Acoustic.P_YgivenS_all1{mm,aa},Model.Acoustic.P_YgivenS_all2{mm,aa}] = info_model_Calculus(Model.Acoustic.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1}),MaxYpredictInfo,MinWin);
+            Ac_Info_input= Model.Acoustic.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1});
+            if any(AC_Info_input > 10*MaxYpredictInfo)
+                fprintf('WARNING GrowingModelsRidgeglmLambdaMod line 1043: Spike count predictions for AC are really too high that is going to bias information calculations\n');
+            end
+            [Model.Acoustic.info(mm,aa),Model.Acoustic.P_YgivenS_all1{mm,aa},Model.Acoustic.P_YgivenS_all2{mm,aa}] = info_model_Calculus(Ac_Info_input,MinWin);
             if mm>1 && SWITCH.AllAlpha
                 [Model.Acoustic.cum_info(mm,aa)]=info_cumulative_model_Calculus(Model.Acoustic.P_YgivenS_all1(1:mm,aa), mm,Data.x_stim_indices_wholeset, Stim_local);
             elseif SWITCH.AllAlpha
@@ -1036,7 +1045,10 @@ for mm = StartWin:modNum
             % Semantic Model
             fprintf('**Info on Semantic**\n')
             AllStims_data=Model.Semantic.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1});
-            [Model.Semantic.info(mm,aa),Model.Semantic.P_YgivenS_all1{mm,aa},Model.Semantic.P_YgivenS_all2{mm,aa}]  = info_model_Calculus(AllStims_data,MaxYpredictInfo,MinWin);
+            if any(AllStims_data > 10*MaxYpredictInfo)
+                fprintf('WARNING GrowingModelsRidgeglmLambdaMod line 1058: Spike count predictions for Sem are really too high that is going to bias information calculations\n');
+            end
+            [Model.Semantic.info(mm,aa),Model.Semantic.P_YgivenS_all1{mm,aa},Model.Semantic.P_YgivenS_all2{mm,aa}]  = info_model_Calculus(AllStims_data,MinWin);
 %             EndStims_data=nan(length(Stim_local_end),1);
 %             for ss = 1:length(Stim_local_end)
 %                 EndStims_data(ss) = AllStims_data(find(Stim_local==Stim_local_end(ss)));
@@ -1053,7 +1065,11 @@ for mm = StartWin:modNum
         if ParamModel.ModelChoice(4)
             % AcSemAc
             fprintf('**Info on AcSemAc**\n')
-            [Model.AcSemAc.info(mm,aa),Model.AcSemAc.P_YgivenS_all1{mm,aa},Model.AcSemAc.P_YgivenS_all2{mm,aa}] = info_model_Calculus(Model.AcSemAc.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1}),MaxYpredictInfo,MinWin);
+            AcSemAc_Info_input= Model.AcSemAc.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1});
+            if any(ACSemAc_Info_input > 10*MaxYpredictInfo)
+                fprintf('WARNING GrowingModelsRidgeglmLambdaMod line 1079: Spike count predictions for ACSemAC are really too high that is going to bias information calculations\n');
+            end
+            [Model.AcSemAc.info(mm,aa),Model.AcSemAc.P_YgivenS_all1{mm,aa},Model.AcSemAc.P_YgivenS_all2{mm,aa}] = info_model_Calculus(AcSemAc_Info_input,MinWin);
             if mm>1 && SWITCH.AllAlpha
                 [Model.AcSemAc.cum_info(mm,aa)]=info_cumulative_model_Calculus(Model.AcSemAc.P_YgivenS_all1(1:mm,aa), mm,Data.x_stim_indices_wholeset, Stim_local);
             elseif SWITCH.AllAlpha
@@ -1064,7 +1080,11 @@ for mm = StartWin:modNum
         if ParamModel.ModelChoice(5)
             % AcSemSem
             fprintf('**Info on AcSemSem**\n')
-            [Model.AcSemSem.info(mm,aa),Model.AcSemSem.P_YgivenS_all1{mm,aa},Model.AcSemSem.P_YgivenS_all2{mm,aa}] = info_model_Calculus(Model.AcSemSem.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1}),MaxYpredictInfo,MinWin);
+            AcSemSem_Info_input= Model.AcSemSem.y_predict{mm,aa}(MResultsOptimal.ValSetFirstRep{1});
+            if any(ACSemSem_Info_input > 10*MaxYpredictInfo)
+                fprintf('WARNING GrowingModelsRidgeglmLambdaMod line 1094: Spike count predictions for ACSemSem are really too high that is going to bias information calculations\n');
+            end
+            [Model.AcSemSem.info(mm,aa),Model.AcSemSem.P_YgivenS_all1{mm,aa},Model.AcSemSem.P_YgivenS_all2{mm,aa}] = info_model_Calculus(AcSemSem_Info_input,MinWin);
             if mm>1 && SWITCH.AllAlpha
                 [Model.AcSemSem.cum_info(mm,aa)]=info_cumulative_model_Calculus(Model.AcSemSem.P_YgivenS_all1(1:mm,aa), mm,Data.x_stim_indices_wholeset, Stim_local);
             elseif SWITCH.AllAlpha
@@ -1098,15 +1118,19 @@ for mm = StartWin:modNum
     %% Calculate the information for models that do not depend on alpha (Floor, Ceiling, AR, Semantic)
     % Ceiling Model
     fprintf('**Info on Ceiling Model**\n')
-    %[Model.Ceiling.info(mm),Model.Ceiling.P_YgivenS_all1{mm},Model.Ceiling.P_YgivenS_all2{mm}] = info_model_Calculus(Data.y_wholeset_bestGuess{mm}(Data.y_ValSetFirstRep{mm}),MaxYpredictInfo,MinWin);
+    Ceil_Info_input=Data.y_wholeset_bestGuess{mm}(Data.y_ValSetFirstRep{mm});
     % The input data above makes sense more or less to compare with the AR
-    % model (I'm not sure to understand while I did not take the average of
+    % model (I'm not sure to understand why I did not take the average of
     % the predictions over trials instead of only taking the first one here
     % though....)
     % As of today 08/17/2016 I propose to work with the average observed
     % spike count over trials
     Data.y_wholeset_AvObsDataperStim{mm} = ymean;
-    [Model.Ceiling.info(mm),Model.Ceiling.P_YgivenS_all1{mm},Model.Ceiling.P_YgivenS_all2{mm}] = info_model_Calculus(Data.y_wholeset_AvObsDataperStim{mm},MaxYpredictInfo,MinWin);
+    Ceil_Info_input= Data.y_wholeset_AvObsDataperStim{mm};
+    if any(Ceil_Info_input > 10*MaxYpredictInfo)
+        fprintf('WARNING GrowingModelsRidgeglmLambdaMod line 1140: Spike count predictions for Ceiling are really too high that is going to bias information calculations\n');
+    end
+    [Model.Ceiling.info(mm),Model.Ceiling.P_YgivenS_all1{mm},Model.Ceiling.P_YgivenS_all2{mm}] = info_model_Calculus(Ceil_Info_input,MinWin);
     % Calculating the info using only the dataset that is present until the
     % last window
 %     EndStims_data=nan(length(Stim_local_end),1);
@@ -1122,13 +1146,21 @@ for mm = StartWin:modNum
     % first trial of each stim to calculate the average response??
     % As of today 08/17/2016 I propose something else:
     Data.y_wholeset_AvObsData(mm) = mean(ymean);
-    [Model.Floor.info(mm),Model.Floor.P_YgivenS_all1{mm},Model.Floor.P_YgivenS_all2{mm}] = info_model_Calculus(repmat(Data.y_wholeset_AvObsData(mm),NbStim_local,1), MaxYpredictInfo, MinWin);
+    Floor_Info_input= repmat(Data.y_wholeset_AvObsData(mm),NbStim_local,1);
+    if any(Floor_Info_input > 10*MaxYpredictInfo)
+        fprintf('WARNING GrowingModelsRidgeglmLambdaMod line 1160: Spike count predictions for Floor are really too high that is going to bias information calculations\n');
+    end
+    [Model.Floor.info(mm),Model.Floor.P_YgivenS_all1{mm},Model.Floor.P_YgivenS_all2{mm}] = info_model_Calculus(Floor_Info_input, MinWin);
     
     
     % AR Model
     if mm>1 && SWITCH.AR
         fprintf('**Info on AR**\n')
-        [Model.AR.info(mm),Model.AR.P_YgivenS_all1{mm},Model.AR.P_YgivenS_all2{mm}] = info_model_Calculus(Data.y_wholeset_AR{mm}(Data.y_ValSetFirstRep{mm}),MaxYpredictInfo,MinWin);
+        AR_Info_input= Data.y_wholeset_AR{mm}(Data.y_ValSetFirstRep{mm});
+        if any(AR_Info_input > 10*MaxYpredictInfo)
+            fprintf('WARNING GrowingModelsRidgeglmLambdaMod line 1170: Spike count predictions for Floor are really too high that is going to bias information calculations\n');
+        end
+        [Model.AR.info(mm),Model.AR.P_YgivenS_all1{mm},Model.AR.P_YgivenS_all2{mm}] = info_model_Calculus(AR_Info_input,MinWin);
     elseif SWITCH.AR
         Model.AR.P_YgivenS_all1{mm}=Model.Ceiling.P_YgivenS_all1{mm}; %initializing values of probabilities of the AR models with the ones from the Ceiling model to calculate a cumulative at Win=2
         Model.AR.info(mm) = Model.Ceiling.info(mm);
