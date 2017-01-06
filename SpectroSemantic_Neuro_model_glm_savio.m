@@ -25,50 +25,74 @@ TimerVal=tic;
 if nargin<2
     SWITCH = struct();
 end
-if ~isfield(SWITCH,'FanoFactor') || isempty(ParamModel.FanoFactor)
+if ~isfield(SWITCH,'FanoFactor')
+    SWITCH.FanoFactor=0;
+elseif isempty(ParamModel.FanoFactor)
     SWITCH.FanoFactor=0;
 end
-if ~isfield(SWITCH,'BestBin') || isempty(ParamModel.BestBin)
+if ~isfield(SWITCH,'BestBin')
+    SWITCH.BestBin=1;
+elseif isempty(ParamModel.BestBin)
     SWITCH.BestBin=1;
 end
-if ~isfield(SWITCH,'Models') || isempty(ParamModel.Models)
+if ~isfield(SWITCH,'Models')
+    SWITCH.Models=0;
+elseif isempty(ParamModel.Models)
     SWITCH.Models=0;
 end
-if ~isfield(SWITCH,'InfoCal') || isempty(ParamModel.InfoCal)
+if ~isfield(SWITCH,'InfoCal')
     SWITCH.InfoCal=0;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
+elseif isempty(ParamModel.InfoCal)
+    SWITCH.InfoCal=0;
 end
 
 if nargin<3
     ParamModel = struct();
 end
-if ~isfield(ParamModel,'LINK') || isempty(ParamModel.LINK)
+if ~isfield(ParamModel,'LINK')
+    ParamModel.LINK='log'; %'identity'
+elseif isempty(ParamModel.LINK)
     ParamModel.LINK='log'; %'identity'
 end
-if ~isfield(ParamModel,'DISTR') || isempty(ParamModel.DISTR)
+if ~isfield(ParamModel,'DISTR')
+    ParamModel.DISTR='poisson';%'normal'
+elseif isempty(ParamModel.DISTR)
     ParamModel.DISTR='poisson';%'normal'
 end
-if ~isfield(ParamModel,'NeuroRes') || isempty(ParamModel.NeuroRes)
+if ~isfield(ParamModel,'NeuroRes')
+    ParamModel.NeuroRes = 'count_gaussfiltered';
+elseif isempty(ParamModel.NeuroRes)
     ParamModel.NeuroRes = 'count_gaussfiltered';
 end
-if  ~isfield(ParamModel,'MinWin') || isempty(ParamModel.MinWin)
+if  ~isfield(ParamModel,'MinWin')
+    ParamModel.MinWin = 10; % end point of the first analysis window (spectrogram and neural response)
+elseif isempty(ParamModel.MinWin)
     ParamModel.MinWin = 10; % end point of the first analysis window (spectrogram and neural response)
 end
-if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
+if ~isfield(ParamModel,'MaxWin')
     ParamModel.MaxWin = 1000; %end point of the last anaysis window for...
     ... neural response and end point of the largest analysis window for...
         ... spectrogram
+elseif isempty(ParamModel.MaxWin)
+    ParamModel.MaxWin = 1000; 
 end
-if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
+if ~isfield(ParamModel,'Increment')
+    ParamModel.Increment = 10; %increase the size of the spectro window with a Xms pace
+elseif isempty(ParamModel.Increment)
     ParamModel.Increment = 10; %increase the size of the spectro window with a Xms pace
 end
-if ~isfield(ParamModel,'NeuroBin') || isempty(ParamModel.NeuroBin)
+if ~isfield(ParamModel,'NeuroBin')
     ParamModel.NeuroBin = 10; % size of the window (ms) within which the neural response is analyzed
                                % The end of the window of analysis is
                                % determined by the Increment and ResDelay (see below).
+elseif isempty(ParamModel.NeuroBin)
+    ParamModel.NeuroBin = 10;
 end
-if ~isfield(ParamModel,'ResDelay') || isempty(ParamModel.ResDelay)
+if ~isfield(ParamModel,'ResDelay')
     ParamModel.ResDelay = 0; % Delay in ms between the end of the...
     ... spectrogram window and the end of the neural response window
+elseif isempty(ParamModel.ResDelay)
+    ParamModel.ResDelay = 0;
 end
 
 
