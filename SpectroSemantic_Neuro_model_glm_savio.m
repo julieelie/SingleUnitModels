@@ -265,9 +265,13 @@ end
 
 %% Compute coherence to determine the optimal window size, the scale at which neural response information is maximized
 if SWITCH.BestBin
-    
-    %Data processing
-    [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials_GaussFiltered(DataSel),Res.PSTH_GaussFiltered(DataSel),ParamModel);
+    if strcmp(ParamModel.NeuroRes, 'count')
+        %Data processing
+    [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials(DataSel),Res.PSTH(DataSel),ParamModel);
+    elseif strcmp(ParamModel.NeuroRes, 'count_gaussfiltered')
+        %Data processing
+        [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials_GaussFiltered(DataSel),Res.PSTH_GaussFiltered(DataSel),ParamModel);
+    end
     % compute coherence
     SampleRate=1000; %bin size =1ms so sample Rate = 1000Hz
     [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,SampleRate);
