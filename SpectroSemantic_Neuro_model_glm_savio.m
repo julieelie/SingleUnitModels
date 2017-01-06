@@ -275,7 +275,7 @@ if SWITCH.BestBin
     % fig BestPSTHBin.fig
     % At that window size, the values of the FanoFactor over cells is very
     % close to 1. see fig PoissonFanoFactor.fig
-    save(calfilename_local,'MatfilePath', 'OptimalCoherenceWinsize','-append');
+    save(calfilename_local,'MatfilePath', 'OptimalCoherenceWinsize');
 end
 
 %% Estimate Poisson assumption for data at the choosen bining
