@@ -318,10 +318,9 @@ if Savio
     if ~(Status1 || Status2)
         system(['mv ' OutputDirEx_local '/JobToDoSavio/Ex*' Res.Site '*.txt ' OutputDirEx_local '/JobDoneSavio/'])
     end
-end
-
 fprintf(1,'Ready to quit');
 quit
+end
 
 end
 
