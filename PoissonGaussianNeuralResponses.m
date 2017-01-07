@@ -1,5 +1,5 @@
 function [PG_Index, FanoFactor_Index, Wins] = PoissonGaussianNeuralResponses(Trials,ParamModel,SWITCH, Cellname, Spectro)
-FIG=1;
+FIG=0;
 if nargin<2
     ParamModel = struct();
 end
