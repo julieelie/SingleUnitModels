@@ -1,6 +1,6 @@
 function [PG_Index,FanoFactor_Index, Wins] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %% Get the environment to figure out on which machine/cluster we are
-getenv('HOSTNAME')
+getenv('HOSTNAME');
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
     Savio=1;
     addpath(genpath('/global/home/users/jelie/CODE'));
