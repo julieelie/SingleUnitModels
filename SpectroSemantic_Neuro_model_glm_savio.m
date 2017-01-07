@@ -1,6 +1,5 @@
 function [PG_Index,FanoFactor_Index, Wins] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %% Get the environment to figure out on which machine/cluster we are
-fprintf('hello before\n')
 getenv('HOSTNAME');
 
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
@@ -19,7 +18,6 @@ else %we are on strfinator or a cluster machine
     addpath(genpath('/auto/fhome/julie/Code/GeneralCode'));
     addpath(genpath('/auto/fhome/julie/Code/strflab'));
 end
-fprintf('hello after\n')
 %% Start a timer for the function
 TimerVal=tic;
 
@@ -105,21 +103,21 @@ if Savio
     OutputDirEx_local='/global/home/users/jelie/MatFiles/ModMat';
     OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatSavio');
 elseif Me
-    if SWITCH.InfoCal || SWITCH.BestBin
+    if SWITCH.InfoCal || SWITCH.BestBin || SWITCH.FanoFactor
         OutputDir_local='/users/elie/Documents/CODE/data/matfile/ModMatInfo';
     else
         OutputDir_local='/users/elie/Documents/CODE/data/matfile/ModMatAcOnly';
     end
     OutputDir_final=OutputDir_local;
 else
-    if SWITCH.InfoCal || SWITCH.BestBin
+    if SWITCH.InfoCal || SWITCH.BestBin || SWITCH.FanoFactor
         OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatInfo');
     else
         OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatAcOnly');
     end
     OutputDir_local=OutputDir_final;
 end
-if SWITCH.InfoCal || SWITCH.BestBin
+if SWITCH.InfoCal || SWITCH.BestBin || SWITCH.FanoFactor
     calfilename_local=fullfile(OutputDir_local,['InfoPoissonGF_' Res.Site '.mat']);
     calfilename_final=fullfile(OutputDir_final,['InfoPoissonGF_' Res.Site '.mat']);
 else
