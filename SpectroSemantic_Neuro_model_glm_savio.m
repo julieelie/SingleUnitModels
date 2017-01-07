@@ -1,4 +1,4 @@
-function [OptimalCoherenceWinsize] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+function [PG_Index,FanoFactor_Index, Wins] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %% Get the environment to figure out on which machine/cluster we are
 getenv('HOSTNAME')
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
@@ -276,7 +276,7 @@ if SWITCH.BestBin
     SampleRate=1000; %bin size =1ms so sample Rate = 1000Hz
     [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,SampleRate);
     OptimalCoherenceWinsize = CoherenceStruct.freqCutoff;
-    % According to this code 20ms is the best size for a majority of cells see
+    % According to this code 10ms is the best size for 97% of cells see
     % fig BestPSTHBin.fig
     % At that window size, the values of the FanoFactor over cells is very
     % close to 1. see fig PoissonFanoFactor.fig
@@ -285,14 +285,8 @@ end
 
 %% Estimate Poisson assumption for data at the choosen bining
 if SWITCH.FanoFactor
-    FanoFactor_mean=nan(length(Bins),1);
-    for MW=1:length(Bins)
-        [NeuroRes, PG_Index,FanoFactor_Index, Wins] = PoissonGaussianNeuralResponses(Spectro, Res.VocType(DataSel), Res.PSTH(DataSel), Res.Trials(DataSel),Cellname,Bins(MW), MaxWin, Increment, ResDelay);
-        % According to PoissonGaussianNeuralResponses, neural responses are more
-        % poisson than gaussian.
-        FanoFactor_mean(MW) = mean(FanoFactor_Index);
-    end
-    save(calfilename_local,'MatfilePath', 'FanoFactor_mean','-append');
+    [PG_Index,FanoFactor_Index, Wins] = PoissonGaussianNeuralResponses(Res.Trials(DataSel),ParamModel,SWITCH,Cellname);
+    save(calfilename_local,'PG_Index', 'FanoFactor_Index','Wins','-append');
 end
 
 %return
@@ -303,17 +297,17 @@ if SWITCH.Models
     else
         [LambdaChoice, Deviance, LL, Model, ParamModel, Data, PropVal, Wins] = GrowingModelsRidgeglmLambdaMod( Spectro, Res.VocType(DataSel), Res.PSTH_GaussFiltered(DataSel),Res.Trials_GaussFiltered(DataSel),Emitter, ParamModel,calfilename_local);
     end
-ElapsedTime = toc(TimerVal);
-Days = floor(ElapsedTime/(60*60*24));
-ETRem = ElapsedTime - Days*60*60*24;
-Hours = floor(ETRem/(60*60));
-ETRem = ETRem - Hours*60*60;
-Minutes = floor(ETRem/60);
-ETRem = ETRem-60*Minutes;
-fprintf(1,'Corrected Code run for %d days %dh %dmin and %dsec\n',Days,Hours,Minutes,ETRem);
-fprintf(1,'Good calculation of AcSemAc\n');
-fprintf(1,'Threshold for coordinate descent corrected: relying on L2Norm of the parameters''vector\n');
-save(calfilename_local,'MatfilePath', 'LambdaChoice', 'Deviance','LL','Model','ParamModel','Data','PropVal','Wins','ElapsedTime','-append');
+    ElapsedTime = toc(TimerVal);
+    Days = floor(ElapsedTime/(60*60*24));
+    ETRem = ElapsedTime - Days*60*60*24;
+    Hours = floor(ETRem/(60*60));
+    ETRem = ETRem - Hours*60*60;
+    Minutes = floor(ETRem/60);
+    ETRem = ETRem-60*Minutes;
+    fprintf(1,'Corrected Code run for %d days %dh %dmin and %dsec\n',Days,Hours,Minutes,ETRem);
+    fprintf(1,'Good calculation of AcSemAc\n');
+    fprintf(1,'Threshold for coordinate descent corrected: relying on L2Norm of the parameters''vector\n');
+    save(calfilename_local,'MatfilePath', 'LambdaChoice', 'Deviance','LL','Model','ParamModel','Data','PropVal','Wins','ElapsedTime','-append');
 end
 
 if Savio
@@ -322,8 +316,8 @@ if Savio
     if ~(Status1 || Status2)
         system(['mv ' OutputDirEx_local '/JobToDoSavio/Ex*' Res.Site '*.txt ' OutputDirEx_local '/JobDoneSavio/'])
     end
-fprintf(1,'Ready to quit');
-quit
+    fprintf(1,'Ready to quit');
+    quit
 end
 
 end
