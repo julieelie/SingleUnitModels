@@ -1,8 +1,8 @@
 function [PG_Index,FanoFactor_Index, Wins] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %% Get the environment to figure out on which machine/cluster we are
-fprintf('hello before')
+fprintf('hello before\n')
 getenv('HOSTNAME');
-fprintf('hello after')
+
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
     Savio=1;
     addpath(genpath('/global/home/users/jelie/CODE'));
@@ -19,7 +19,7 @@ else %we are on strfinator or a cluster machine
     addpath(genpath('/auto/fhome/julie/Code/GeneralCode'));
     addpath(genpath('/auto/fhome/julie/Code/strflab'));
 end
-
+fprintf('hello after\n')
 %% Start a timer for the function
 TimerVal=tic;
 
@@ -28,10 +28,10 @@ if nargin<2
     SWITCH = struct();
 end
 if ~isfield(SWITCH,'FanoFactor') || isempty(SWITCH.FanoFactor)
-    SWITCH.FanoFactor=0;
+    SWITCH.FanoFactor=1;
 end
 if ~isfield(SWITCH,'BestBin') || isempty(SWITCH.BestBin)
-    SWITCH.BestBin=1;
+    SWITCH.BestBin=0;
 end
 if ~isfield(SWITCH,'Models') || isempty(SWITCH.Models)
     SWITCH.Models=0;
