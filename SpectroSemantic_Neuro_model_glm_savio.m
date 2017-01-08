@@ -187,7 +187,7 @@ if SWITCH.Models % For models we use vocalization sections, only the first eleme
     % Select first sections
     Firsts = find(Res.Voc_orders == 1);
 else
-    Firsts = 1:length(Res.Voc_orders);
+    Firsts = 1:length(Res.VocType);
 end
 % Need to get rid of mlnoise sections and whine sections when they
 % exist. I construct a vector of indices of the right sections
