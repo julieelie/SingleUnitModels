@@ -1,4 +1,4 @@
-function [PG_Index,FanoFactor_Index, Wins] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+function [OptimalCoherenceWinsize] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %% Get the environment to figure out on which machine/cluster we are
 getenv('HOSTNAME');
 
@@ -186,49 +186,50 @@ end
 if SWITCH.Models % For models we use vocalization sections, only the first element of each vocalization sequence
     % Select first sections
     Firsts = find(Res.Voc_orders == 1);
-    % Need to get rid of mlnoise sections and whine sections when they
-    % exist. I construct a vector of indices of the right sections
-    DataSel=zeros(1,length(Firsts));
-    nvoc=0;
-    voctype=Res.VocType;
-    for ii=1:length(Firsts);
-        dd = Firsts(ii);
-        if strcmp(voctype{dd}, 'Ag')
-            nvoc=nvoc+1;
-            DataSel(nvoc)=dd;
-        elseif strcmp(voctype{dd}, 'Be')
-            nvoc=nvoc+1;
-            DataSel(nvoc)=dd;
-        elseif strcmp(voctype{dd}, 'DC')
-            nvoc=nvoc+1;
-            DataSel(nvoc)=dd;
-        elseif strcmp(voctype{dd}, 'Di')
-            nvoc=nvoc+1;
-            DataSel(nvoc)=dd;
-        elseif strcmp(voctype{dd}, 'LT')
-            nvoc=nvoc+1;
-            DataSel(nvoc)=dd;
-        elseif strcmp(voctype{dd}, 'Ne')
-            nvoc=nvoc+1;
-            DataSel(nvoc)=dd;
-        elseif strcmp(voctype{dd}, 'Te')
-            nvoc=nvoc+1;
-            DataSel(nvoc)=dd;
-        elseif strcmp(voctype{dd}, 'Th')
-            nvoc=nvoc+1;
-            DataSel(nvoc)=dd;
-        elseif strcmp(voctype{dd}, 'song')
-            nvoc=nvoc+1;
-            DataSel(nvoc)=dd;
-            %     elseif strcmp(voctype{dd}, 'Wh')
-            %         nvoc=nvoc+1;
-            %         DataSel(nvoc)=dd;
-        end
-    end
-    DataSel=DataSel(1:nvoc);
 else
-    DataSel = 1:length(Res.VocType);
+    Firsts = 1:length(Res.Voc_orders);
 end
+% Need to get rid of mlnoise sections and whine sections when they
+% exist. I construct a vector of indices of the right sections
+DataSel=zeros(1,length(Firsts));
+
+nvoc=0;
+voctype=Res.VocType;
+for ii=1:length(Firsts);
+    dd = Firsts(ii);
+    if strcmp(voctype{dd}, 'Ag')
+        nvoc=nvoc+1;
+        DataSel(nvoc)=dd;
+    elseif strcmp(voctype{dd}, 'Be')
+        nvoc=nvoc+1;
+        DataSel(nvoc)=dd;
+    elseif strcmp(voctype{dd}, 'DC')
+        nvoc=nvoc+1;
+        DataSel(nvoc)=dd;
+    elseif strcmp(voctype{dd}, 'Di')
+        nvoc=nvoc+1;
+        DataSel(nvoc)=dd;
+    elseif strcmp(voctype{dd}, 'LT')
+        nvoc=nvoc+1;
+        DataSel(nvoc)=dd;
+    elseif strcmp(voctype{dd}, 'Ne')
+        nvoc=nvoc+1;
+        DataSel(nvoc)=dd;
+    elseif strcmp(voctype{dd}, 'Te')
+        nvoc=nvoc+1;
+        DataSel(nvoc)=dd;
+    elseif strcmp(voctype{dd}, 'Th')
+        nvoc=nvoc+1;
+        DataSel(nvoc)=dd;
+    elseif strcmp(voctype{dd}, 'song')
+        nvoc=nvoc+1;
+        DataSel(nvoc)=dd;
+        %     elseif strcmp(voctype{dd}, 'Wh')
+        %         nvoc=nvoc+1;
+        %         DataSel(nvoc)=dd;
+    end
+end
+DataSel=DataSel(1:nvoc);
 
 
 %% Select the spectrograms of the selected stims
