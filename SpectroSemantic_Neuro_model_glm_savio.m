@@ -26,7 +26,7 @@ if nargin<2
     SWITCH = struct();
 end
 if ~isfield(SWITCH,'FanoFactor') || isempty(SWITCH.FanoFactor)
-    SWITCH.FanoFactor=1;
+    SWITCH.FanoFactor=0;
 end
 if ~isfield(SWITCH,'BestBin') || isempty(SWITCH.BestBin)
     SWITCH.BestBin=0;
@@ -35,7 +35,7 @@ if ~isfield(SWITCH,'Models') || isempty(SWITCH.Models)
     SWITCH.Models=0;
 end
 if ~isfield(SWITCH,'InfoCal') || isempty(SWITCH.InfoCal)
-    SWITCH.InfoCal=0;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
+    SWITCH.InfoCal=1;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
 end
 
 if nargin<3
@@ -288,6 +288,12 @@ end
 if SWITCH.FanoFactor
     [PG_Index,FanoFactor_Index, Wins] = PoissonGaussianNeuralResponses(Res.Trials(DataSel),ParamModel,SWITCH,Cellname);
     save(calfilename_local,'PG_Index', 'FanoFactor_Index','Wins','-append');
+end
+
+%% Calculate information about stimuli along time
+if SWITCH.InfoCal
+   [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(Res.Trials_GaussFiltered(DataSel),Res.VocType(DataSel), ParamModel, calfilename_local);
+    save(calfilename_local,'Data', 'InputData','Wins','ParamModel','-append');
 end
 
 %return

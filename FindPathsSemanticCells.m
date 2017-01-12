@@ -8,7 +8,7 @@ SemCellPV = find(SemanticIndex.quantileDiagUniCatMaxInv<0.01);
 SemSU = intersect(SU, SemCellPV);
 
 % % ID Cell selective for DC in EJN 2015
-DC_cell=418; % other
+DC_cell=418; % other /auto/k6/julie/matfile/GreBlu9508M/ConfMat_Site4_L1500R1900_e23_s0_ss2.mat
 TheFileID=List_matfilepath(DC_cell);
 [P,TheFile,ext]=fileparts(TheFileID{1});
 Matfilepath= fullfile('/Users/elie/Documents/CODE/data/matfile/WholeVocMat',['WholeVoc' TheFile(8:end) ext]);
@@ -17,7 +17,7 @@ SpectroSemantic_Neuro_model_glm(Matfilepath,'DC128','poisson','log',110,110)
 %SpectroSemantic_Neuro_model_glm(Matfilepath,'DC128','normal','identity',110,110)
 % 
 % ID Cell selective for Ag in EJN 2015
-Ag_cell=127;
+Ag_cell=127;%/auto/k6/julie/matfile/BlaBro09xxF/ConfMat_Site3_L2500R2300_e22_s1_ss1.mat
 TheFileID=List_matfilepath(Ag_cell);
 [P,TheFile,ext]=fileparts(TheFileID{1});
 Matfilepath= fullfile('/Users/elie/Documents/CODE/data/matfile/WholeVocMat',['WholeVoc' TheFile(8:end) ext]);

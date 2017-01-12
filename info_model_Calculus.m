@@ -62,7 +62,7 @@ else
 end
 
 if nargin<2
-    ymax = 20; % For julie's data spike count are within 20ms windows!!
+    ymax = 20; % For julie's data spike count are within 10ms windows!!
     %ymax = ceil(max(mu_in_checked*10));
 end
 if ymax>170
