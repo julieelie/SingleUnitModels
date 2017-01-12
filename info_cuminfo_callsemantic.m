@@ -1,5 +1,5 @@
 function [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(Trials,VocType, ParamModel, Calfilename)
-FIG=1;
+FIG=0;
 if nargin<3
     ParamModel = struct();
 end
@@ -24,6 +24,29 @@ if ~isfield(ParamModel,'ResDelay') || isempty(ParamModel.ResDelay)
     ... spectrogram window and the end of the neural response window
 end
 
+% Number of bootstraps
+if ~isfield(ParamModel, 'NbBoot_Info') || isempty(ParamModel.NbBoot_Info)
+    ParamModel.NbBoot_Info = 100;
+end
+
+% Set parameters for the number of samples that should be tested in the
+% MonteCarlo estimation of the cumulative information
+if ~isfield(ParamModel, 'NumSamples_MC_Cum_Info') || isempty(ParamModel.NumSamples_MC_Cum_Info)
+ParamModel.NumSamples_MC_Cum_Info = [10^2 10^3 10^4 10^5 10^6]; %Set the number of samples for the Monte Carlo approximation of the cumulative information 10^7 takes too much memory prefers lower numbers
+end
+
+% Set the Parameters of the Markov approximation of the cumulative
+% information
+if ~isfield(ParamModel, 'MarkovParameters_Cum_Info') || isempty(ParamModel.MarkovParameters_Cum_Info)
+    ParamModel.MarkovParameters_Cum_Info = [2 3 4;1 1 1];
+end
+
+% Set the fix time history to calculate the exact cumulative information
+% (above 4 will certainly bug the computer asking for too big matrices)
+if ~isfield(ParamModel, 'ExactHist') || isempty(ParamModel.ExactHist)
+    ParamModel.ExactHist = 4;
+end
+
 if nargin<4
     saveonline = 0;
 else
@@ -43,8 +66,7 @@ NbStims = length(Trials);
 IdCats = unique(VocType);
 NbCat = length(IdCats);
 
-% Number of bootstraps
-ParamModel.NbBoot_Info = 10;
+
 
 %% Initialize output variables
 InputData.InfoStim = nan(NbStims,WinNum);
@@ -238,10 +260,6 @@ end
      ylabel('Category Information in bits')
  end
 %% Now calculating cumulative information
-ParamModel.NumSamples_MC_Cum_Info = [10^2 10^3 10^4 10^5 10^6]; %Set the number of samples for the Monte Carlo approximation of the cumulative information 10^7 takes too much memory prefers lower numbers
-ParamModel.MarkovParameters_Cum_Info = [2 3 4;1 1 1];
-ParamModel.ExactHist = 4;
-
 % Getting output variables ready
 Data.cum_info_stim = struct();
 Data.cum_info_cat = struct();
@@ -254,10 +272,11 @@ for ss=1:length(ParamModel.NumSamples_MC_Cum_Info)
     Data.cum_info_cat.(sprintf('%s',ModelType))= nan(2,WinNum);
     Data.cum_info_cat.(sprintf('%s',ModelType))(1,1)= Data.category_info(1);
 end
-Data.cum_info_stim.ExactMem0_5 = nan(1,WinNum);
-Data.cum_info_cat.ExactMem0_5 = nan(1,WinNum);
-Data.cum_info_stim.ExactMem0_5(1) = Data.stim_info(1);
-Data.cum_info_cat.ExactMem0_5(1) = Data.category_info(1);
+ModelType = sprintf('ExactMem0_%d',ParamModel.ExactHist);
+Data.cum_info_stim.(sprintf('%s',ModelType)) = nan(1,WinNum);
+Data.cum_info_cat.(sprintf('%s',ModelType)) = nan(1,WinNum);
+Data.cum_info_stim.(sprintf('%s',ModelType))(1) = Data.stim_info(1);
+Data.cum_info_cat.(sprintf('%s',ModelType))(1) = Data.category_info(1);
 for ss=1:size(ParamModel.MarkovParameters_Cum_Info,2)
     ModelType = sprintf('MarkovEst%d',ParamModel.MarkovParameters_Cum_Info(1,ss));
     Data.cum_info_stim.(sprintf('%s',ModelType))= nan(1,WinNum);
@@ -280,10 +299,11 @@ for ww =2:WinNum
         [Data.cum_info_cat.(sprintf('%s',ModelType))(:,ww),~]=info_cumulative_model_Calculus(Data.category_P_YgivenS(1:ww),'Model#',2,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(ss));
     end
     
-    % Exact calculation cumulative information on stims with 50 ms memory
-    [Data.cum_info_stim.ExactMem0_5(ww),~]=info_cumulative_model_Calculus(Data.stim_P_YgivenS(1:ww),'Model#',1,'CalMode','Exact_Mem', 'Exact_history',ParamModel.ExactHist);
-    % Exact calculation cumulative information on categories with 50 ms memory
-    [Data.cum_info_cat.ExactMem0_5(ww),~]=info_cumulative_model_Calculus(Data.category_P_YgivenS(1:ww),'Model#',2,'CalMode','Exact_Mem', 'Exact_history',ParamModel.ExactHist);
+    ModelType = sprintf('ExactMem0_%d',ParamModel.ExactHist);
+    % Exact calculation cumulative information on stims with ParamModel.ExactHist*10 ms memory
+    [Data.cum_info_stim.(sprintf('%s',ModelType))(ww),~]=info_cumulative_model_Calculus(Data.stim_P_YgivenS(1:ww),'Model#',1,'CalMode','Exact_Mem', 'Exact_history',ParamModel.ExactHist);
+    % Exact calculation cumulative information on categories with ParamModel.ExactHist*10 ms memory
+    [Data.cum_info_cat.(sprintf('%s',ModelType))(ww),~]=info_cumulative_model_Calculus(Data.category_P_YgivenS(1:ww),'Model#',2,'CalMode','Exact_Mem', 'Exact_history',ParamModel.ExactHist);
     
     for ss=1:size(ParamModel.MarkovParameters_Cum_Info,2)
         ModelType = sprintf('MarkovEst%d',ParamModel.MarkovParameters_Cum_Info(1,ss));
@@ -309,6 +329,26 @@ end
      save(Calfilename,'Data','ParamModel', 'NbBoot','-append');
  end
 
+%% Plot the cumulative information
+if FIG
+    figure()
+    subplot(2,1,1)
+    plot(1:WinNum, Data.stim_info, 1:WinNum,Data.cum_info_stim.MarkovEst4, 1:WinNum,Data.cum_info_stim.MarkovEst3, 1:WinNum,Data.cum_info_stim.MarkovEst2,1:WinNum,Data.cum_info_stim.MonteCarlo6(1,:), 1:WinNum,Data.cum_info_stim.MonteCarlo5(1,:), 1:WinNum,Data.cum_info_stim.MonteCarlo4(1,:), 1:WinNum,Data.cum_info_stim.MonteCarlo3(1,:),1:WinNum,Data.cum_info_stim.MonteCarlo2(1,:), 1:WinNum, Data.cum_info_stim.ExactMem0_5, 1:WinNum, cumsum(Data.stim_info), 'LineWidth',2)
+    Color_Lines = get(gca,'ColorOrder');
+    legend('Information', 'Cumulative Info Markov4', 'Cumulative Info Markov3','Cumulative Info Markov2','Cumulative Information MC 10^6','Cumulative Information MC 10^5','Cumulative Information MC 10^4','Cumulative Information MC 10^3', 'Cumulative Information MC 10^2', 'Exact Cumulative Information 40ms history', 'Cumulative sum of info', 'Location', 'NorthWest')
+    Xtickposition=get(gca,'XTick');
+     set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
+     xlabel('Time ms')
+     ylabel('Stimulus Information in bits')
+    subplot(2,1,2)
+    plot(1:WinNum, Data.category_info, 1:WinNum,Data.cum_info_cat.MarkovEst4, 1:WinNum,Data.cum_info_cat.MarkovEst3, 1:WinNum,Data.cum_info_cat.MarkovEst2,1:WinNum,Data.cum_info_cat.MonteCarlo6(1,:), 1:WinNum,Data.cum_info_cat.MonteCarlo5(1,:), 1:WinNum,Data.cum_info_cat.MonteCarlo4(1,:), 1:WinNum,Data.cum_info_cat.MonteCarlo3(1,:),1:WinNum,Data.cum_info_cat.MonteCarlo2(1,:), 1:WinNum, Data.cum_info_cat.ExactMem0_5, 1:WinNum, cumsum(Data.category_info), 'LineWidth',2)
+    Color_Lines = get(gca,'ColorOrder');
+    legend('Information', 'Cumulative Info Markov4', 'Cumulative Info Markov3','Cumulative Info Markov2','Cumulative Information MC 10^6','Cumulative Information MC 10^5','Cumulative Information MC 10^4','Cumulative Information MC 10^3', 'Cumulative Information MC 10^2', 'Exact Cumulative Information 40ms history', 'Cumulative sum of info', 'Location', 'NorthWest')
+    Xtickposition=get(gca,'XTick');
+     set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
+     xlabel('Time ms')
+     ylabel('Category Information in bits')
+end
 %% Calculating bootstrap values accross stims and across trials within stims
 ModelTypeMCstim = sprintf('MonteCarlo%d_Bootstim',log10(ParamModel.NumSamples_MC_Cum_Info(end)));
 Data.cum_info_stim.(sprintf('%s',ModelTypeMCstim)) = nan(ParamModel.NbBoot_Info/10,WinNum);
