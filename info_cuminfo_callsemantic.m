@@ -326,7 +326,7 @@ end
 
  %% Save what we have for now
  if saveonline
-     save(Calfilename,'Data','ParamModel', 'NbBoot','-append');
+     save(Calfilename,'Data','ParamModel','-append');
  end
 
 %% Plot the cumulative information
@@ -431,6 +431,6 @@ end
 
 %% Save what we have for now
  if saveonline
-     save(Calfilename,'Data','ParamModel', 'NbBoot','-append');
+     save(Calfilename,'Data','ParamModel','-append');
  end
 end
