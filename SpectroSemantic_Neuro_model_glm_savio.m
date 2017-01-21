@@ -35,7 +35,11 @@ if ~isfield(SWITCH,'Models') || isempty(SWITCH.Models)
     SWITCH.Models=0;
 end
 if ~isfield(SWITCH,'InfoCal') || isempty(SWITCH.InfoCal)
-    SWITCH.InfoCal=1;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
+    SWITCH.InfoCal=0;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
+end
+
+if ~isfield(SWITCH,'GaussWin') || isempty(SWITCH.GaussWin)
+    SWITCH.GaussWin=0;%Set to 1 if you want to add the data about the gaussian window sizes used to convolve spike trains to the output file
 end
 
 if nargin<3
@@ -57,6 +61,10 @@ if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
     ParamModel.MaxWin = 1000; %end point of the last anaysis window for...
     ... neural response and end point of the largest analysis window for...
         ... spectrogram
+end
+if ~isfield(ParamModel,'MaxWin_cumInfo') || isempty(ParamModel.MaxWin_cumInfo)
+    ParamModel.MaxWin_cumInfo = 600; %end point of the last anaysis window for...
+    ... the calculation of cumulative information
 end
 if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
     ParamModel.Increment = 10; %increase the size of the spectro window with a Xms pace
@@ -103,21 +111,21 @@ if Savio
     OutputDirEx_local='/global/home/users/jelie/MatFiles/ModMat';
     OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatSavio');
 elseif Me
-    if SWITCH.InfoCal || SWITCH.BestBin || SWITCH.FanoFactor
+    if SWITCH.InfoCal || SWITCH.BestBin || SWITCH.FanoFactor || SWITCH.GaussWin
         OutputDir_local='/users/elie/Documents/CODE/data/matfile/ModMatInfo';
     else
         OutputDir_local='/users/elie/Documents/CODE/data/matfile/ModMatAcOnly';
     end
     OutputDir_final=OutputDir_local;
 else
-    if SWITCH.InfoCal || SWITCH.BestBin || SWITCH.FanoFactor
+    if SWITCH.InfoCal || SWITCH.BestBin || SWITCH.FanoFactor || SWITCH.GaussWin
         OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatInfo');
     else
         OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatAcOnly');
     end
     OutputDir_local=OutputDir_final;
 end
-if SWITCH.InfoCal || SWITCH.BestBin || SWITCH.FanoFactor
+if SWITCH.InfoCal || SWITCH.BestBin || SWITCH.FanoFactor || SWITCH.GaussWin
     calfilename_local=fullfile(OutputDir_local,['InfoPoissonGF_' Res.Site '.mat']);
     calfilename_final=fullfile(OutputDir_final,['InfoPoissonGF_' Res.Site '.mat']);
 else
@@ -297,6 +305,13 @@ if SWITCH.InfoCal
 end
 
 %return
+
+%% Add the size of the Gaussian used to convolve spike trains as output in the file
+if SWITCH.GaussWin
+    HwidthSpikes = Res.HwidthSpikes(DataSel);
+    save(calfilename_local,'HwidthSpikes', '-append');
+end
+    
 %% Inject the data in the models
 if SWITCH.Models
     if PrevData
