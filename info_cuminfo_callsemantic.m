@@ -84,7 +84,13 @@ NbStims = length(Trials);
 IdCats = unique(VocType);
 NbCat = length(IdCats);
 
-
+%% Configure Parallel computing
+if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
+    parpool(str2num(getenv('SLURM_CPUS_ON_NODE')));
+    system('mkdir -p /global/scratch/$USER/$SLURM_JOB_ID')
+    [~,JobID] = system('echo $SLURM_JOB_ID');
+    parcluster.JobStorageLocation = ['/global/scratch/jelie/' JobID];    
+end
 
 %% Initialize output variables
 InputData.InfoStim = nan(NbStims,WinNum);
@@ -525,6 +531,11 @@ else
 
     end
 end
+%% get rid of temporary files for parallel computing
+if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
+    system(['rm -r ' parcluster.JobStorageLocation])
+end
+
 %% Save what we have for now
  if saveonline
      save(Calfilename,'Data','ParamModel','-append');
