@@ -35,6 +35,10 @@ if ~isfield(ParamModel, 'NbBoot_Info') || isempty(ParamModel.NbBoot_Info)
     ParamModel.NbBoot_Info = 100;
 end
 
+if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
+    ParamModel.NbBoot_CumInfo = 20;
+end
+
 % Set parameters for the number of samples that should be tested in the
 % MonteCarlo estimation of the cumulative information
 if ~isfield(ParamModel, 'NumSamples_MC_Cum_Info')
@@ -95,10 +99,10 @@ Data.stim_info_biais = nan(1,WinNum);
 Data.category_info_biais = nan(1,WinNum);
 Data.stim_P_YgivenS = cell(1,WinNum);
 Data.category_P_YgivenS = cell(1,WinNum);
-Data_stim_P_YgivenS_Bootstim = cell(ParamModel.NbBoot_Info/10,WinNum);
-Data_category_P_YgivenS_Bootstim = cell(ParamModel.NbBoot_Info/10,WinNum);
-Data_stim_P_YgivenS_Boottrial = cell(ParamModel.NbBoot_Info/10,WinNum);
-Data_category_P_YgivenS_Boottrial = cell(ParamModel.NbBoot_Info/10,WinNum);
+Data_stim_P_YgivenS_Bootstim = cell(ParamModel.NbBoot_CumInfo,WinNum);
+Data_category_P_YgivenS_Bootstim = cell(ParamModel.NbBoot_CumInfo,WinNum);
+Data_stim_P_YgivenS_Boottrial = cell(ParamModel.NbBoot_CumInfo,WinNum);
+Data_category_P_YgivenS_Boottrial = cell(ParamModel.NbBoot_CumInfo,WinNum);
 
 %% Now loop through bins and calculate spike patterns and instantaneous information
 for ww = 1:WinNum
@@ -135,16 +139,16 @@ for ww = 1:WinNum
     Boot_switch = 2;
     Info_biais_stim = nan(1,ParamModel.NbBoot_Info);
     Info_biais_category = nan(1,ParamModel.NbBoot_Info);
-    for bb=1:ParamModel.NbBoot_Info
+    parfor bb=1:ParamModel.NbBoot_Info
         [Local_Output] = info_model_Calculus_wrapper(Trials, FirstTimePoint, LastTimePoint,Boot_switch);
         Info_biais_stim(bb) = Local_Output.value;
-        if bb/10 == round(bb/10)
-            Data_stim_P_YgivenS_Boottrial{bb/10,ww} = Local_Output.P_YgivenS;
+        if bb <= ParamModel.NbBoot_CumInfo
+            Data_stim_P_YgivenS_Boottrial{bb,ww} = Local_Output.P_YgivenS;
         end
         [Local_Output] = info_model_Calculus_wrapper(Trials, FirstTimePoint, LastTimePoint,Boot_switch,VocType);
         Info_biais_category(bb) = Local_Output.value;
-        if bb/10 == round(bb/10)
-            Data_category_P_YgivenS_Boottrial{bb/10,ww} = Local_Output.P_YgivenS;
+        if bb <= ParamModel.NbBoot_CumInfo
+            Data_category_P_YgivenS_Boottrial{bb,ww} = Local_Output.P_YgivenS;
         end
     end
     Data.stim_info_biais(ww)=mean(Info_biais_stim);
@@ -156,16 +160,16 @@ for ww = 1:WinNum
     Boot_switch = 1;
     Info_boot_stim = nan(1,ParamModel.NbBoot_Info);
     Info_boot_category = nan(1,ParamModel.NbBoot_Info);
-    for bb=1:ParamModel.NbBoot_Info
+    parfor bb=1:ParamModel.NbBoot_Info
         [Local_Output] = info_model_Calculus_wrapper(Trials, FirstTimePoint, LastTimePoint,Boot_switch);
         Info_boot_stim(bb) = Local_Output.value;
-        if bb/10 == round(bb/10)
-            Data_stim_P_YgivenS_Bootstim{bb/10,ww} = Local_Output.P_YgivenS;
+        if bb <= ParamModel.NbBoot_CumInfo
+            Data_stim_P_YgivenS_Bootstim{bb,ww} = Local_Output.P_YgivenS;
         end
         [Local_Output] = info_model_Calculus_wrapper(Trials, FirstTimePoint, LastTimePoint,Boot_switch,VocType);
         Info_boot_category(bb) = Local_Output.value;
-        if bb/10 == round(bb/10)
-            Data_category_P_YgivenS_Bootstim{bb/10,ww} = Local_Output.P_YgivenS;
+        if bb <= ParamModel.NbBoot_CumInfo
+            Data_category_P_YgivenS_Bootstim{bb,ww} = Local_Output.P_YgivenS;
         end
     end
     Data.stim_info_boot_var(ww)=var(Info_boot_stim);
@@ -408,9 +412,9 @@ else
     end
     
     
-    parfor bb=1:ParamModel.NbBoot_Info/10
+    parfor bb=1:ParamModel.NbBoot_CumInfo
         Tstart3=tic;
-        fprintf('Bootstrap %d/%d\n', bb, ParamModel.NbBoot_Info/10);
+        fprintf('Bootstrap %d/%d\n', bb, ParamModel.NbBoot_CumInfo);
         if ~isempty(ParamModel.MarkovParameters_Cum_Info)
             HY_Markov4_stim_bbtrial = nan(1,WinNum_cumInfo);
             HY_Markov4_stim_bbstim = nan(1,WinNum_cumInfo);
@@ -418,7 +422,7 @@ else
             HY_Markov4_cat_bbstim = nan(1,WinNum_cumInfo);
         end
         for ww=2:WinNum_cumInfo
-            fprintf('Bootstrap %d/%d Time point %d/%d\n',bb, ParamModel.NbBoot_Info/10, ww, WinNum_cumInfo);
+            fprintf('Bootstrap %d/%d Time point %d/%d\n',bb, ParamModel.NbBoot_CumInfo, ww, WinNum_cumInfo);
             
             % First for the cumulative information about stimuli
             P_YgivenS_local_trial = Data_stim_P_YgivenS_Boottrial(bb,1:ww);

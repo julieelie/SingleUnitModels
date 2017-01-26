@@ -4,6 +4,7 @@ getenv('HOSTNAME');
 
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
     Savio=1;
+    fprintf(1, 'We are on savio!/n')
     addpath(genpath('/global/home/users/jelie/CODE'));
 elseif ismac()
     Savio=0;
@@ -35,7 +36,7 @@ if ~isfield(SWITCH,'Models') || isempty(SWITCH.Models)
     SWITCH.Models=0;
 end
 if ~isfield(SWITCH,'InfoCal') || isempty(SWITCH.InfoCal)
-    SWITCH.InfoCal=0;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
+    SWITCH.InfoCal=1;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
 end
 
 if ~isfield(SWITCH,'GaussWin') || isempty(SWITCH.GaussWin)
@@ -94,7 +95,7 @@ if Savio %savio Cluster
 elseif Me
     Dir_local='/Users/elie/Documents/CODE/data/matfile/FirstVoc1sMat/';
     if ~exist('ext','var')
-        [path,Cellname,ext]=fileparts(MatfilePath);
+        [~,Cellname,ext]=fileparts(MatfilePath);
     end
     Res = load([Dir_local Cellname ext]);
 else
@@ -104,11 +105,11 @@ end
 
 
 %% Get ready saving files and directories
-OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatSavio');
+%OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatSavio');
 
 if Savio
-    OutputDir_local='/global/scratch/jelie/MatFiles/ModMat';
-    OutputDirEx_local='/global/home/users/jelie/MatFiles/ModMat';
+    OutputDir_local='/global/scratch/jelie/MatFiles/ModMatInfo';
+    OutputDirEx_local='/global/home/users/jelie/JobExecutableFiles';
     OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatSavio');
 elseif Me
     if SWITCH.InfoCal || SWITCH.BestBin || SWITCH.FanoFactor || SWITCH.GaussWin
@@ -203,7 +204,7 @@ DataSel=zeros(1,length(Firsts));
 
 nvoc=0;
 voctype=Res.VocType;
-for ii=1:length(Firsts);
+for ii=1:length(Firsts)
     dd = Firsts(ii);
     if strcmp(voctype{dd}, 'Ag')
         nvoc=nvoc+1;
@@ -300,8 +301,20 @@ end
 
 %% Calculate information about stimuli along time
 if SWITCH.InfoCal
+    ParamModel.MarkovParameters_Cum_Info = [];% supressing the calculation of Markov approximation for the cumulative information
+    ParamModel.ExactHist = [];% supressing the exact calculation of the cumulative information
+    
    [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(Res.Trials_GaussFiltered(DataSel),Res.VocType(DataSel), ParamModel, calfilename_local);
     save(calfilename_local,'Data', 'InputData','Wins','ParamModel','-append');
+    
+    ElapsedTime = toc(TimerVal);
+    Days = floor(ElapsedTime/(60*60*24));
+    ETRem = ElapsedTime - Days*60*60*24;
+    Hours = floor(ETRem/(60*60));
+    ETRem = ETRem - Hours*60*60;
+    Minutes = floor(ETRem/60);
+    ETRem = ETRem-60*Minutes;
+    fprintf(1,'Code run for %d days %dh %dmin and %dsec\n',Days,Hours,Minutes,ETRem);
 end
 
 %return
