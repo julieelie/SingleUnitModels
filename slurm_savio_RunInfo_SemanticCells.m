@@ -1,9 +1,10 @@
 %% Set up the paths, retrieve list of cells already done, list of all cells
 addpath('/auto/k1/queued/')
-addpath('/auto/fhome/julie/matlab/tlab/src/h5analysis/Julie_neuralcode')
-addpath('/auto/fhome/julie/matlab/tlab/src/slurmbot/matlab')
+addpath(genpath('/auto/fhome/julie/Code/SingleUnitModels'));
+addpath(genpath('/auto/fhome/julie/Code/GeneralCode'));
+addpath('/auto/fhome/julie/Code/tlab/src/slurmbot/matlab')
 
-cd /auto/tdrive/julie/k6/julie/matfile/ModMatSavio/
+cd /auto/tdrive/julie/k6/julie/matfile/ModMatInfo/
 DoneFile=dir('InfoPoissonGF_*');
 
 %system('ssh TheunissenLab')
@@ -36,7 +37,7 @@ MatfileToDo = cell(length(List_SemanticCellspath),1);
 MatNameToDo = cell(length(List_SemanticCellspath),1);
 
 %% Identify cells left to run and create jobs' files
-cd /auto/tdrive/julie/k6/julie/matfile/ModMatSavio/JobToDoSavio
+cd /auto/tdrive/julie/k6/julie/matfile/ModMatInfo/JobToDoSavio
 for ff=1:length(List_SemanticCellspath)
     fprintf(1,'checking file %d/%d\n',ff,length(List_SemanticCellspath));
     [P,TheFile,ext]=fileparts(List_SemanticCellspath{ff});

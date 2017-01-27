@@ -5,7 +5,9 @@ getenv('HOSTNAME');
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
     Savio=1;
     fprintf(1, 'We are on savio!/n')
-    addpath(genpath('/global/home/users/jelie/CODE'));
+    addpath(genpath('/global/home/users/jelie/CODE/SingleUnitModels'));
+    addpath(genpath('/global/home/users/jelie/CODE/GeneralCode'));
+    addpath(genpath('/global/home/users/jelie/CODE/tlab/src/slurmbot/matlab'));
 elseif ismac()
     Savio=0;
     Me = 1;
@@ -110,7 +112,7 @@ end
 if Savio
     OutputDir_local='/global/scratch/jelie/MatFiles/ModMatInfo';
     OutputDirEx_local='/global/home/users/jelie/JobExecutableFiles';
-    OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatSavio');
+    OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatInfo');
 elseif Me
     if SWITCH.InfoCal || SWITCH.BestBin || SWITCH.FanoFactor || SWITCH.GaussWin
         OutputDir_local='/users/elie/Documents/CODE/data/matfile/ModMatInfo';
@@ -190,7 +192,40 @@ if SWITCH.Models
     if ~ PrevData
         save(calfilename_local,'MatfilePath', '-append')
     end
+elseif SWITCH.InfoCal || SWITCH.BestBin || SWITCH.FanoFactor || SWITCH.GaussWin
+    PrevData=0;
+    if Savio
+        try
+            DoneCalc=loadfromTdrive_savio(calfilename_final, OutputDir_local,1);
+            fprintf('Found some data for this unit\n')
+            PrevData = 1;
+
+        catch err
+            fprintf('No Previous Data available or complete, working from the first window\nThe error is %s\n',err.identifier, err.message);
+            PrevData = 0;
+        end
+    %         if strcmp(err.identifier, 'MATLAB:load:couldNotReadFile')
+    %             fprintf('No previous Data working from the first window\n');
+    %             PrevData = 0;
+    %         elseif strcmp(err.identifier, 'MATLAB:load:cantReadFile')
+    %             fprintf('Previous Data File corrupted working from the first window\n');
+    %             PrevData = 0;
+    %         else
+    %             fprintf('Error loading previous Data: %s\nworking from the first window\n',err.identifier);
+    %             PrevData = 0;
+    %         end
+    else
+        try
+            DoneCalc=load(calfilename_final);
+            fprintf('Found some data for this unit\n')
+                PrevData = 1;
+        catch err
+            fprintf('No Previous Data available or complete, working from the first window\nThe error is %s\n',err.identifier, err.message);
+            PrevData = 0;
+        end
+    end
 end
+    
 %% Get the data ready
 if SWITCH.Models % For models we use vocalization sections, only the first element of each vocalization sequence
     % Select first sections
@@ -290,13 +325,22 @@ if SWITCH.BestBin
     % fig BestPSTHBin.fig
     % At that window size, the values of the FanoFactor over cells is very
     % close to 1. see fig PoissonFanoFactor.fig
-    save(calfilename_local,'MatfilePath', 'OptimalCoherenceWinsize');
+    if PrevData
+        save(calfilename_local,'MatfilePath', 'OptimalCoherenceWinsize', '-append');
+    else
+        save(calfilename_local,'MatfilePath', 'OptimalCoherenceWinsize');
+    end
 end
 
 %% Estimate Poisson assumption for data at the choosen bining
 if SWITCH.FanoFactor
     [PG_Index,FanoFactor_Index, Wins] = PoissonGaussianNeuralResponses(Res.Trials(DataSel),ParamModel,SWITCH,Cellname);
-    save(calfilename_local,'PG_Index', 'FanoFactor_Index','Wins','-append');
+    if PrevData
+        save(calfilename_local,'PG_Index', 'FanoFactor_Index','Wins','-append');
+    else
+        save(calfilename_local,'PG_Index', 'FanoFactor_Index','Wins');
+    end
+    
 end
 
 %% Calculate information about stimuli along time
@@ -305,7 +349,11 @@ if SWITCH.InfoCal
     ParamModel.ExactHist = [];% supressing the exact calculation of the cumulative information
     
    [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(Res.Trials_GaussFiltered(DataSel),Res.VocType(DataSel), ParamModel, calfilename_local);
-    save(calfilename_local,'Data', 'InputData','Wins','ParamModel','-append');
+   if PrevData 
+       save(calfilename_local,'Data', 'InputData','Wins','ParamModel','-append');
+   else
+       save(calfilename_local,'Data', 'InputData','Wins','ParamModel');
+   end
     
     ElapsedTime = toc(TimerVal);
     Days = floor(ElapsedTime/(60*60*24));
