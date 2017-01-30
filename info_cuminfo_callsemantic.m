@@ -148,6 +148,7 @@ for ww = 1:WinNum
     
     
     parfor bb=1:ParamModel.NbBoot_Info
+        fprintf(1,'%d/%d bootstrap info for + biais', bb, ParamModel.NbBoot_Info);
         [Local_Output] = info_model_Calculus_wrapper(Trials, FirstTimePoint, LastTimePoint,Boot_switch);
         Info_biais_stim(bb) = Local_Output.value;
         if bb <= ParamModel.NbBoot_CumInfo
@@ -169,15 +170,16 @@ for ww = 1:WinNum
     Info_boot_stim = nan(1,ParamModel.NbBoot_Info);
     Info_boot_category = nan(1,ParamModel.NbBoot_Info);
     
-    if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
-        delete(gcp)
-        parpool(str2num(getenv('SLURM_CPUS_ON_NODE')));
-        system('mkdir -p /global/scratch/$USER/$SLURM_JOB_ID')
-        [~,JobID] = system('echo $SLURM_JOB_ID');
-        parcluster.JobStorageLocation = ['/global/scratch/jelie/' JobID];
-    end
+%     if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
+%         delete(gcp)
+%         parpool(str2num(getenv('SLURM_CPUS_ON_NODE')));
+%         system('mkdir -p /global/scratch/$USER/$SLURM_JOB_ID')
+%         [~,JobID] = system('echo $SLURM_JOB_ID');
+%         parcluster.JobStorageLocation = ['/global/scratch/jelie/' JobID];
+%     end
 
     parfor bb=1:ParamModel.NbBoot_Info
+        fprintf(1,'%d/%d bootstrap info for variance', bb, ParamModel.NbBoot_Info);
         [Local_Output] = info_model_Calculus_wrapper(Trials, FirstTimePoint, LastTimePoint,Boot_switch);
         Info_boot_stim(bb) = Local_Output.value;
         if bb <= ParamModel.NbBoot_CumInfo
