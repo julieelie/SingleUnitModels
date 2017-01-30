@@ -145,6 +145,9 @@ for ww = 1:WinNum
     Boot_switch = 2;
     Info_biais_stim = nan(1,ParamModel.NbBoot_Info);
     Info_biais_category = nan(1,ParamModel.NbBoot_Info);
+    if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
+        parpool(str2num(getenv('SLURM_CPUS_ON_NODE')));
+    end
     parfor bb=1:ParamModel.NbBoot_Info
         [Local_Output] = info_model_Calculus_wrapper(Trials, FirstTimePoint, LastTimePoint,Boot_switch);
         Info_biais_stim(bb) = Local_Output.value;
@@ -166,6 +169,9 @@ for ww = 1:WinNum
     Boot_switch = 1;
     Info_boot_stim = nan(1,ParamModel.NbBoot_Info);
     Info_boot_category = nan(1,ParamModel.NbBoot_Info);
+    if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
+        parpool(str2num(getenv('SLURM_CPUS_ON_NODE')));
+    end
     parfor bb=1:ParamModel.NbBoot_Info
         [Local_Output] = info_model_Calculus_wrapper(Trials, FirstTimePoint, LastTimePoint,Boot_switch);
         Info_boot_stim(bb) = Local_Output.value;
@@ -182,7 +188,7 @@ for ww = 1:WinNum
     Data.category_info_boot_var(ww)=var(Info_boot_category);
     Data.stim_info_boot_mean(ww)=mean(Info_boot_stim);
     Data.category_info_boot_mean(ww)=mean(Info_boot_category);
-    fprintf('Done bin %d/%d after %f sec\n', ww, WinNum, toc(Tstart));
+    fprintf('Instantaneous Info: Done bin %d/%d after %f sec\n', ww, WinNum, toc(Tstart));
 end
 
  %% Save what we have for now
@@ -417,6 +423,9 @@ else
         Cum_info_cat_LastMarkov_Boottrial = nan(ParamModel.NbBoot_Info/10,WinNum_cumInfo);
     end
     
+    if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
+        parpool(str2num(getenv('SLURM_CPUS_ON_NODE')));
+    end
     
     parfor bb=1:ParamModel.NbBoot_CumInfo
         Tstart3=tic;
