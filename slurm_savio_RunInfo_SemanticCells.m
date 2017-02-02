@@ -41,8 +41,8 @@ cd /auto/tdrive/julie/k6/julie/matfile/ModMatInfo/JobToDoSavio
 for ff=1:length(List_SemanticCellspath)
     fprintf(1,'checking file %d/%d\n',ff,length(List_SemanticCellspath));
     [P,TheFile,ext]=fileparts(List_SemanticCellspath{ff});
-    MatfileToDo{ff}= fullfile(P,['FirstVoc1s_' TheFile(8:end) ext]);
-    MatNameToDo{ff}=['FirstVoc1s_' TheFile(8:end) ext];
+    MatfileToDo{ff}= fullfile(P,['FirstVoc1s' TheFile(8:end) ext]);
+    MatNameToDo{ff}=['FirstVoc1s' TheFile(8:end) ext];
     JobParams.out = fullfile(SlurmParams.resultsDirectory,sprintf('slurm_out_%s_%%j.txt', MatNameToDo{ff}));
     JobParams.err = JobParams.out;
     icmd = sprintf(SlurmParams.cmd, MatfileToDo{ff});
