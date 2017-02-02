@@ -148,7 +148,7 @@ for ww = 1:WinNum
     
     
     parfor bb=1:ParamModel.NbBoot_Info
-        fprintf(1,'%d/%d bootstrap info for + biais', bb, ParamModel.NbBoot_Info);
+        fprintf(1,'%d/%d bootstrap instantaneous info for + biais', bb, ParamModel.NbBoot_Info);
         [Local_Output] = info_model_Calculus_wrapper(Trials, FirstTimePoint, LastTimePoint,Boot_switch);
         Info_biais_stim(bb) = Local_Output.value;
         if bb <= ParamModel.NbBoot_CumInfo
@@ -179,7 +179,7 @@ for ww = 1:WinNum
 %     end
 
     parfor bb=1:ParamModel.NbBoot_Info
-        fprintf(1,'%d/%d bootstrap info for variance', bb, ParamModel.NbBoot_Info);
+        fprintf(1,'%d/%d bootstrap instantaneous info for variance', bb, ParamModel.NbBoot_Info);
         [Local_Output] = info_model_Calculus_wrapper(Trials, FirstTimePoint, LastTimePoint,Boot_switch);
         Info_boot_stim(bb) = Local_Output.value;
         if bb <= ParamModel.NbBoot_CumInfo
@@ -303,6 +303,7 @@ if isempty(ParamModel.ExactHist) && isempty(ParamModel.MarkovParameters_Cum_Info
     % skip the next calculation we're not running the calculation of
     % cumulative information
 else
+    fprintf(1,'Starting calculation of cumulative information\n')
     Data.cum_info_stim = struct();
     Data.cum_info_cat = struct();
     
@@ -377,7 +378,7 @@ else
                 end
             end
         end
-        fprintf('Done cumulative information bin %d/%d after %f sec\n', ww, WinNum, toc(Tstart2));
+        fprintf('Done cumulative information bin %d/%d after %f sec\n', ww, WinNum_cumInfo, toc(Tstart2));
     end
     
     %% Save what we have for now
@@ -406,14 +407,14 @@ else
         ylabel('Category Information in bits')
     end
     %% Calculating bootstrap values accross stims and across trials within stims
-    
+    fprintf(1,'Bootstraping calculation of cumulative information\n')
     if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
         Cum_info_stim_LastMonteCarlo_Bootstim = nan(ParamModel.NbBoot_Info/10,WinNum_cumInfo);
         Cum_info_cat_LastMonteCarlo_Bootstim = nan(ParamModel.NbBoot_Info/10,WinNum_cumInfo);
         Cum_info_stim_LastMonteCarlo_Boottrial = nan(ParamModel.NbBoot_Info/10,WinNum_cumInfo);
         Cum_info_cat_LastMonteCarlo_Boottrial = nan(ParamModel.NbBoot_Info/10,WinNum_cumInfo);
-        Cum_info_stim_LastMonteCarlo_Bootsample = nan(ParamModel.NbBoot_Info/10,WinNum_cumInfo);
-        Cum_info_cat_LastMonteCarlo_Bootsample = nan(ParamModel.NbBoot_Info/10,WinNum_cumInfo);
+        %Cum_info_stim_LastMonteCarlo_Bootsample = nan(ParamModel.NbBoot_Info/10,WinNum_cumInfo);
+        %Cum_info_cat_LastMonteCarlo_Bootsample = nan(ParamModel.NbBoot_Info/10,WinNum_cumInfo);
     end
     
     if ~isempty(ParamModel.ExactHist)
@@ -440,7 +441,7 @@ else
     
     parfor bb=1:ParamModel.NbBoot_CumInfo
         Tstart3=tic;
-        fprintf('Bootstrap %d/%d\n', bb, ParamModel.NbBoot_CumInfo);
+        fprintf('Bootstrap CumInfo %d/%d\n', bb, ParamModel.NbBoot_CumInfo);
         if ~isempty(ParamModel.MarkovParameters_Cum_Info)
             HY_Markov4_stim_bbtrial = nan(1,WinNum_cumInfo);
             HY_Markov4_stim_bbstim = nan(1,WinNum_cumInfo);
@@ -448,7 +449,7 @@ else
             HY_Markov4_cat_bbstim = nan(1,WinNum_cumInfo);
         end
         for ww=2:WinNum_cumInfo
-            fprintf('Bootstrap %d/%d Time point %d/%d\n',bb, ParamModel.NbBoot_CumInfo, ww, WinNum_cumInfo);
+            fprintf('Bootstrap CumInfo %d/%d Time point %d/%d\n',bb, ParamModel.NbBoot_CumInfo, ww, WinNum_cumInfo);
             
             % First for the cumulative information about stimuli
             P_YgivenS_local_trial = Data_stim_P_YgivenS_Boottrial(bb,1:ww);
@@ -460,8 +461,10 @@ else
                 Cum_info_stim_LastMonteCarlo_Bootstim(bb,ww)=Icum_EstMonteCarlo_temp(1);
                 [Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(P_YgivenS_local_trial,'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end));
                 Cum_info_stim_LastMonteCarlo_Boottrial(bb,ww)=Icum_EstMonteCarlo_temp(1);
-                [Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(Data.stim_P_YgivenS(1,1:ww),'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end));
-                Cum_info_stim_LastMonteCarlo_Bootsample(bb,ww) = Icum_EstMonteCarlo_temp(1);
+                % if you want to restore the bootstrap of MC on same
+                % estimations of spike rate restore the following lines
+                %[Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(Data.stim_P_YgivenS(1,1:ww),'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end));
+                %Cum_info_stim_LastMonteCarlo_Bootsample(bb,ww) = Icum_EstMonteCarlo_temp(1);
             end
             
             if ~isempty(ParamModel.ExactHist)
@@ -492,8 +495,10 @@ else
                 Cum_info_cat_LastMonteCarlo_Bootstim(bb,ww)=Icum_EstMonteCarlo_temp(1);
                 [Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(P_YgivenS_local_trial,'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end));
                 Cum_info_cat_LastMonteCarlo_Boottrial(bb,ww)=Icum_EstMonteCarlo_temp(1);
-                [Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(Data.category_P_YgivenS(1,1:ww),'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end));
-                Cum_info_cat_LastMonteCarlo_Bootsample(bb,ww) = Icum_EstMonteCarlo_temp(1);
+                % if you want to restore the bootstrap of MC on same
+                % estimations of spike rate restore the following lines
+                %[Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(Data.category_P_YgivenS(1,1:ww),'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end));
+                %Cum_info_cat_LastMonteCarlo_Bootsample(bb,ww) = Icum_EstMonteCarlo_temp(1);
             end
             
             if ~isempty(ParamModel.ExactHist)
@@ -529,9 +534,11 @@ else
         ModelTypeMCtrial = sprintf('MonteCarlo%d_Boottrial',log10(ParamModel.NumSamples_MC_Cum_Info(end)));
         Data.cum_info_stim.(sprintf('%s',ModelTypeMCtrial)) = Cum_info_stim_LastMonteCarlo_Boottrial;
         Data.cum_info_cat.(sprintf('%s',ModelTypeMCtrial)) = Cum_info_cat_LastMonteCarlo_Boottrial;
-        ModelTypeMCsample = sprintf('MonteCarlo%d_Bootsample',log10(ParamModel.NumSamples_MC_Cum_Info(end)));
-        Data.cum_info_stim.(sprintf('%s',ModelTypeMCsample)) = Cum_info_stim_LastMonteCarlo_Bootsample;
-        Data.cum_info_cat.(sprintf('%s',ModelTypeMCsample)) = Cum_info_cat_LastMonteCarlo_Bootsample;
+        % if you want to restore the bootstrap of MC on same
+        % estimations of spike rate restore the following lines
+        %ModelTypeMCsample = sprintf('MonteCarlo%d_Bootsample',log10(ParamModel.NumSamples_MC_Cum_Info(end)));
+        %Data.cum_info_stim.(sprintf('%s',ModelTypeMCsample)) = Cum_info_stim_LastMonteCarlo_Bootsample;
+        %Data.cum_info_cat.(sprintf('%s',ModelTypeMCsample)) = Cum_info_cat_LastMonteCarlo_Bootsample;
     end
     
     if ~isempty(ParamModel.ExactHist)

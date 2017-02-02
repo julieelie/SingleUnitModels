@@ -110,7 +110,7 @@ end
 %OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatSavio');
 
 if Savio
-    OutputDir_local='/global/scratch/jelie/MatFiles/ModMatInfobis';
+    OutputDir_local='/global/scratch/jelie/MatFiles/ModMatInfo';
     OutputDirEx_local='/global/home/users/jelie/JobExecutableFiles';
     OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatInfo');
 elseif Me

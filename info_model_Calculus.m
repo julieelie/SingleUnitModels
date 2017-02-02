@@ -1,4 +1,4 @@
-function [I,P_YgivenS_all1,P_YgivenS_all2]=info_model_Calculus(mu_in, ymax,y,Scale)
+function [I,P_YgivenS_all1,P_YgivenS_all2,H_y, H_ymu]=info_model_Calculus(mu_in, ymax,y,Scale)
 %% This function calculate how much information there is in the prediction of a model
 % Note that there is a trade off in the information value calculation
 % between the values that mu can get and how widely the entropy of the model
