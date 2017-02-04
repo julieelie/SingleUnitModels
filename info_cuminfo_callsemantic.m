@@ -86,7 +86,7 @@ NbCat = length(IdCats);
 
 %% Configure Parallel computing
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
-    parpool(str2num(getenv('SLURM_CPUS_ON_NODE')));
+    MyParPool = parpool(str2num(getenv('SLURM_CPUS_ON_NODE')),'IdleTimeout', Inf);
     system('mkdir -p /global/scratch/$USER/$SLURM_JOB_ID')
     [~,JobID] = system('echo $SLURM_JOB_ID');
     parcluster.JobStorageLocation = ['/global/scratch/jelie/' JobID];    
@@ -148,7 +148,7 @@ for ww = 1:WinNum
     
     
     parfor bb=1:ParamModel.NbBoot_Info
-        fprintf(1,'%d/%d bootstrap instantaneous info for + biais', bb, ParamModel.NbBoot_Info);
+        fprintf(1,'%d/%d bootstrap instantaneous info for + biais\n', bb, ParamModel.NbBoot_Info);
         [Local_Output] = info_model_Calculus_wrapper(Trials, FirstTimePoint, LastTimePoint,Boot_switch);
         Info_biais_stim(bb) = Local_Output.value;
         if bb <= ParamModel.NbBoot_CumInfo
@@ -179,7 +179,7 @@ for ww = 1:WinNum
 %     end
 
     parfor bb=1:ParamModel.NbBoot_Info
-        fprintf(1,'%d/%d bootstrap instantaneous info for variance', bb, ParamModel.NbBoot_Info);
+        fprintf(1,'%d/%d bootstrap instantaneous info for variance\n', bb, ParamModel.NbBoot_Info);
         [Local_Output] = info_model_Calculus_wrapper(Trials, FirstTimePoint, LastTimePoint,Boot_switch);
         Info_boot_stim(bb) = Local_Output.value;
         if bb <= ParamModel.NbBoot_CumInfo
@@ -197,7 +197,6 @@ for ww = 1:WinNum
     Data.category_info_boot_mean(ww)=mean(Info_boot_category);
     fprintf('Instantaneous Info: Done bin %d/%d after %f sec\n', ww, WinNum, toc(Tstart));
 end
-
  %% Save what we have for now
  if saveonline
      if exist(Calfilename, 'file')==2
@@ -431,13 +430,13 @@ else
         Cum_info_cat_LastMarkov_Boottrial = nan(ParamModel.NbBoot_Info/10,WinNum_cumInfo);
     end
     
-    if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
-        delete(gcp)
-        parpool(str2num(getenv('SLURM_CPUS_ON_NODE')));
-        system('mkdir -p /global/scratch/$USER/$SLURM_JOB_ID')
-        [~,JobID] = system('echo $SLURM_JOB_ID');
-        parcluster.JobStorageLocation = ['/global/scratch/jelie/' JobID];
-    end
+%     if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
+%         delete(gcp)
+%         parpool(str2num(getenv('SLURM_CPUS_ON_NODE')));
+%         system('mkdir -p /global/scratch/$USER/$SLURM_JOB_ID')
+%         [~,JobID] = system('echo $SLURM_JOB_ID');
+%         parcluster.JobStorageLocation = ['/global/scratch/jelie/' JobID];
+%     end
     
     parfor bb=1:ParamModel.NbBoot_CumInfo
         Tstart3=tic;
@@ -558,8 +557,10 @@ else
 
     end
 end
+
 %% get rid of temporary files for parallel computing
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
+    delete(MyParPool);
     system(['rm -r ' parcluster.JobStorageLocation])
 end
 
