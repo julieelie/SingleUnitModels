@@ -330,7 +330,7 @@ if SWITCH.BestBin
     % of the spectrum power density is contained
     SignalTot = cell2mat(Res.PSTH_GaussFiltered(DataSel));
     SignalTot_1dim=reshape(SignalTot',[size(SignalTot,1)*size(SignalTot,2),1]);
-    Window = 0.4*Res.Response_samprate;
+    Window = 0.2*Res.Response_samprate;
     [Pxx,F] = pwelch(SignalTot_1dim, Window, [],[],10000);
     Pxx_Perc = 100*cumsum(Pxx / sum(Pxx));
     IndMax=find(Pxx_Perc > 99);
