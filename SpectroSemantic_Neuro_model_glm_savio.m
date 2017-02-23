@@ -1,4 +1,5 @@
-function [PG_Index,FanoFactor_Index, Wins] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+function [OptimalFreqCutOff] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+% [PG_Index,FanoFactor_Index, Wins] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %% Get the environment to figure out on which machine/cluster we are
 getenv('HOSTNAME');
 
@@ -310,25 +311,40 @@ end
 
 %% Compute coherence to determine the optimal window size, the scale at which neural response information is maximized
 if SWITCH.BestBin
-    if strcmp(ParamModel.NeuroRes, 'count')
-        %Data processing
+    %Data processing
+    ParamModel.NeuroRes = 'count';
+    ParamModel.Response_samprate = Res.Response_samprate;
     [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials(DataSel),Res.PSTH(DataSel),ParamModel);
-    elseif strcmp(ParamModel.NeuroRes, 'count_gaussfiltered')
-        %Data processing
-        [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials_GaussFiltered(DataSel),Res.PSTH_GaussFiltered(DataSel),ParamModel);
-    end
     % compute coherence
-    SampleRate=1000; %bin size =1ms so sample Rate = 1000Hz
-    [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,SampleRate);
-    OptimalCoherenceWinsize = CoherenceStruct.freqCutoff;
+    [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,Res.Response_samprate);
+    OptimalFreqCutOff.CoherenceRaw = CoherenceStruct.freqCutoff;
+    
+    ParamModel.NeuroRes = 'count_gaussfiltered';
+    %Data processing
+    [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials_GaussFiltered(DataSel),Res.PSTH_GaussFiltered(DataSel),ParamModel);
+    [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,Res.Response_samprate);
+    % Compute coherence on gaussian filtered spike trains
+    OptimalFreqCutOff.CoherenceGaussFilt = CoherenceStruct.freqCutoff;
+    
+    % Calculate the frequency of the gaussian filtered PSTH below which 99%
+    % of the spectrum power density is contained
+    SignalTot = cell2mat(Res.PSTH_GaussFiltered(DataSel));
+    SignalTot_1dim=reshape(SignalTot',[size(SignalTot,1)*size(SignalTot,2),1]);
+    Window = 0.4*Res.Response_samprate;
+    [Pxx,F] = pwelch(SignalTot_1dim, Window, [],[],10000);
+    Pxx_Perc = 100*cumsum(Pxx / sum(Pxx));
+    IndMax=find(Pxx_Perc > 99);
+    OptimalFreqCutOff.PowerSpectrumDensityThresh = F(IndMax(1));
+    
+    
     % According to this code 10ms is the best size for 97% of cells see
     % fig BestPSTHBin.fig
     % At that window size, the values of the FanoFactor over cells is very
     % close to 1. see fig PoissonFanoFactor.fig
     if PrevData
-        save(calfilename_local,'MatfilePath', 'OptimalCoherenceWinsize', '-append');
+        save(calfilename_local,'MatfilePath', 'OptimalFreqCutOff', '-append');
     else
-        save(calfilename_local,'MatfilePath', 'OptimalCoherenceWinsize');
+        save(calfilename_local,'MatfilePath', 'OptimalFreqCutOff');
     end
 end
 
@@ -347,8 +363,15 @@ end
 if SWITCH.InfoCal
     ParamModel.MarkovParameters_Cum_Info = [];% supressing the calculation of Markov approximation for the cumulative information
     ParamModel.ExactHist = [];% supressing the exact calculation of the cumulative information
-    
-   [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(Res.Trials_GaussFiltered(DataSel),Res.VocType(DataSel), ParamModel, calfilename_local);
+    ParamModel.Response_samprate = Res.Response_samprate;
+    % Find out the number of trials per stimulus
+    Ntrials_perstim = nan(length(DataSel),1);
+    for ss=1:length(DataSel)
+        Ntrials_perstim(ss) = length(Res.Trials{DataSel(ss)});
+    end
+    ParamModel.Mean_Ntrials_perstim = [mean(Ntrials_perstim) mean(Ntrials_perstim - 1)];
+    % Calculate information
+   [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(Res.PSTH_GaussFiltered(DataSel),Res.JackKnife_GaussFiltered(DataSel),Res.VocType(DataSel), ParamModel, calfilename_local);
    if PrevData 
        save(calfilename_local,'Data', 'InputData','Wins','ParamModel','-append');
    else

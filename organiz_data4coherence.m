@@ -1,4 +1,4 @@
-function [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Trials,PSTH,ParamModel)
+function [HalfTrain1, HalfTrain2, NumTrials,SpikeTrains]=organiz_data4coherence(Trials,PSTH,ParamModel)
 %% define new dataset depending on the size of the window of the model
 % loop through the stims and only keep the Win first ms of them when
 % they are longer than Win ms
@@ -6,6 +6,7 @@ NbStim=length(Trials);
 HalfTrain1=[];
 HalfTrain2=[];
 NumTrials=nan(NbStim,1);
+SpikeTrains = cell(1,NbStim);
 for dd = 1:NbStim
     if strcmp(ParamModel.NeuroRes, 'count')
         NTrials=length(Trials{dd});
@@ -28,13 +29,14 @@ for dd = 1:NbStim
                 PSTH_local(tt,SpikeIdx)=1+PSTH_local(tt,SpikeIdx);
             end
         end
+        SpikeTrains{dd} = PSTH_local;
     elseif strcmp(ParamModel.NeuroRes, 'count_gaussfiltered')
         NTrials=size(Trials{dd},1);
-        duration=size(PSTH{dd},2);% This is the duration of the neural response in ms
-        if duration<=(ParamModel.MaxWin + ParamModel.ResDelay)
+        duration=size(PSTH{dd},2);% This is the duration of the neural response in number of points
+        if duration<=(ParamModel.MaxWin + ParamModel.ResDelay)*ParamModel.Response_samprate/1000
             PSTH_local=zeros(NTrials,duration);
         else
-            PSTH_local=zeros(NTrials,ParamModel.MaxWin + ParamModel.ResDelay);
+            PSTH_local=zeros(NTrials,(ParamModel.MaxWin + ParamModel.ResDelay)*ParamModel.Response_samprate/1000);
         end
 
 
