@@ -61,9 +61,7 @@ Info.stim_entropy = log2(NbStim);
 if ~isempty(CatList_in)
     % Derive P_YgivenC and calculate information about categories
     Info.P_YgivenC = nan(MaxY+1,NbCat);
-    size(Info.P_YgivenS)
-    size(sum(Info.P_YgivenS,1))
-    P_YgivenS_scaled = Info.P_YgivenS ./ sum(Info.P_YgivenS,1); % Make sure that all distributions of probabilities sum to 1 for each stimulus
+    P_YgivenS_scaled = Info.P_YgivenS ./ repmat(sum(Info.P_YgivenS,1),size(Info.P_YgivenS,1),1); % Make sure that all distributions of probabilities sum to 1 for each stimulus
     for Cat=1:NbCat
         Info.P_YgivenC(:,Cat) = mean(P_YgivenS_scaled(:,find(CatList_in == Cat)),2);
     end
