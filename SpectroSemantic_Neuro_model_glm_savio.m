@@ -13,12 +13,14 @@ if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HO
 elseif ismac()
     Savio=0;
     Me = 1;
+    fprintf(1, 'We are on my Mac Book Pro!/n')
     addpath(genpath('/Users/elie/Documents/CODE/SingleUnitModels'));
     addpath(genpath('/Users/elie/Documents/CODE/GeneralCode'));
     addpath(genpath('/Users/elie/Documents/CODE/STRFLab/trunk'));
 else %we are on strfinator or a cluster machine
     Savio = 0;
     Me = 0;
+    fprintf(1, 'Hum.. We must be on one of the lab machine/n')
     addpath(genpath('/auto/fhome/julie/Code/SingleUnitModels'));
     addpath(genpath('/auto/fhome/julie/Code/GeneralCode'));
     addpath(genpath('/auto/fhome/julie/Code/strflab'));
