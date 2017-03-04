@@ -2,7 +2,7 @@ function [calfilename_local] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath
 % [OptimalFreqCutOff] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 % [PG_Index,FanoFactor_Index, Wins] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %% Get the environment to figure out on which machine/cluster we are
-getenv('HOSTNAME');
+fprintf(1,'The environment is: %s\n',getenv('HOSTNAME'))
 
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
     Savio=1;
