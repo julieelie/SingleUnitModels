@@ -92,11 +92,11 @@ end
 
 % Number of bootstraps
 if ~isfield(ParamModel, 'NbBoot_Info') || isempty(ParamModel.NbBoot_Info)
-    ParamModel.NbBoot_Info = 16;
+    ParamModel.NbBoot_Info = 20;
 end
 
 if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
-    ParamModel.NbBoot_CumInfo = 16;
+    ParamModel.NbBoot_CumInfo = 20;
 end
 
 
