@@ -110,7 +110,7 @@ P_YgivenC_Bootstrap = cell(ParamModel.NbBoot_CumInfo,WinNum);
 
 %% Now loop through bins and calculate spike rates and instantaneous information
 %parfor
-parfor ww = 1:WinNum
+for ww = 1:WinNum
     Tstart=tic;
     fprintf(1,'Instantaneous info exact spike patterns %d/%d window\n', ww, WinNum);
     Win = Wins(ww);
@@ -131,7 +131,7 @@ end
     
 % Bootstrapping the calculation of information with Jackknife estimations of spike rate
 %parfor
-parfor bb=1:ParamModel.NbBoot_Info
+for bb=1:ParamModel.NbBoot_Info
     fprintf(1,'%d/%d bootstrap instantaneous info with Jackknife estimates of spike rates\n', bb, ParamModel.NbBoot_Info);
     
     % Choosing a different set of JK trials for the stims for each bootstrap
@@ -478,7 +478,7 @@ else
 %     end
     
     %parfor
-    parfor bb=1:ParamModel.NbBoot_CumInfo
+    for bb=1:ParamModel.NbBoot_CumInfo
         Tstart3=tic;
         fprintf('Bootstrap CumInfo %d/%d\n', bb, ParamModel.NbBoot_CumInfo);
         if ~isempty(ParamModel.MarkovParameters_Cum_Info)
