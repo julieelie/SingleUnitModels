@@ -29,12 +29,12 @@ end
 TimerVal=tic;
 
 if nargin<1
-    MatfilePath = '/auto/tdrive/julie/k6/julie/matfile/FirstVoc1s_Site3_L1250R1650_e13_s0_ss1.VariousKNeigh.mat';
+    MatfilePath = '/auto/tdrive/julie/k6/julie/matfile/FirstVoc1s_Site3_L1250R1650_e13_s0_ss1.VariousKNeigh.mat'
 end
 
 %% Deal with input parameters
 if nargin<2
-    SWITCH = struct();
+    SWITCH = struct()
 end
 if ~isfield(SWITCH,'FanoFactor') || isempty(SWITCH.FanoFactor)
     SWITCH.FanoFactor=0;
