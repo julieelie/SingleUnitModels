@@ -4,7 +4,7 @@ function [calfilename_local] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath
 %% Get the environment to figure out on which machine/cluster we are
 fprintf(1,'The environment is: %s\n',getenv('HOSTNAME'))
 
-if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
+if ~isempty(strfind(getenv('HOSTNAME'),'ln')) || ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
     Savio=1;
     fprintf(1, 'We are on savio!/n')
     addpath(genpath('/global/home/users/jelie/CODE/SingleUnitModels'));
