@@ -1,5 +1,5 @@
 function [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(PSTH,JackKnifeTrials,VocType, ParamModel,  Calfilename)
-FIG=1;
+FIG=0;
 if nargin<4
     ParamModel = struct();
 end
@@ -32,17 +32,17 @@ end
 
 % Number of bootstraps
 if ~isfield(ParamModel, 'NbBoot_Info') || isempty(ParamModel.NbBoot_Info)
-    ParamModel.NbBoot_Info = 10;
+    ParamModel.NbBoot_Info = 20;
 end
 
 if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
-    ParamModel.NbBoot_CumInfo = 10;
+    ParamModel.NbBoot_CumInfo = 20;
 end
 
 % Set parameters for the number of samples that should be tested in the
 % MonteCarlo estimation of the cumulative information
 if ~isfield(ParamModel, 'NumSamples_MC_Cum_Info')
-ParamModel.NumSamples_MC_Cum_Info = 10^6; %Set the number of samples for the Monte Carlo approximation of the cumulative information 10^7 takes too much memory prefers lower numbers
+    ParamModel.NumSamples_MC_Cum_Info = 10^6; %Set the number of samples for the Monte Carlo approximation of the cumulative information 10^7 takes too much memory prefers lower numbers
 elseif isempty(ParamModel.NumSamples_MC_Cum_Info)
     fprintf(1,'No Monte Carlo approximation of the cumulative information will be calculated\n');
 end
@@ -93,83 +93,106 @@ if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HO
 end
 
 %% Initialize output variables
-InputData.Rate4InfoStim = nan(NbStims,WinNum);
-InputData_Rate4InfoStim_Boot = cell(1,ParamModel.NbBoot_Info);
+Rate4InfoStim = nan(NbStims,WinNum);
+Rate4InfoStim_Boot = cell(1,ParamModel.NbBoot_Info);
 InputData.VocType = VocType;
-Data.stim_entropy = nan(1,WinNum);
-Data.category_entropy = nan(1,WinNum);
-Data.stim_info = nan(1,WinNum);
-Data_stim_info_JKBoot = nan(ParamModel.NbBoot_Info,WinNum);
-Data.stim_info_infT = nan(1,WinNum);
-Data.stim_info_std = nan(1,WinNum);
-Data.stim_info_std_infT = nan(1,WinNum);
-Data.category_info = nan(1,WinNum);
-Data_category_info_JKBoot = nan(ParamModel.NbBoot_Info,WinNum);
-Data.category_info_infT = nan(1,WinNum);
-Data.category_info_std = nan(1,WinNum);
-Data.category_info_std_infT = nan(1,WinNum);
+Stim_entropy = nan(1,WinNum);
+Category_entropy = nan(1,WinNum);
+Stim_info = nan(1,WinNum);
+Stim_info_JKBoot = nan(ParamModel.NbBoot_Info,WinNum);
+Category_info = nan(1,WinNum);
+Category_info_JKBoot = nan(ParamModel.NbBoot_Info,WinNum);
 
-Data.P_YgivenS = cell(1,WinNum);
-Data.P_YgivenC = cell(1,WinNum);
-Data_P_YgivenS_Bootstrap = cell(ParamModel.NbBoot_CumInfo,WinNum);
-Data_P_YgivenC_Bootstrap = cell(ParamModel.NbBoot_CumInfo,WinNum);
+P_YgivenS = cell(1,WinNum);
+P_YgivenC = cell(1,WinNum);
+P_YgivenS_Bootstrap = cell(ParamModel.NbBoot_CumInfo,WinNum);
+P_YgivenC_Bootstrap = cell(ParamModel.NbBoot_CumInfo,WinNum);
 
-%% Now loop through bins and calculate spike patterns and instantaneous information
-for ww = 1:WinNum
+%% Now loop through bins and calculate spike rates and instantaneous information
+%parfor
+parfor ww = 1:WinNum
     Tstart=tic;
-    fprintf(1,'%d/%d window\n', ww, WinNum);
+    fprintf(1,'Instantaneous info exact spike patterns %d/%d window\n', ww, WinNum);
     Win = Wins(ww);
-    FirstTimePoint = (Win - ParamModel.NeuroBin+ ParamModel.ResDelay)*ParamModel.Response_SampRate/1000 +1;
-    LastTimePoint = (Win + ParamModel.ResDelay)*ParamModel.Response_SampRate/1000;
+    FirstTimePoint = (Win - ParamModel.NeuroBin+ ParamModel.ResDelay)*ParamModel.Response_samprate/1000 +1;
+    LastTimePoint = (Win + ParamModel.ResDelay)*ParamModel.Response_samprate/1000;
      
-    % Calculating info about the stims and the categories for actual and
-    % jackknife values of spike rates
-    Boot_switch = 0;
-    [Local_Output] = info_model_Calculus_wrapper2(PSTH, FirstTimePoint, LastTimePoint,VocType,Boot_switch);
-    InputData.Rate4InfoStim(:,ww) = Local_Output.InputdataStim;
-    Data.stim_info(ww) = Local_Output.stim_value;
-    Data.category_info(ww) = Local_Output.cat_value;
-    Data.P_YgivenS{ww} = Local_Output.P_YgivenS;
-    Data.P_YgivenC{ww} = Local_Output.P_YgivenC;
-    Data.stim_entropy(ww) = Local_Output.stim_entropy;
-    Data.category_entropy(ww) = Local_Output.cat_entropy;
+    % Calculating info about the stims and the categories for actual values of spike rates
+    [Local_Output] = info_model_Calculus_wrapper2(PSTH, FirstTimePoint, LastTimePoint,VocType,ParamModel.Response_samprate);
+    Rate4InfoStim(:,ww) = Local_Output.InputdataStim;
+    Stim_info(ww) = Local_Output.stim_value;
+    Category_info(ww) = Local_Output.cat_value;
+    P_YgivenS{ww} = Local_Output.P_YgivenS;
+    P_YgivenC{ww} = Local_Output.P_YgivenC;
+    Stim_entropy(ww) = Local_Output.stim_entropy;
+    Category_entropy(ww) = Local_Output.cat_entropy; 
+   fprintf('Instantaneous Info: Done bin %d/%d after %f sec\n', ww, WinNum, toc(Tstart));
+end
     
-    % Bootstrapping the calculation of information with Jackknife estimations of spike rate
-    Boot_switch = 1;
-    parfor bb=1:ParamModel.NbBoot_Info
-        fprintf(1,'%d/%d bootstrap instantaneous info with Jackknife estimates of spike rates\n', bb, ParamModel.NbBoot_Info);
-        [Local_Output] = info_model_Calculus_wrapper2(JackKnifeTrials, FirstTimePoint, LastTimePoint,Boot_switch);
+% Bootstrapping the calculation of information with Jackknife estimations of spike rate
+%parfor
+parfor bb=1:ParamModel.NbBoot_Info
+    fprintf(1,'%d/%d bootstrap instantaneous info with Jackknife estimates of spike rates\n', bb, ParamModel.NbBoot_Info);
+    
+    % Choosing a different set of JK trials for the stims for each bootstrap
+    NbStim = length(JackKnifeTrials);
+    JackKnifePSTH = cell(1,NbStim);
+    Rate4InfoStim_Boot{bb} = nan(NbStims,WinNum);
+    for st = 1:NbStim
+        PSTH_Local = JackKnifeTrials{st};
+        NJK = size(PSTH_Local,1);
+        JackKnifePSTH{st} = PSTH_Local(randperm(NJK,1),:);
+    end
+
+    % Then run the calculation of information on all windows
+    for ww_in = 1:WinNum
+        fprintf(1,'JK instantaneous info Boostrap %d %d/%d window\n',bb, ww_in, WinNum);
+        Win = Wins(ww_in);
+        FirstTimePoint = (Win - ParamModel.NeuroBin+ ParamModel.ResDelay)*ParamModel.Response_samprate/1000 +1;
+        LastTimePoint = (Win + ParamModel.ResDelay)*ParamModel.Response_samprate/1000;        
         
-        if ww==1
-            InputData_Rate4InfoStim_Boot{bb} = nan(NbStims,WinNum);
-        end
-        InputData_Rate4InfoStim_Boot{bb}(:,ww) = Local_Output.InputdataStim;
-        Data_stim_info_JKBoot(bb,ww) = Local_Output.stim_value;
-        Data_category_info_JKBoot(bb,ww) = Local_Output.cat_value;
+        [Local_Output] = info_model_Calculus_wrapper2(JackKnifePSTH, FirstTimePoint, LastTimePoint, VocType, ParamModel.Response_samprate);
+        
+        Rate4InfoStim_Boot{bb}(:,ww_in) = Local_Output.InputdataStim;
+        Stim_info_JKBoot(bb,ww_in) = Local_Output.stim_value;
+        Category_info_JKBoot(bb,ww_in) = Local_Output.cat_value;
         if bb <= ParamModel.NbBoot_CumInfo
-            Data_P_YgivenS_Bootstrap{bb,ww} = Local_Output.P_YgivenS;
-            Data_P_YgivenC_Bootstrap{bb,ww} = Local_Output.P_YgivenC;
+            P_YgivenS_Bootstrap{bb,ww_in} = Local_Output.P_YgivenS;
+            P_YgivenC_Bootstrap{bb,ww_in} = Local_Output.P_YgivenC;
         end
     end
-    
-    % Estimate information for infinite number of trials
-    % ordonnée à l'origine: b = (y1*x2 - y2*x1)/(x2-x1)
-    Data.stim_info_infT(ww) = (Data.stim_info(ww)/ParamModel.Mean_Ntrials_perstim(1) - mean(Data_stim_info_JKBoot(:,ww))/ParamModel.Mean_Ntrials_perstim(2))/(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-    Data.category_info_infT(ww) = (Data.category_info(ww)/ParamModel.Mean_Ntrials_perstim(1) - mean(Data_category_info_JKBoot(:,ww))/ParamModel.Mean_Ntrials_perstim(2))/(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-    Data.stim_info_std(ww)=std(Data_stim_info_JKBoot(:,ww));
-    Data.category_info_std(ww)=std(Data_category_info_JKBoot(:,ww));
-    Data.stim_info_JKBoot_infT(:,ww) = (Data.stim_info(ww)/ParamModel.Mean_Ntrials_perstim(1) - Data_stim_info_JKBoot(:,ww) ./ ParamModel.Mean_Ntrials_perstim(2)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-    Data.category_info_JKBoot_infT(:,ww) = (Data.category_info(ww)/ParamModel.Mean_Ntrials_perstim(1) - Data_category_info_JKBoot(:,ww) ./ ParamModel.Mean_Ntrials_perstim(2)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-    Data.stim_info_std_infT(ww) = std(Data.stim_info_JKBoot_infT(:,ww));
-    Data.category_info_stdinfT(ww) = std(Data.category_info_JKBoot_infT(:,ww));
-
-    fprintf('Instantaneous Info: Done bin %d/%d after %f sec\n', ww, WinNum, toc(Tstart));
 end
-Data.stim_info_JKBoot = Data_stim_info_JKBoot;
-Data.category_info_JKBoot = Data_category_info_JKBoot;
-InputData.Rate4InfoStim_Boot = InputData_Rate4InfoStim_Boot;
-Data.P_YgivenS_Bootstrap = Data_P_YgivenS_Bootstrap;
-Data.P_YgivenC_Bootstrap = Data_P_YgivenC_Bootstrap;
+
+% Estimate information for infinite number of trials
+% ordonnée à l'origine: b = (y1*x2 - y2*x1)/(x2-x1)
+Data.stim_info_infT = (Stim_info./ParamModel.Mean_Ntrials_perstim(2) - mean(Stim_info_JKBoot,1)./ParamModel.Mean_Ntrials_perstim(1))./(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
+Data.category_info_infT = (Category_info./ParamModel.Mean_Ntrials_perstim(2) - mean(Category_info_JKBoot,1)./ParamModel.Mean_Ntrials_perstim(1))./(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
+Data.stim_info_JKBoot_std=std(Stim_info_JKBoot);
+Data.category_info_JKBoot_std=std(Category_info_JKBoot);
+
+Data.stim_info_JKBoot_infT = (repmat(Stim_info ./ ParamModel.Mean_Ntrials_perstim(2), ParamModel.NbBoot_Info,1) - Stim_info_JKBoot ./ ParamModel.Mean_Ntrials_perstim(1)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
+Data.category_info_JKBoot_infT = (repmat(Category_info ./ ParamModel.Mean_Ntrials_perstim(2), ParamModel.NbBoot_Info,1) - Category_info_JKBoot ./ ParamModel.Mean_Ntrials_perstim(1)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
+Data.stim_info_infT_std = std(Data.stim_info_JKBoot_infT);
+Data.category_info_infT_std = std(Data.category_info_JKBoot_infT);
+
+
+% Stuff in results in structure
+InputData.VocType = VocType;
+InputData.Rate4InfoStim_Boot = Rate4InfoStim_Boot;
+InputData.Rate4InfoStim = Rate4InfoStim;
+
+Data.P_YgivenS_Bootstrap = P_YgivenS_Bootstrap;
+Data.P_YgivenC_Bootstrap = P_YgivenC_Bootstrap;
+
+Data.P_YgivenS = P_YgivenS;
+Data.P_YgivenC = P_YgivenC;
+
+Data.stim_entropy = Stim_entropy;
+Data.category_entropy = Category_entropy;
+Data.stim_info = Stim_info;
+Data.stim_info_JKBoot = Stim_info_JKBoot;
+Data.category_info = Category_info;
+Data.category_info_JKBoot = Category_info_JKBoot;
 
  %% Save what we have for now
  if saveonline
@@ -204,7 +227,7 @@ Data.P_YgivenC_Bootstrap = Data_P_YgivenC_Bootstrap;
         xlabel('Time ms')
         ylabel('Spike rate /ms')
         title(sprintf('Stim %d/%d',ss, NbStims))
-        pause()
+        pause(1)
      end
      
     figure()
@@ -222,6 +245,7 @@ Data.P_YgivenC_Bootstrap = Data_P_YgivenC_Bootstrap;
     set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
     xlabel('Time ms')
     ylabel('Stimulus spike rate variance')
+    pause()
     
          
      
@@ -235,9 +259,9 @@ Data.P_YgivenC_Bootstrap = Data_P_YgivenC_Bootstrap;
      plot(mean(Data.stim_info_JKBoot),'LineWidth',2, 'Color',[0 1 0])
      legend('Information', 'Info 4 Infinite # Trials', 'Info 4 JK Trials', 'Location','NorthEast');
      hold on
-     plot(Data.stim_info_infT + 2*Data.stim_info_std_infT, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
+     plot(Data.stim_info_infT + 2*Data.stim_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
      hold on
-     plot(Data.stim_info_infT - 2*Data.stim_info_std_infT, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
+     plot(Data.stim_info_infT - 2*Data.stim_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
      hold on
      line([0 WinNum], [0 0], 'LineStyle','-.','Color','k')
      hold on
@@ -257,9 +281,9 @@ Data.P_YgivenC_Bootstrap = Data_P_YgivenC_Bootstrap;
      plot(mean(Data.stim_info_JKBoot),'LineWidth',2, 'Color',[0 1 0])
      legend('Information', 'Info 4 Infinite # Trials', 'Info 4 JK Trials', 'Location','NorthEast');
      hold on
-     plot(Data.stim_info_infT + 2*Data.stim_info_std_infT, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
+     plot(Data.stim_info_infT + 2*Data.stim_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
      hold on
-     plot(Data.stim_info_infT - 2*Data.stim_info_std_infT, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
+     plot(Data.stim_info_infT - 2*Data.stim_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
      hold on
      line([0 WinNum], [0 0], 'LineStyle','-.','Color','k')
      hold off
@@ -279,9 +303,9 @@ Data.P_YgivenC_Bootstrap = Data_P_YgivenC_Bootstrap;
      plot(mean(Data.category_info_JKBoot),'LineWidth',2, 'Color',[0 1 0])
      legend('Information', 'Info 4 Infinite # Trials', 'Info 4 JK Trials', 'Location','NorthEast');
      hold on
-     plot(Data.category_info_infT + 2*Data.category_info_std_infT, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
+     plot(Data.category_info_infT + 2*Data.category_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
      hold on
-     plot(Data.category_info_infT - 2*Data.category_info_std_infT, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
+     plot(Data.category_info_infT - 2*Data.category_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
      hold on
      line([0 WinNum], [0 0], 'LineStyle','-.','Color','k')
      hold on
@@ -301,9 +325,9 @@ Data.P_YgivenC_Bootstrap = Data_P_YgivenC_Bootstrap;
      plot(mean(Data.category_info_JKBoot),'LineWidth',2, 'Color',[0 1 0])
      legend('Information', 'Info 4 Infinite # Trials', 'Info 4 JK Trials', 'Location','NorthEast');
      hold on
-     plot(Data.category_info_infT + 2*Data.category_info_std_infT, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
+     plot(Data.category_info_infT + 2*Data.category_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
      hold on
-     plot(Data.category_info_infT - 2*Data.catgeory_info_std_infT, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
+     plot(Data.category_info_infT - 2*Data.category_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
      hold on
      line([0 WinNum], [0 0], 'LineStyle','-.','Color','k')
      hold off
@@ -313,6 +337,7 @@ Data.P_YgivenC_Bootstrap = Data_P_YgivenC_Bootstrap;
      set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
      xlabel('Time ms')
      ylabel('Category Information in bits')
+     pause()
  end
 %% Now calculating cumulative information
 % Getting output variables ready
@@ -426,20 +451,22 @@ else
     %% Calculating bootstrap values accross stims and across trials within stims
     fprintf(1,'Bootstraping calculation of cumulative information\n')
     if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
-        Cum_info_stim_LastMonteCarlo_Bootstrap = nan(ParamModel.NbBoot_cumInfo,WinNum_cumInfo);
-        Cum_info_cat_LastMonteCarlo_Bootstrap = nan(ParamModel.NbBoot_cumInfo,WinNum_cumInfo);
+        Cum_info_stim_LastMonteCarlo_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
+        Cum_info_cat_LastMonteCarlo_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
+        Cum_info_stim_LastMonteCarlo_Bootstrap(:,1) = repmat(Data.stim_info(1),ParamModel.NbBoot_CumInfo,1);
+        Cum_info_cat_LastMonteCarlo_Bootstrap(:,1) = repmat(Data.category_info(1),ParamModel.NbBoot_CumInfo,1);
         %Cum_info_stim_LastMonteCarlo_Bootsample = nan(ParamModel.NbBoot_cumInfo,WinNum_cumInfo);
         %Cum_info_cat_LastMonteCarlo_Bootsample = nan(ParamModel.NbBoot_cumInfo,WinNum_cumInfo);
     end
     
     if ~isempty(ParamModel.ExactHist)
-        Cum_info_stim_ExactMem0_4_Bootstrap = nan(ParamModel.NbBoot_cumInfo,WinNum_cumInfo);
-        Cum_info_cat_ExactMem0_4_Bootstrap = nan(ParamModel.NbBoot_cumInfo,WinNum_cumInfo);
+        Cum_info_stim_ExactMem0_4_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
+        Cum_info_cat_ExactMem0_4_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
     end
     
     if ~isempty(ParamModel.MarkovParameters_Cum_Info)
-        Cum_info_stim_LastMarkov_Bootstrap = nan(ParamModel.NbBoot_cumInfo,WinNum_cumInfo);
-        Cum_info_cat_LastMarkov_Bootstrap = nan(ParamModel.NbBoot_cumInfo,WinNum_cumInfo);
+        Cum_info_stim_LastMarkov_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
+        Cum_info_cat_LastMarkov_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
     end
     
 %     if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
@@ -450,6 +477,7 @@ else
 %         parcluster.JobStorageLocation = ['/global/scratch/jelie/' JobID];
 %     end
     
+    %parfor
     parfor bb=1:ParamModel.NbBoot_CumInfo
         Tstart3=tic;
         fprintf('Bootstrap CumInfo %d/%d\n', bb, ParamModel.NbBoot_CumInfo);
@@ -461,11 +489,11 @@ else
             fprintf('Bootstrap CumInfo %d/%d Time point %d/%d\n',bb, ParamModel.NbBoot_CumInfo, ww, WinNum_cumInfo);
             
             % First for the cumulative information about stimuli
-            P_YgivenC_local = Data_P_YgivenS_Bootstrap(bb,1:ww);
+            P_YgivenS_local = P_YgivenS_Bootstrap(bb,1:ww);
             
             if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
                 % Monte Carlo estimation with full memory
-                [Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(P_YgivenC_local,'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end));
+                [Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(P_YgivenS_local,'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end));
                 Cum_info_stim_LastMonteCarlo_Bootstrap(bb,ww)=Icum_EstMonteCarlo_temp(1);
                 % if you want to restore the bootstrap of MC on same
                 % estimations of spike rate restore the following lines
@@ -489,7 +517,7 @@ else
             end
             
             % Then same thing for the cumulative information about categories
-            P_YgivenC_local = Data_P_YgivenC_Bootstrap(bb,1:ww);
+            P_YgivenC_local = P_YgivenC_Bootstrap(bb,1:ww);
             
             if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
                 % Monte Carlo estimation with full memory
@@ -521,9 +549,25 @@ else
     end
     
     if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
-        ModelTypeMCstim = sprintf('MonteCarlo%d_Bootstim',log10(ParamModel.NumSamples_MC_Cum_Info(end)));
+        ModelTypeMCstim = sprintf('MonteCarlo%d_JKBootstrap',log10(ParamModel.NumSamples_MC_Cum_Info(end)));
         Data.cum_info_stim.(sprintf('%s',ModelTypeMCstim)) = Cum_info_stim_LastMonteCarlo_Bootstrap;
         Data.cum_info_cat.(sprintf('%s',ModelTypeMCstim)) = Cum_info_cat_LastMonteCarlo_Bootstrap;
+
+        % Estimate cumulative information for infinite number of trials and
+        % stuff in results in structure
+            % ordonnée à l'origine: b = (y1*x2 - y2*x1)/(x2-x1)
+        ModelTypeMC = sprintf('MonteCarlo%d_',log10(ParamModel.NumSamples_MC_Cum_Info(end)));
+        ModelType=sprintf('MonteCarlo%d',log10(ParamModel.NumSamples_MC_Cum_Info(ss)));
+        
+        Data.cum_info_stim.(sprintf('%sinfT',ModelTypeMC)) = (Data.cum_info_stim.(sprintf('%s',ModelType))(1,:) ./ ParamModel.Mean_Ntrials_perstim(2) - mean(Cum_info_stim_LastMonteCarlo_Bootstrap,1)./ParamModel.Mean_Ntrials_perstim(1))./(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
+        Data.cum_info_stim.(sprintf('%sJK_std',ModelTypeMC)) = std(Cum_info_stim_LastMonteCarlo_Bootstrap);
+        Data.cum_info_cat.(sprintf('%sinfT',ModelTypeMC)) = (Data.cum_info_cat.(sprintf('%s',ModelType))(1,:)./ParamModel.Mean_Ntrials_perstim(2) - mean(Cum_info_cat_LastMonteCarlo_Bootstrap,1)./ParamModel.Mean_Ntrials_perstim(1))./(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
+        Data.cum_info_cat.(sprintf('%sJK_std',ModelTypeMC)) = std(Cum_info_cat_LastMonteCarlo_Bootstrap);
+        Data.cum_info_stim.(sprintf('%sJKBoot_infT',ModelTypeMC)) = (repmat(Data.cum_info_stim.(sprintf('%s',ModelType))(1,:) ./ ParamModel.Mean_Ntrials_perstim(2), ParamModel.NbBoot_CumInfo,1) - Cum_info_stim_LastMonteCarlo_Bootstrap ./ ParamModel.Mean_Ntrials_perstim(1)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
+        Data.cum_info_cat.(sprintf('%sJKBoot_infT',ModelTypeMC)) = (repmat(Data.cum_info_cat.(sprintf('%s',ModelType))(1,:) ./ ParamModel.Mean_Ntrials_perstim(2), ParamModel.NbBoot_CumInfo,1) - Cum_info_cat_LastMonteCarlo_Bootstrap ./ ParamModel.Mean_Ntrials_perstim(1)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
+        Data.cum_info_stim.(sprintf('%sJKBoot_infT_std',ModelTypeMC)) = std(Data.cum_info_stim.(sprintf('%sJKBoot_infT',ModelTypeMC)));
+        Data.cum_info_cat.(sprintf('%sJKBoot_infT_std',ModelTypeMC)) = std(Data.cum_info_cat.(sprintf('%sJKBoot_infT',ModelTypeMC)));
+        
         % if you want to restore the bootstrap of MC on same
         % estimations of spike rate restore the following lines
         %ModelTypeMCsample = sprintf('MonteCarlo%d_Bootsample',log10(ParamModel.NumSamples_MC_Cum_Info(end)));
@@ -544,11 +588,15 @@ else
     end
 end
 
+
+
+
 %% get rid of temporary files for parallel computing
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
     delete(MyParPool);
     system(['rm -r ' parcluster.JobStorageLocation])
 end
+
 
 %% Save what we have for now
  if saveonline

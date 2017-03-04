@@ -1,4 +1,5 @@
-function [OptimalFreqCutOff] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+function [calfilename_local] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+% [OptimalFreqCutOff] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 % [PG_Index,FanoFactor_Index, Wins] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %% Get the environment to figure out on which machine/cluster we are
 getenv('HOSTNAME');
@@ -59,22 +60,22 @@ if ~isfield(ParamModel,'NeuroRes') || isempty(ParamModel.NeuroRes)
     ParamModel.NeuroRes = 'count_gaussfiltered';
 end
 if  ~isfield(ParamModel,'MinWin') || isempty(ParamModel.MinWin)
-    ParamModel.MinWin = 10; % end point of the first analysis window (spectrogram and neural response)
+    ParamModel.MinWin = 1; % end point of the first analysis window (spectrogram and neural response)
 end
 if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
-    ParamModel.MaxWin = 1000; %end point of the last anaysis window for...
+    ParamModel.MaxWin = 100; %end point of the last anaysis window for...
     ... neural response and end point of the largest analysis window for...
         ... spectrogram
 end
 if ~isfield(ParamModel,'MaxWin_cumInfo') || isempty(ParamModel.MaxWin_cumInfo)
-    ParamModel.MaxWin_cumInfo = 600; %end point of the last anaysis window for...
+    ParamModel.MaxWin_cumInfo = 100; %end point of the last anaysis window for...
     ... the calculation of cumulative information
 end
 if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
-    ParamModel.Increment = 10; %increase the size of the spectro window with a Xms pace
+    ParamModel.Increment = 1; %increase the size of the spectro window with a Xms pace
 end
 if ~isfield(ParamModel,'NeuroBin') || isempty(ParamModel.NeuroBin)
-    ParamModel.NeuroBin = 10; % size of the window (ms) within which the neural response is analyzed
+    ParamModel.NeuroBin = 1; % size of the window (ms) within which the neural response is analyzed
                                % The end of the window of analysis is
                                % determined by the Increment and ResDelay (see below).
 end
@@ -311,30 +312,48 @@ end
 
 %% Compute coherence to determine the optimal window size, the scale at which neural response information is maximized
 if SWITCH.BestBin
-    %Data processing
-    ParamModel.NeuroRes = 'count';
     ParamModel.Response_samprate = Res.Response_samprate;
-    [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials(DataSel),Res.PSTH(DataSel),ParamModel);
-    % compute coherence
-    [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,Res.Response_samprate);
-    OptimalFreqCutOff.CoherenceRaw = CoherenceStruct.freqCutoff;
     
-    ParamModel.NeuroRes = 'count_gaussfiltered';
     %Data processing
-    [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials_GaussFiltered(DataSel),Res.PSTH_GaussFiltered(DataSel),ParamModel);
-    [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,Res.Response_samprate);
+%     ParamModel.NeuroRes = 'count';
+%     [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials(DataSel),Res.PSTH(DataSel),ParamModel);
+    
+    % compute coherence
+%     [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,Res.Response_samprate);
+%     OptimalFreqCutOff.CoherenceRaw = CoherenceStruct.freqCutoff;
+    
+%     ParamModel.NeuroRes = 'count_gaussfiltered';
+    %Data processing
+%     [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials_GaussFiltered(DataSel),Res.PSTH_GaussFiltered(DataSel),ParamModel);
+%     [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,Res.Response_samprate);
     % Compute coherence on gaussian filtered spike trains
-    OptimalFreqCutOff.CoherenceGaussFilt = CoherenceStruct.freqCutoff;
+%     OptimalFreqCutOff.CoherenceGaussFilt = CoherenceStruct.freqCutoff;
     
     % Calculate the frequency of the gaussian filtered PSTH below which 99%
     % of the spectrum power density is contained
+    Kth_Neigh_local =unique(cell2mat(Res.Kth_Neigh'));
+    EffectifK = nan(1,length(Kth_Neigh_local));
+    ValidKth = 1;
+    for kk=1:length(Kth_Neigh_local)
+        EffectifK(kk) = sum(cell2mat(Res.Kth_Neigh') == Kth_Neigh_local(kk));
+        if kk>1 && (EffectifK(kk) == EffectifK(kk-1))
+              ValidKth = ValidKth + 1;
+        end
+    end
+      
+    OptimalFreqCutOff.PowerSpectrumDensityThresh = nan(1,ValidKth);
+    KthNeigh = cell2mat(Res.Kth_Neigh(DataSel)');
     SignalTot = cell2mat(Res.PSTH_GaussFiltered(DataSel));
-    SignalTot_1dim=reshape(SignalTot',[size(SignalTot,1)*size(SignalTot,2),1]);
-    Window = 0.2*Res.Response_samprate;
-    [Pxx,F] = pwelch(SignalTot_1dim, Window, [],[],10000);
-    Pxx_Perc = 100*cumsum(Pxx / sum(Pxx));
-    IndMax=find(Pxx_Perc > 99);
-    OptimalFreqCutOff.PowerSpectrumDensityThresh = F(IndMax(1));
+    for kk=1:ValidKth
+        KthNeigh_local = find(KthNeigh == kk);
+        SignalTot_local = SignalTot(KthNeigh_local,:);
+        SignalTot_1dim=reshape(SignalTot_local',[size(SignalTot_local,1)*size(SignalTot_local,2),1]);
+        Window = 0.2*Res.Response_samprate;
+        [Pxx,F] = pwelch(SignalTot_1dim, Window, [],[],10000);
+        Pxx_Perc = 100*cumsum(Pxx / sum(Pxx));
+        IndMax=find(Pxx_Perc > 99);
+        OptimalFreqCutOff.PowerSpectrumDensityThresh(kk) = F(IndMax(1));
+    end
     
     
     % According to this code 10ms is the best size for 97% of cells see
@@ -364,14 +383,38 @@ if SWITCH.InfoCal
     ParamModel.MarkovParameters_Cum_Info = [];% supressing the calculation of Markov approximation for the cumulative information
     ParamModel.ExactHist = [];% supressing the exact calculation of the cumulative information
     ParamModel.Response_samprate = Res.Response_samprate;
-    % Find out the number of trials per stimulus
-    Ntrials_perstim = nan(length(DataSel),1);
-    for ss=1:length(DataSel)
-        Ntrials_perstim(ss) = length(Res.Trials{DataSel(ss)});
+    
+    Kth_Neigh_local =unique(cell2mat(Res.Kth_Neigh'));
+    EffectifK = nan(1,length(Kth_Neigh_local));
+    ValidKth = 1;
+    for kk=1:length(Kth_Neigh_local)
+        EffectifK(kk) = sum(cell2mat(Res.Kth_Neigh') == Kth_Neigh_local(kk));
+        if kk>1 && (EffectifK(kk) == EffectifK(kk-1))
+              ValidKth = ValidKth + 1;
+        end
     end
-    ParamModel.Mean_Ntrials_perstim = [mean(Ntrials_perstim) mean(Ntrials_perstim - 1)];
-    % Calculate information
-   [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(Res.PSTH_GaussFiltered(DataSel),Res.JackKnife_GaussFiltered(DataSel),Res.VocType(DataSel), ParamModel, calfilename_local);
+      
+    KthNeigh = Res.Kth_Neigh(DataSel);
+    PSTH_All = Res.PSTH_GaussFiltered(DataSel);
+    JK_All = Res.JackKnife_GaussFiltered(DataSel);
+    for kk=1:ValidKth
+        PSTH_GaussFilteredK = cell(length(DataSel),1);
+        JK_GaussFilteredK = cell(length(DataSel),1);
+        
+        % Find out the number of trials per stimulus and feed-in PSTH and
+        % PSTH_JackKnife
+        Ntrials_perstim = nan(length(DataSel),1);
+        for ss=1:length(DataSel)
+            Ntrials_perstim(ss) = length(Res.Trials{DataSel(ss)});
+            IndKth = find(KthNeigh{ss}==kk);
+            PSTH_GaussFilteredK{ss} = PSTH_All{ss}(IndKth,:);
+            JK_GaussFilteredK{ss} = JK_All{ss}{IndKth};
+        end
+        ParamModel.Mean_Ntrials_perstim = [mean(Ntrials_perstim) mean(Ntrials_perstim - 1)];
+        % Calculate information
+        [ParamModel, Data.(sprintf('Kth%d',kk)), InputData.(sprintf('Kth%d',kk)), Wins]=info_cuminfo_callsemantic(PSTH_GaussFilteredK,JK_GaussFilteredK,Res.VocType(DataSel), ParamModel, calfilename_local);
+        
+    end
    if PrevData 
        save(calfilename_local,'Data', 'InputData','Wins','ParamModel','-append');
    else
@@ -386,6 +429,7 @@ if SWITCH.InfoCal
     Minutes = floor(ETRem/60);
     ETRem = ETRem-60*Minutes;
     fprintf(1,'Code run for %d days %dh %dmin and %dsec\n',Days,Hours,Minutes,ETRem);
+    
 end
 
 %return
