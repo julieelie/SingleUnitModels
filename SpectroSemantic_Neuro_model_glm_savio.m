@@ -84,6 +84,15 @@ if ~isfield(ParamModel,'ResDelay') || isempty(ParamModel.ResDelay)
     ... spectrogram window and the end of the neural response window
 end
 
+% Number of bootstraps
+if ~isfield(ParamModel, 'NbBoot_Info') || isempty(ParamModel.NbBoot_Info)
+    ParamModel.NbBoot_Info = 16;
+end
+
+if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
+    ParamModel.NbBoot_CumInfo = 16;
+end
+
 
 if nargin<4
     [path,Cellname,ext]=fileparts(MatfilePath);
