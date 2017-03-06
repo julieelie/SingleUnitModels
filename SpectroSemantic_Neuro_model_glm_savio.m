@@ -33,7 +33,7 @@ if nargin<1
 end
 
 %% Deal with input parameters
-if nargin<2
+if nargin<3
     SWITCH = struct();
 end
 if ~isfield(SWITCH,'FanoFactor') || isempty(SWITCH.FanoFactor)
@@ -53,7 +53,7 @@ if ~isfield(SWITCH,'GaussWin') || isempty(SWITCH.GaussWin)
     SWITCH.GaussWin=0;%Set to 1 if you want to add the data about the gaussian window sizes used to convolve spike trains to the output file
 end
 
-if nargin<3
+if nargin<4
     ParamModel = struct();
 end
 if ~isfield(ParamModel,'LINK') || isempty(ParamModel.LINK)
@@ -100,7 +100,7 @@ if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
 end
 
 
-if nargin<4
+if nargin<5
     [path,Cellname,ext]=fileparts(MatfilePath);
 end
 
