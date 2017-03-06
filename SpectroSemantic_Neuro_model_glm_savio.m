@@ -6,21 +6,21 @@ fprintf(1,'The environment is: %s\n',getenv('HOSTNAME'))
 
 if ~isempty(strfind(getenv('HOSTNAME'),'ln')) || ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
     Savio=1;
-    fprintf(1, 'We are on savio!/n')
+    fprintf(1, 'We are on savio!\n')
     addpath(genpath('/global/home/users/jelie/CODE/SingleUnitModels'));
     addpath(genpath('/global/home/users/jelie/CODE/GeneralCode'));
     addpath(genpath('/global/home/users/jelie/CODE/tlab/src/slurmbot/matlab'));
 elseif ismac()
     Savio=0;
     Me = 1;
-    fprintf(1, 'We are on my Mac Book Pro!/n')
+    fprintf(1, 'We are on my Mac Book Pro!\n')
     addpath(genpath('/Users/elie/Documents/CODE/SingleUnitModels'));
     addpath(genpath('/Users/elie/Documents/CODE/GeneralCode'));
     addpath(genpath('/Users/elie/Documents/CODE/STRFLab/trunk'));
 else %we are on strfinator or a cluster machine
     Savio = 0;
     Me = 0;
-    fprintf(1, 'Hum.. We must be on one of the lab machine/n')
+    fprintf(1, 'Hum.. We must be on one of the lab machine\n')
     addpath(genpath('/auto/fhome/julie/Code/SingleUnitModels'));
     addpath(genpath('/auto/fhome/julie/Code/GeneralCode'));
     addpath(genpath('/auto/fhome/julie/Code/strflab'));
