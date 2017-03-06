@@ -1,4 +1,4 @@
-function [calfilename_local] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+function [calfilename_local] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath,ValidKth_i, SWITCH, ParamModel,Cellname)
 % [OptimalFreqCutOff] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 % [PG_Index,FanoFactor_Index, Wins] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %% Get the environment to figure out on which machine/cluster we are
@@ -29,12 +29,12 @@ end
 TimerVal=tic;
 
 if nargin<1
-    MatfilePath = '/auto/tdrive/julie/k6/julie/matfile/FirstVoc1s_Site3_L1250R1650_e13_s0_ss1.VariousKNeigh.mat'
+    MatfilePath = '/auto/tdrive/julie/k6/julie/matfile/FirstVoc1s_Site3_L1250R1650_e13_s0_ss1.VariousKNeigh.mat';
 end
 
 %% Deal with input parameters
 if nargin<2
-    SWITCH = struct()
+    SWITCH = struct();
 end
 if ~isfield(SWITCH,'FanoFactor') || isempty(SWITCH.FanoFactor)
     SWITCH.FanoFactor=0;
@@ -412,7 +412,7 @@ if SWITCH.InfoCal
     KthNeigh = Res.Kth_Neigh(DataSel);
     PSTH_All = Res.PSTH_GaussFiltered(DataSel);
     JK_All = Res.JackKnife_GaussFiltered(DataSel);
-    for kk=1:ValidKth
+    %for kk=1:ValidKth
         PSTH_GaussFilteredK = cell(length(DataSel),1);
         JK_GaussFilteredK = cell(length(DataSel),1);
         
@@ -421,17 +421,20 @@ if SWITCH.InfoCal
         Ntrials_perstim = nan(length(DataSel),1);
         for ss=1:length(DataSel)
             Ntrials_perstim(ss) = length(Res.Trials{DataSel(ss)});
-            IndKth = find(KthNeigh{ss}==kk);
+            IndKth = find(KthNeigh{ss}==ValidKth_i);
             PSTH_GaussFilteredK{ss} = PSTH_All{ss}(IndKth,:);
             JK_GaussFilteredK{ss} = JK_All{ss}{IndKth};
         end
         ParamModel.Mean_Ntrials_perstim = [mean(Ntrials_perstim) mean(Ntrials_perstim - 1)];
         % Calculate information
-        [ParamModel, Data.(sprintf('Kth%d',kk)), InputData.(sprintf('Kth%d',kk)), Wins]=info_cuminfo_callsemantic(PSTH_GaussFilteredK,JK_GaussFilteredK,Res.VocType(DataSel), ParamModel, calfilename_local);
+        [ParamModel, Data_local.(sprintf('Kth%d',ValidKth_i)), InputData_local.(sprintf('Kth%d',ValidKth_i)), Wins]=info_cuminfo_callsemantic(PSTH_GaussFilteredK,JK_GaussFilteredK,Res.VocType(DataSel), ParamModel, calfilename_local);
         
-    end
+   % end
    if PrevData 
-       save(calfilename_local,'Data', 'InputData','Wins','ParamModel','-append');
+        load(calfilename_local,'Data', 'InputData');
+        Data.(sprintf('Kth%d',ValidKth_i)) = Data_local.(sprintf('Kth%d',ValidKth_i));
+        InputData.(sprintf('Kth%d',ValidKth_i)) = InputData_local.(sprintf('Kth%d',ValidKth_i));
+        save(calfilename_local,'Data', 'InputData','Wins','ParamModel','-append');
    else
        save(calfilename_local,'Data', 'InputData','Wins','ParamModel');
    end
