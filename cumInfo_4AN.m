@@ -17,6 +17,7 @@ HY_Markov5 = nan(1,Nb_Win);
 
 
 for tt=2:Nb_Win
+    tstart = tic;
     fprintf('Time point %d/%d\n', tt, Nb_Win);
     P_YgivenS_local = P_YgivenS(1:tt);
     % Monte Carlo estimation with full memory
@@ -48,6 +49,8 @@ for tt=2:Nb_Win
         % Markov chain estimation 50 ms
         [Icum_EstMarkov5(tt),HY_Markov5(tt),~]=info_cumulative_model_Calculus(P_YgivenS_local,'CalMode','MarkovChain', 'MarkovParameters',[5,1], 'HY_old', HY_Markov5(tt-1));
     end
+    telapsed = toc(tstart);
+    fprintf('Elapsed time: %d s\n', telapsed)
 end
 Icum_EstMonteCarlo6 = Icum_EstMonteCarlo6_local(1,:);
 Icum_EstMonteCarlo4 = Icum_EstMonteCarlo4_local(1,:);
