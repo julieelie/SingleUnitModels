@@ -427,8 +427,9 @@ if SWITCH.InfoCal
         end
         ParamModel.Mean_Ntrials_perstim = [mean(Ntrials_perstim) mean(Ntrials_perstim - 1)];
         % Calculate information
-        [ParamModel, Data_local.(sprintf('Kth%d',ValidKth_i)), InputData_local.(sprintf('Kth%d',ValidKth_i)), Wins]=info_cuminfo_callsemantic(PSTH_GaussFilteredK,JK_GaussFilteredK,Res.VocType(DataSel), ParamModel, calfilename_local);
-        
+        %[ParamModel, Data_local.(sprintf('Kth%d',ValidKth_i)), InputData_local.(sprintf('Kth%d',ValidKth_i)), Wins]=info_cuminfo_callsemantic(PSTH_GaussFilteredK,JK_GaussFilteredK,Res.VocType(DataSel), ParamModel, calfilename_local);
+        Data_local.(sprintf('Kth%d',ValidKth_i)) = 'It works';
+        InputData_local.(sprintf('Kth%d',ValidKth_i)) = 'very well';
    % end
    if PrevData 
         load(calfilename_local,'Data', 'InputData');
@@ -436,6 +437,7 @@ if SWITCH.InfoCal
         InputData.(sprintf('Kth%d',ValidKth_i)) = InputData_local.(sprintf('Kth%d',ValidKth_i));
         save(calfilename_local,'Data', 'InputData','Wins','ParamModel','-append');
    else
+       Data.(sprintf('Kth%d',ValidKth_i)) = Data_local.(sprintf('Kth%d',ValidKth_i));
        save(calfilename_local,'Data', 'InputData','Wins','ParamModel');
    end
     
@@ -478,15 +480,15 @@ if SWITCH.Models
     save(calfilename_local,'MatfilePath', 'LambdaChoice', 'Deviance','LL','Model','ParamModel','Data','PropVal','Wins','ElapsedTime','-append');
 end
 
-if Savio
-    [Status1]=transfertoTdrive_savio(calfilename_local,calfilename_final);
-    [Status2]=transfertoTdrive_savio(outfilename_local,[OutputDir_final '/']);
-    if ~(Status1 || Status2)
-        system(['mv ' OutputDirEx_local '/JobToDoSavio/Ex*' Res.Site '*.txt ' OutputDirEx_local '/JobDoneSavio/'])
-    end
-    fprintf(1,'Ready to quit');
-    quit
-end
+% if Savio
+%     [Status1]=transfertoTdrive_savio(calfilename_local,calfilename_final);
+%     [Status2]=transfertoTdrive_savio(outfilename_local,[OutputDir_final '/']);
+%     if ~(Status1 || Status2)
+%         system(['mv ' OutputDirEx_local '/JobToDoSavio/Ex*' Res.Site '*.txt ' OutputDirEx_local '/JobDoneSavio/'])
+%     end
+%     fprintf(1,'Ready to quit');
+%     quit
+% end
 
 end
 
