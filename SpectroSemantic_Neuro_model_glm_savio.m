@@ -430,8 +430,11 @@ if SWITCH.InfoCal
         %[ParamModel, Data_local.(sprintf('Kth%d',ValidKth_i)), InputData_local.(sprintf('Kth%d',ValidKth_i)), Wins]=info_cuminfo_callsemantic(PSTH_GaussFilteredK,JK_GaussFilteredK,Res.VocType(DataSel), ParamModel, calfilename_local);
         Data_local.(sprintf('Kth%d',ValidKth_i)) = 'It works';
         InputData_local.(sprintf('Kth%d',ValidKth_i)) = 'very well';
+        Wins = 'really';
+        
    % end
    if PrevData 
+       fprintf(1,'appending to the file\n');
         load(calfilename_local,'Data', 'InputData');
         Data.(sprintf('Kth%d',ValidKth_i)) = Data_local.(sprintf('Kth%d',ValidKth_i));
         InputData.(sprintf('Kth%d',ValidKth_i)) = InputData_local.(sprintf('Kth%d',ValidKth_i));
