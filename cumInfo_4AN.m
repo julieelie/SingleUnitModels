@@ -2,12 +2,10 @@ function [Icum_EstMonteCarlo6,Icum_EstMonteCarlo4,Icum_EstMonteCarlo3,Icum_EstMo
 
 Nb_Win = length(P_YgivenS);
 Icum_EstMonteCarlo6_local = nan(2,Nb_Win);
-Icum_EstMonteCarlo6_local(1,1) = Info(1); % Initializing the first value of cumulative info
 Icum_EstMonteCarlo4_local = Icum_EstMonteCarlo6_local;
 Icum_EstMonteCarlo3_local = Icum_EstMonteCarlo6_local;
 Icum_EstMonteCarlo2_local = Icum_EstMonteCarlo6_local;
 Icum_ExactMem0_5 = nan(1,Nb_Win);
-Icum_ExactMem0_5(1) = Info(1);
 Icum_EstMarkov2 = Icum_ExactMem0_5;
 Icum_EstMarkov3 = Icum_ExactMem0_5;
 Icum_EstMarkov4 = Icum_ExactMem0_5;
