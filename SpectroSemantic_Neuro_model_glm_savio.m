@@ -438,10 +438,11 @@ if SWITCH.InfoCal
         load(calfilename_local,'Data', 'InputData');
         Data.(sprintf('Kth%d',ValidKth_i)) = Data_local.(sprintf('Kth%d',ValidKth_i));
         InputData.(sprintf('Kth%d',ValidKth_i)) = InputData_local.(sprintf('Kth%d',ValidKth_i));
-        save(calfilename_local,'Data', 'InputData','Wins','ParamModel','-append');
+        save(sprintf('%s_Kth%d_%s',calfilename_local(1:(end-4)),ValidKth_i,calfilename_local((end-4):end)),'Data', 'InputData','Wins','ParamModel');
    else
        Data.(sprintf('Kth%d',ValidKth_i)) = Data_local.(sprintf('Kth%d',ValidKth_i));
-       save(calfilename_local,'Data', 'InputData','Wins','ParamModel');
+       InputData.(sprintf('Kth%d',ValidKth_i)) = InputData_local.(sprintf('Kth%d',ValidKth_i));
+       save(sprintf('%s_Kth%d_%s',calfilename_local(1:(end-4)),ValidKth_i,calfilename_local((end-4):end)),'Data', 'InputData','Wins','ParamModel');
    end
     
     ElapsedTime = toc(TimerVal);
