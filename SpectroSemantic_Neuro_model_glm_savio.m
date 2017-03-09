@@ -427,15 +427,11 @@ if SWITCH.InfoCal
         end
         ParamModel.Mean_Ntrials_perstim = [mean(Ntrials_perstim) mean(Ntrials_perstim - 1)];
         % Calculate information
-        %[ParamModel, Data_local.(sprintf('Kth%d',ValidKth_i)), InputData_local.(sprintf('Kth%d',ValidKth_i)), Wins]=info_cuminfo_callsemantic(PSTH_GaussFilteredK,JK_GaussFilteredK,Res.VocType(DataSel), ParamModel, calfilename_local);
-        Data_local.(sprintf('Kth%d',ValidKth_i)) = 'It works';
-        InputData_local.(sprintf('Kth%d',ValidKth_i)) = 'very well';
-        Wins = 'really';
+        [ParamModel, Data_local.(sprintf('Kth%d',ValidKth_i)), InputData_local.(sprintf('Kth%d',ValidKth_i)), Wins]=info_cuminfo_callsemantic(PSTH_GaussFilteredK,JK_GaussFilteredK,Res.VocType(DataSel), ParamModel, calfilename_local);
         
    % end
    if PrevData 
        fprintf(1,'appending to the file\n');
-        load(calfilename_local,'Data', 'InputData');
         Data.(sprintf('Kth%d',ValidKth_i)) = Data_local.(sprintf('Kth%d',ValidKth_i));
         InputData.(sprintf('Kth%d',ValidKth_i)) = InputData_local.(sprintf('Kth%d',ValidKth_i));
         save(sprintf('%s_Kth%d_%s',calfilename_local(1:(end-4)),ValidKth_i,calfilename_local((end-4):end)),'Data', 'InputData','Wins','ParamModel');
