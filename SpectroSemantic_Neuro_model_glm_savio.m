@@ -1,4 +1,5 @@
 function [calfilename_local] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath,ValidKth_i, SWITCH, ParamModel,Cellname)
+% [calfilename_local] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath,ValidKth_i, SWITCH, ParamModel,Cellname)
 % [OptimalFreqCutOff] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 % [PG_Index,FanoFactor_Index, Wins] = SpectroSemantic_Neuro_model_glm_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %% Get the environment to figure out on which machine/cluster we are
@@ -69,12 +70,12 @@ if  ~isfield(ParamModel,'MinWin') || isempty(ParamModel.MinWin)
     ParamModel.MinWin = 1; % end point of the first analysis window (spectrogram and neural response)
 end
 if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
-    ParamModel.MaxWin = 100; %end point of the last anaysis window for...
+    ParamModel.MaxWin = 200; %end point of the last anaysis window for...
     ... neural response and end point of the largest analysis window for...
         ... spectrogram
 end
 if ~isfield(ParamModel,'MaxWin_cumInfo') || isempty(ParamModel.MaxWin_cumInfo)
-    ParamModel.MaxWin_cumInfo = 100; %end point of the last anaysis window for...
+    ParamModel.MaxWin_cumInfo = 200; %end point of the last anaysis window for...
     ... the calculation of cumulative information
 end
 if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
@@ -356,9 +357,10 @@ if SWITCH.BestBin
         end
     end
       
-    OptimalFreqCutOff.PowerSpectrumDensityThresh = nan(1,ValidKth);
+    
     KthNeigh = cell2mat(Res.Kth_Neigh(DataSel)');
     SignalTot = cell2mat(Res.PSTH_GaussFiltered(DataSel));
+    OptimalFreqCutOff.Thresh = 80:99;
     for kk=1:ValidKth
         KthNeigh_local = find(KthNeigh == kk);
         SignalTot_local = SignalTot(KthNeigh_local,:);
@@ -366,8 +368,12 @@ if SWITCH.BestBin
         Window = 0.2*Res.Response_samprate;
         [Pxx,F] = pwelch(SignalTot_1dim, Window, [],[],10000);
         Pxx_Perc = 100*cumsum(Pxx / sum(Pxx));
-        IndMax=find(Pxx_Perc > 99);
-        OptimalFreqCutOff.PowerSpectrumDensityThresh(kk) = F(IndMax(1));
+        OptimalFreqCutOff.(sprintf('PowerSpectrumDensityKth%d',kk)) = nan(1,length(80:99));
+        
+        for Thresh = OptimalFreqCutOff.Thresh
+            IndMax=find(Pxx_Perc > Thresh);
+            OptimalFreqCutOff.(sprintf('PowerSpectrumDensityKth%d',kk))(Thresh) = F(IndMax(1));
+        end
     end
     
     
@@ -378,7 +384,7 @@ if SWITCH.BestBin
     if PrevData
         save(calfilename_local,'MatfilePath', 'OptimalFreqCutOff', '-append');
     else
-        save(calfilename_local,'MatfilePath', 'OptimalFreqCutOff');
+        %save(calfilename_local,'MatfilePath', 'OptimalFreqCutOff');
     end
 end
 
@@ -427,18 +433,19 @@ if SWITCH.InfoCal
         end
         ParamModel.Mean_Ntrials_perstim = [mean(Ntrials_perstim) mean(Ntrials_perstim - 1)];
         % Calculate information
-        [ParamModel, Data_local.(sprintf('Kth%d',ValidKth_i)), InputData_local.(sprintf('Kth%d',ValidKth_i)), Wins]=info_cuminfo_callsemantic(PSTH_GaussFilteredK,JK_GaussFilteredK,Res.VocType(DataSel), ParamModel, calfilename_local);
+        Calfilename_localKth = sprintf('%s_Kth%d_%s',calfilename_local(1:(end-4)),ValidKth_i,calfilename_local((end-4):end));
+        [ParamModel, Data_local.(sprintf('Kth%d',ValidKth_i)), InputData_local.(sprintf('Kth%d',ValidKth_i)), Wins]=info_cuminfo_callsemantic(PSTH_GaussFilteredK,JK_GaussFilteredK,Res.VocType(DataSel), ParamModel, Calfilename_localKth);
         
    % end
    if PrevData 
        fprintf(1,'appending to the file\n');
         Data.(sprintf('Kth%d',ValidKth_i)) = Data_local.(sprintf('Kth%d',ValidKth_i));
         InputData.(sprintf('Kth%d',ValidKth_i)) = InputData_local.(sprintf('Kth%d',ValidKth_i));
-        save(sprintf('%s_Kth%d_%s',calfilename_local(1:(end-4)),ValidKth_i,calfilename_local((end-4):end)),'Data', 'InputData','Wins','ParamModel');
+        save(Calfilename_localKth,'Data', 'InputData','Wins','ParamModel');
    else
        Data.(sprintf('Kth%d',ValidKth_i)) = Data_local.(sprintf('Kth%d',ValidKth_i));
        InputData.(sprintf('Kth%d',ValidKth_i)) = InputData_local.(sprintf('Kth%d',ValidKth_i));
-       save(sprintf('%s_Kth%d_%s',calfilename_local(1:(end-4)),ValidKth_i,calfilename_local((end-4):end)),'Data', 'InputData','Wins','ParamModel');
+       save(Calfilename_localKth,'Data', 'InputData','Wins','ParamModel');
    end
     
     ElapsedTime = toc(TimerVal);
