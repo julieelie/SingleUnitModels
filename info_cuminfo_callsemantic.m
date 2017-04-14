@@ -367,8 +367,10 @@ else
             ModelType=sprintf('MonteCarlo%d',log10(ParamModel.NumSamples_MC_Cum_Info(ss)));
             Data.cum_info_stim.(sprintf('%s',ModelType))= nan(2,WinNum_cumInfo);
             Data.cum_info_stim.(sprintf('%s',ModelType))(1,1)= Data.stim_info(1);
+            Data.cum_info_stim.(sprintf('%s_Samples',ModelType)) = cell(1, WinNum_cumInfo);
             Data.cum_info_cat.(sprintf('%s',ModelType))= nan(2,WinNum_cumInfo);
             Data.cum_info_cat.(sprintf('%s',ModelType))(1,1)= Data.category_info(1);
+            Data.cum_info_cat.(sprintf('%s_Samples',ModelType)) = cell(1, WinNum_cumInfo);
         end
     end
     if ~isempty(ParamModel.ExactHist)
@@ -387,10 +389,10 @@ else
             for ss=1:length(ParamModel.NumSamples_MC_Cum_Info)
                 ModelType=sprintf('MonteCarlo%d',log10(ParamModel.NumSamples_MC_Cum_Info(ss)));
                 % Monte Carlo estimation with full memory cumulative information stimuli
-                [Data.cum_info_stim.(sprintf('%s',ModelType))(:,ww),~]=info_cumulative_model_Calculus(Data.P_YgivenS(1:ww),'Model#',1,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(ss));
+                [Data.cum_info_stim.(sprintf('%s',ModelType))(:,ww),~,~,Data.cum_info_stim.(sprintf('%s_Samples',ModelType)){ww}]=info_cumulative_model_Calculus(Data.P_YgivenS(1:ww),'Model#',1,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(ss));
                 % Monte Carlo estimation with full memory cumulative information
                 % categories
-                [Data.cum_info_cat.(sprintf('%s',ModelType))(:,ww),~]=info_cumulative_model_Calculus(Data.P_YgivenC(1:ww),'Model#',2,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(ss));
+                [Data.cum_info_cat.(sprintf('%s',ModelType))(:,ww),~,~,Data.cum_info_cat.(sprintf('%s_Samples',ModelType)){ww}]=info_cumulative_model_Calculus(Data.P_YgivenC(1:ww),'Model#',2,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(ss));
             end
         end
         
@@ -457,6 +459,9 @@ else
         Cum_info_cat_LastMonteCarlo_Bootstrap(:,1) = repmat(Data.category_info(1),ParamModel.NbBoot_CumInfo,1);
         %Cum_info_stim_LastMonteCarlo_Bootsample = nan(ParamModel.NbBoot_cumInfo,WinNum_cumInfo);
         %Cum_info_cat_LastMonteCarlo_Bootsample = nan(ParamModel.NbBoot_cumInfo,WinNum_cumInfo);
+        ModelTypeMC = sprintf('MonteCarlo%d_',log10(ParamModel.NumSamples_MC_Cum_Info(end)));
+        MC_Carlo_Samp_stim = Data.cum_info_stim.(sprintf('%s_Samples',ModelTypeMC));
+        MC_Carlo_Samp_cat = Data.cum_info_cat.(sprintf('%s_Samples',ModelTypeMC));
     end
     
     if ~isempty(ParamModel.ExactHist)
@@ -493,7 +498,7 @@ else
             
             if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
                 % Monte Carlo estimation with full memory
-                [Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(P_YgivenS_local,'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end));
+                [Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(P_YgivenS_local,'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end),'MCSamp_input', MC_Carlo_Samp_stim{ww});
                 Cum_info_stim_LastMonteCarlo_Bootstrap(bb,ww)=Icum_EstMonteCarlo_temp(1);
                 % if you want to restore the bootstrap of MC on same
                 % estimations of spike rate restore the following lines
@@ -521,7 +526,7 @@ else
             
             if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
                 % Monte Carlo estimation with full memory
-                [Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(P_YgivenC_local,'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end));
+                [Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(P_YgivenC_local,'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end),'MCSamp_input', MC_Carlo_Samp_cat{ww});
                 Cum_info_cat_LastMonteCarlo_Bootstrap(bb,ww)=Icum_EstMonteCarlo_temp(1);
                 
                 % if you want to restore the bootstrap of MC on same

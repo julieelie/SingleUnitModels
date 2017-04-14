@@ -54,6 +54,10 @@ tic
 %                      point pace as a second element, both are integers).
 %   'MCParameter'    is the number of samples in the Monte Carlo estimation
 %                    of the entropy of the response
+%   'MCSamp_input'   is a matrix of samples of the MonteCarlo, the number 
+%                   rows corresponds to the number of samples MCParameter,
+%                   the number of columns corresponds to the number of
+%                   time point t.
 %   'MinProbThresh'  set to 1 to discard probabilities lower than 1/life of
 %                    a zebra finch in the lab, set to 0 to take into
 %                    acccount all probabilities. Default 0.
@@ -76,7 +80,7 @@ tic
 %                   none
 
 %% Sorting input arguments
-pnames = {'CalMode', 'FirstTimePoint','StimIndicesAll','StimIndicesLast','Model#','TempStoragePath','MarkovParameters', 'MCParameter','MinProbThresh', 'DebugFig','MinProb','HY_old','ScaleY','Exact_history', 'Verbose'};
+pnames = {'CalMode', 'FirstTimePoint','StimIndicesAll','StimIndicesLast','Model#','TempStoragePath','MarkovParameters', 'MCParameter','MCSamp_input','MinProbThresh', 'DebugFig','MinProb','HY_old','ScaleY','Exact_history', 'Verbose'};
 
 % Calculating default values of input arguments
 Stim_local = 1:size(P_YgivenS{end},2);
@@ -363,12 +367,13 @@ if strcmp(CalculMode, 'MonteCarlo')
             P_YgivenS_local_Resp(ww,:) = P_YgivenS_local{ww}(Resp_MC,:);
         end
         
-       % Calculate the exact joint probability of that sequence of responses
+        % Calculate the exact joint probability of that sequence of responses
         % and store it
         PY_MC(ss) = mean(prod(P_YgivenS_local_Resp,1));
         QY_MC(ss) = prod(mean(P_YgivenS_local_Resp,2));
         PYgivenS_MC(ss,:) = prod(P_YgivenS_local_Resp,1);
     end
+    
     % Calculate the MC estimate of the conditional response entropy to the
     % stimulus
     HYgivenS = - sum(sum(PYgivenS_MC./repmat(QY_MC,1,length(Stim_local)).*log2(PYgivenS_MC),1))/(N_MC*length(Stim_local));
