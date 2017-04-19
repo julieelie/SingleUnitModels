@@ -96,15 +96,15 @@ HY_JK = zeros(1, Nb_Boot);
 N_MC_tot = 0;
 Icum_std = ConvThresh+1; % set the error on information to an arbitrary value above the threshold
 
-while Icum_std>ConvThresh || N_MC_tot<N_MC_max
+while Icum_std>ConvThresh && N_MC_tot<N_MC_max
     [HY_Full_local,HYgivenS_Full_local,HY_JK_local,HYgivenS_JK_local]= cuminfo_MC(P_YgivenS_all, N_MC);
 
     N_MC_tot_new = N_MC + N_MC_tot;
     if N_MC_tot ~= 0
         HY_Full = (HY_Full * N_MC_tot + HY_Full_local * N_MC) / N_MC_tot_new;
-        HYgivenS_Full = (HYgivenS_Full * N_MC_Tot + HYgivenS_Full_local * N_MC) / N_MC_tot_new;
-        HYgivenS_JK = (HYgivenS_JK .* N_MC_Tot + HYgivenS_JK_local .* N_MC) ./ N_MC_tot_new;
-        HY_JK = (HY_JK .* N_MC_Tot + HY_JK_local.*N_MC) ./ N_MC_tot_new;
+        HYgivenS_Full = (HYgivenS_Full * N_MC_tot + HYgivenS_Full_local * N_MC) / N_MC_tot_new;
+        HYgivenS_JK = (HYgivenS_JK .* N_MC_tot + HYgivenS_JK_local .* N_MC) ./ N_MC_tot_new;
+        HY_JK = (HY_JK .* N_MC_tot + HY_JK_local.*N_MC) ./ N_MC_tot_new;
     else
         HY_Full = HY_Full_local;
         HYgivenS_Full = HYgivenS_Full_local;
@@ -116,7 +116,7 @@ while Icum_std>ConvThresh || N_MC_tot<N_MC_max
     Icum_Full = HY_Full-HYgivenS_Full;
     Icum_JK = HY_JK-HYgivenS_JK;
 
-    Icum_JKcorrected = NTrials * repmat(Icum_Full,Nb_Boot,1) - (NTrials-1) * Icum_JK(1:Nb_Boot);
+    Icum_JKcorrected = NTrials * repmat(Icum_Full,1,Nb_Boot) - (NTrials-1) * Icum_JK(1:Nb_Boot);
     Icum_std = std(Icum_JKcorrected,1);
 end
 
