@@ -21,7 +21,7 @@ for tt=2:Nb_Win
     fprintf('Time point %d/%d\n', tt, Nb_Win);
     P_YgivenS_local = P_YgivenS(1:tt);
     % Monte Carlo estimation with full memory
-    [Icum_EstMonteCarlo6_local(:,tt),~, ~, MC_Carlo_Samp_stim{tt}]=info_cumulative_model_Calculus(P_YgivenS_local,'CalMode','MonteCarlo', 'MCParameter',10^6,'MCSamp_input', MC_Carlo_Samp_stim{tt});
+    [Icum_EstMonteCarlo6_local(:,tt),~]=info_cumulative_model_Calculus(P_YgivenS_local,'CalMode','MonteCarlo', 'MCParameter',10^6);
     % Monte Carlo estimation with full memory
     [Icum_EstMonteCarlo4_local(:,tt),~]=info_cumulative_model_Calculus(P_YgivenS_local,'CalMode','MonteCarlo', 'MCParameter',10^4);
     % Monte Carlo estimation with full memory
