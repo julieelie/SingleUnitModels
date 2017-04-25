@@ -80,7 +80,7 @@ tic
 %                   none
 
 %% Sorting input arguments
-pnames = {'CalMode', 'FirstTimePoint','StimIndicesAll','StimIndicesLast','Model#','TempStoragePath','MarkovParameters', 'MCParameter','MCSamp_input','MinProbThresh', 'DebugFig','MinProb','HY_old','ScaleY','Exact_history', 'Verbose'};
+pnames = {'CalMode', 'FirstTimePoint','StimIndicesAll','StimIndicesLast','Model#','TempStoragePath','MarkovParameters', 'MCParameter','MinProbThresh', 'DebugFig','MinProb','HY_old','ScaleY','Exact_history', 'Verbose'};
 
 % Calculating default values of input arguments
 Stim_local = 1:size(P_YgivenS{end},2);
