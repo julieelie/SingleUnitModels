@@ -1,5 +1,5 @@
 function I=info_models_Calculus(y,mu1,mu2,Scale)
-%% This function calculate the information between the prediction of two models
+%%  Calculates the information between the prediction of two models
 % y is the observed data
 % mu1 are the prediction from the null model
 % mu2 are the prediction from the full model

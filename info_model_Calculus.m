@@ -1,5 +1,20 @@
-function [I,P_YgivenS_all1,P_YgivenS_all2,H_y, H_ymu]=info_model_Calculus(mu_in, ymax,y,Scale)
-%% This function calculate how much information there is in the prediction of a model
+function [I,P_YgivenS_all1,P_YgivenS_all2,H_y, H_ymu]=info_model_Calculus(mu_in)
+%% Calculates the information obtain from N Poisson with different means.
+
+% This functions is used to calculate the mutual information between n categorical stimuli and
+% a poisson response defined by its n means.  The maximum value is log2(n).  The minum value is
+% zero and will be obtained when the n means are identical.
+% This function assumes that the mean is between 0 and 50.
+% Write your own routine for values higher than 50 using a the Normal approximation
+% for the Poisson distribution.
+
+% Requires:
+% mu_in : vector 1xn that specifies the mean (in count/bin i.e. no units here) of the n Poisson distributions.
+
+% Returns:
+
+
+
 % Note that there is a trade off in the information value calculation
 % between the values that mu can get and how widely the entropy of the model
 % can be estimated over the possible values of y. if ymax is fixed to 170
@@ -29,7 +44,11 @@ function [I,P_YgivenS_all1,P_YgivenS_all2,H_y, H_ymu]=info_model_Calculus(mu_in,
 % In glmfit and here if no scale is provided, other choice because they don't know the
 % natural scale of mu. Their choice keeps mu^4 from underflowing.No upper limit.
 
-SameDataScaleEntropy=1; %set this to zero if you prefer to scale data differently but that sounds weird!!
+% Flag to force normalization of prob distribution as it is calculated from
+% 0 to ymax only.  Should not be set to zero unless you want to estimate
+% the size of the effect.
+
+SameDataScaleEntropy=1; 
 
 % if nargin<2
 %     mu_max = 100*median(mu_in);
@@ -44,6 +63,8 @@ SameDataScaleEntropy=1; %set this to zero if you prefer to scale data differentl
      mu_in_checked = mu_in;
      OkPredict = 1:length(mu_in);
 % end
+
+MAXMEANVALUE = 50;
 
 if nargin<4
 %     dataClass = superiorfloat(mu,y);
@@ -69,6 +90,11 @@ if ymax>170
     ymax=170; % factorial is reaching Inf if ymax>170
 end
 
+% Check for max value of mu_in to be below 50.
+
+% Y max is three standard deviations above the maximum the variance
+ymax = 3.0*sqrt(max(mu_in)) + max(mu_in);
+
 
     
 N_pres = length(mu_in_checked);
@@ -78,35 +104,48 @@ Nb_mu = length(mu_unique);
 
 
 %% Calculate the conditional entropy (H(y/mu))
+
+% To save time this is only done for unique values of mu.
 H_ymu_unique = nan(size(mu_unique)); 
-Fac_y = factorial(y_world);
-RescaledP=0;
+Fac_y = factorial(y_world);   % Saved to save computational time.
+
 P_YgivenS_all1_local = nan(length(y_world),N_pres);
 P_YgivenS_all1_rescaled = nan(length(y_world),N_pres);
+
 for mm=1:Nb_mu
-    mu_local = repmat(mu_unique(mm),size(y_world));
-    %P = (mu_local .^ y_world) .* exp(-mu_local) ./ Fac_y;
     
-    % Calculate log of probability
-    % identify indices for which ylog(y)=0 when y=0
-    mu_temp = mu_local;
-    mu_temp(intersect((y_world-mu_local)==0, mu_local==0)) = 1;
-    %apply a minimum value for mu, cannot be equal to zero
-    mu_temp = max(mu_temp,muLims);
-    Log_P= y_world.*log2(mu_temp) - log2(Fac_y) - mu_local/log(2);   %threshold mu so the log calculation does not blow up when mu=0
+    % Local value of mean
+    mu = mu_unique(mm);
     
+    % Calculate the log of the probability for numerical reasons.
+    Log_P = nan(size(y_world));   % Initialize
+    
+    % Deal with cases where mu is equal to zero and/or is below muLims
+    if mu == 0
+        Log_P(1) = 1;  % The value for y=0
+        mu = muLims;
+        Log_P(2:end)= y_world(2:end).*log2(mu) - log2(Fac_y(2:end)) - mu/log(2);
+    elseif mu < muLims
+        mu = muLims;
+        Log_P = y_world.*log2(mu) - log2(Fac_y) - mu/log(2);
+    else
+        Log_P = y_world.*log2(mu) - log2(Fac_y) - mu/log(2);
+    end
+    
+    % From logP to P
     P = 2.^(Log_P);
     P_YgivenS_all1_local(:,find(I_mu_unique==mm))=repmat(P',1,length(find(I_mu_unique==mm)));
-
-    
+   
     % Check that sum(P) sum to 1 and rescale if not to have a more
     % realistic distribution.
     P = P ./sum(P);
     P_YgivenS_all1_rescaled(:,find(I_mu_unique==mm))=repmat(P',1,length(find(I_mu_unique==mm)));
     H_ymu_unique(mm) = sum(-P.*log2(P + (P==0)));% conditional entropy value for each unique mu (each stim) across all y of the world
 end
+
+% Given that all stimuli have equal probability: H(y|s) = expectation(H(y|si)) = sum(p(si)*H(y|si)) = sum(H(y|si))/(number of stims)
+
 H_ymu = sum(H_ymu_unique(I_mu_unique))/N_pres;
-%H_ymu = sum(sum(-P_YgivenS_all1_rescaled.*log2(P_YgivenS_all1_rescaled+(P_YgivenS_all1_rescaled==0))))/N_pres;
 
 %% Calculate the entropy of y based on Poisson distributions
 % This calculation is not using the data as scaled per stim as used for the
