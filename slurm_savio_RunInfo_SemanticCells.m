@@ -5,7 +5,7 @@ addpath(genpath('/auto/fhome/julie/Code/GeneralCode'));
 addpath('/auto/fhome/julie/Code/tlab/src/slurmbot/matlab')
 
 cd /auto/tdrive/julie/k6/julie/matfile/ModMatInfo/
-DoneFile=dir('InfoPoissonGF_*');
+%DoneFile=dir('InfoPoissonGF_*');
 
 %system('ssh TheunissenLab')
 % cd /auto/tdrive/julie/k6/julie/matfile/ModMat
@@ -27,16 +27,14 @@ JobParams.Account = 'fc_birdpow';
 JobParams.Qos = 'savio_normal';
 JobParams.NTasks = 1;
 JobParams.CPU = 20;
-SlurmParams.cmd = 'SpectroSemantic_Neuro_model_glm_savio(''%s'');';
+SlurmParams.cmd = 'Semantic_NeuroInfo_Poisson_savio(''%s'');';
 SlurmParams.resultsDirectory='/global/scratch/jelie/MatFiles/ModMatInfo';
 
-%% Set up variables to identify cells left to run and order
-MeanRateCellToDo = nan(length(List_SemanticCellspath),1);
-CTD=0; %Counter for cell to do
+%% Set up variables to identify cells to run and order
 MatfileToDo = cell(length(List_SemanticCellspath),1);
 MatNameToDo = cell(length(List_SemanticCellspath),1);
 
-%% Identify cells left to run and create jobs' files
+%% Create jobs' files
 cd /auto/tdrive/julie/k6/julie/matfile/ModMatInfo/JobToDoSavio
 for ff=1:length(List_SemanticCellspath)
     fprintf(1,'checking file %d/%d\n',ff,length(List_SemanticCellspath));
