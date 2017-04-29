@@ -91,11 +91,11 @@ for ww = 1:WinNum
         dd=Stim_local(ss);
         
         % Values of max spike rate(y), mean spike rate (y) and exact number of spike per trial (y) within the window
-        FirstTimePoint = Win - ParamModel.NeuroBin+ ParamModel.ResDelay +1;
+        FirstTimePoint = Win - ParamModel.NeuroBin+ ParamModel.ResDelay;
         LastTimePoint = Win + ParamModel.ResDelay;
         y{ss}=nan(length(Trials{dd}),1);
         for tt=1:length(Trials{dd})
-            y{ss}(tt)=sum((Trials{dd}{tt}>FirstTimePoint).*(Trials{dd}{tt}<LastTimePoint));
+            y{ss}(tt)=sum((Trials{dd}{tt}>=FirstTimePoint).*(Trials{dd}{tt}<LastTimePoint));
         end
         ymean(ss)=mean(y{ss});
         yvar(ss)=var(y{ss});
