@@ -70,19 +70,19 @@ if  ~isfield(ParamModel,'MinWin') || isempty(ParamModel.MinWin)
     ParamModel.MinWin = 1; % end point of the first analysis window (spectrogram and neural response)
 end
 if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
-    ParamModel.MaxWin = 200; %end point of the last anaysis window for...
+    ParamModel.MaxWin = 600; %end point of the last anaysis window for...
     ... neural response and end point of the largest analysis window for...
         ... spectrogram
 end
 if ~isfield(ParamModel,'MaxWin_cumInfo') || isempty(ParamModel.MaxWin_cumInfo)
-    ParamModel.MaxWin_cumInfo = 200; %end point of the last anaysis window for...
+    ParamModel.MaxWin_cumInfo = 600; %end point of the last anaysis window for...
     ... the calculation of cumulative information
 end
 if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
-    ParamModel.Increment = 1; %increase the size of the spectro window with a Xms pace
+    ParamModel.Increment = 10; %increase the size of the spectro window with a Xms pace
 end
 if ~isfield(ParamModel,'NeuroBin') || isempty(ParamModel.NeuroBin)
-    ParamModel.NeuroBin = 1; % size of the window (ms) within which the neural response is analyzed
+    ParamModel.NeuroBin = 10; % size of the window (ms) within which the neural response is analyzed
                                % The end of the window of analysis is
                                % determined by the Increment and ResDelay (see below).
 end
@@ -93,7 +93,7 @@ end
 
 % Number of bootstraps
 if ~isfield(ParamModel, 'NbBoot_Info') || isempty(ParamModel.NbBoot_Info)
-    ParamModel.NbBoot_Info = 20;
+    ParamModel.NbBoot_Info = 100;
 end
 
 if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
