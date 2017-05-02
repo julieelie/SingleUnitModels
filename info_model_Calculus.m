@@ -1,4 +1,4 @@
-function [I,P_YgivenS_all,H_y, H_ymu]=info_model_Calculus(Mu_in)
+function [I,P_YgivenS_all,H_y, H_ymu]=info_model_Calculus(Mu_in, varargin)
 %% Calculates the information obtain from N Poisson with different means.
 
 % This functions is used to calculate the mutual information between n
@@ -14,6 +14,29 @@ function [I,P_YgivenS_all,H_y, H_ymu]=info_model_Calculus(Mu_in)
 % Requires:
 % Mu_in         vector 1xn that specifies the mean (in count/bin i.e. no
 %               units here) of the n Poisson distributions.
+
+% Optional parameters
+%   [...] =
+%   info_model_Calculus(...,'PARAM1',VAL1,'PARAM2',VAL2,...)
+%   specifies various parameters of the calculation.
+% Valid parameters are the following:
+%  Parameter      Value
+%         
+%   'MuLims'    This parameter attends the case of mu=0, which is higly
+%               unlikely for neurons and lead to abberant calculations
+%               because log(0) = -Inf. A better estimation of the lowest
+%               spike rate should be 1/2 * 1/NTrials. By default the value
+%               is set to 1/20, so works well for 10 trials datasets.
+
+%    'Ymax'     Y_world defines the range of values that are used to
+%               calculate the entropies. Ymax corresponds to the maximum
+%               number of spikes you can observed per bin given the input
+%               mean. We can indeed reasonably limit the calculation
+%               of entropy from 0 up to the maximum number of spikes
+%               expected instead of summing to + infinity.
+%               Ymax is three standard deviations above the maximum
+%               variance (note that the mean equals the variance for
+%               Poisson distributions).
 
 
 % Returns: 
@@ -36,36 +59,29 @@ function [I,P_YgivenS_all,H_y, H_ymu]=info_model_Calculus(Mu_in)
 % distribution assumption.
 MAXMEANVALUE = 50;
 if ~sum(Mu_in <= MAXMEANVALUE)
-    ERRMSG= 'This function assumes Poisson distribution means inferior or equal to %d spikes per bin. Write your own routine for values higher than 50 using a the Normal approximation for the Poisson distribution.';
+    ERRMSG= 'This function assumes Poisson distribution means inferior or equal to %d spikes per bin.\nWrite your own routine for values higher than 50 using a the Normal approximation for the Poisson distribution.\n';
     error(ERRMSG, MAXMEANVALUE)
 end
 
 
-% Set a lower bound for Mu_in
-% We need to attend the case of mu=0 which ends up in abberant calculations
-% because log(0) = -Inf.
-% The natural increment for mu is 1 so let's have log(mu)
-% almost linear around 0 (around mu=1) and fix muLims=1/20.
+% Sorting input arguments
+pnames = {'MuLims','Ymax'};
+
+% Calculating default values of input arguments
 MuLims=1/20;
-% Here we know the natural scale for mu: the neuron can spike between
-%0 and 1 time per ms so depending on the window size Win (ms) the range
-% of values is 0 to Win spikes. Make the lower limit for log(mu) as
-% - the max limit by replacing zero values in mu by muLims=1/Win.
-% Other idea: 
-% In glmfit and here if no scale is provided, other choice because they don't know the
-% natural scale of mu. Their choice keeps mu^4 from underflowing.No upper limit.
-% dataClass = superiorfloat(mu,y);
-% muLims = realmin(dataClass).^.25; %Choice in glmfit
+Ymax_def = fix(3.0*sqrt(max(Mu_in)) + max(Mu_in));
+
+% Get input arguments
+dflts  = {MuLims Ymax_def};
+[MuLims, Ymax] = internal.stats.parseArgs(pnames,dflts,varargin{:});
+if fix(Ymax)<Ymax_def
+    ERRMSG= 'The range of neural response values that are used to calculate mutual information is too small.\nThe maximum value investigated is %d when it should be at least %d given the maximum mean entered as input to the function.\n';
+    error(ERRMSG, Ymax)
+end
+    
 
 
-% Y_world defines the range of values that are used to calculate the entropies
-% Ymax corresponds to the maximum number of spikes you can observed per bin
-% given the iput mean. We can indeed reasonably limit the calculation
-% of entropy from 0 up to the maximum number of spikes expected instead of
-% summing to + infinity.
-% Ymax is three standard deviations above the maximum variance (note that
-% the mean equals the variance for Poisson distributions).
-Ymax = 3.0*sqrt(max(Mu_in)) + max(Mu_in);
+% Set the range of values that are used to calculate the entropies.
 Y_world = 0:Ymax;
 
 % To save time, calculations are only done for unique values of Mu_in    
@@ -93,14 +109,8 @@ for mm=1:Nb_Unq_mu
     Mu = Mu_unique(mm);
     
     % Calculate the log of the probability for numerical reasons.
-    Log_P = nan(size(Y_world));   % Initialize
-    
-    % Deal with cases where mu is equal to zero and/or is below muLims
-    if Mu == 0
-        Log_P(1) = 1;  % The value for y=0
-        Mu = MuLims;
-        Log_P(2:end)= Y_world(2:end).*log2(Mu) - log2(Fac_y(2:end)) - Mu/log(2);
-    elseif Mu < MuLims
+    % Deal with cases where mu is below muLims
+    if Mu < MuLims
         Mu = MuLims;
         Log_P = Y_world.*log2(Mu) - log2(Fac_y) - Mu/log(2);
     else

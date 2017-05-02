@@ -1,18 +1,60 @@
-function [Icum_Full, HY_Full, HYgivenS_Full, Icum_JK, HY_JK, HYgivenS_JK, N_MC_tot, Icum_std]=info_cumulative_model_Calculus_MCJK(P_YgivenS_Full,P_YgivenS_JK, NTrials, varargin)
-tic
-%% This function calculates the cumulative information of the neural response
-% P_YgivenS is a cell array of length equals to the number of time points t in ...
-... the neural responses. Each cell contains a c*N matrix of probabilities,
-    ... the conditional probability of a given neural spike count c at the
-    ... particular time point t for the stimulus N. The cumulative
-    ... information is calculated/estimated for the last time point from
-    ... the first time point. Icum is a unique floating point (value of ...
-    ... cumulative information at time t). The algorithm uses a MonteCarlo
-    ... estimation with a weight correction, the number of samples used 
-    ... for the estimation is given by MCParameter.
+function [Icum, HY, HYgivenS, Icum_corr_mean, Icum_corr_std, N_MC_tot]=info_cumulative_model_Calculus_MCJK(P_YgivenS_Full,P_YgivenS_JK, NTrials, varargin)
+%% Calculates the cumulative information in a neural response following an...
+... inhomogenous poisson model
+    % To calculate the cumulative information at a given time bin T, one
+    % needs to estimate the distribution of joint probabilities of reponse
+    % sequences. This distribution can be very very large as the number of
+    % time bins in the neural response sequence increases. This algorithm
+    % uses a Monte Carlo approximation with a weight correction to estimate
+    % the distribution and calculate the entropy of the response and the
+    % conditional entropy (entropy of the response given the event
+    % (stimulus)), and finally the cumulative mutual information. The
+    % number of samples used in the Monte Carlo is upper bounded by
+    % MaxMCParameter.
+    % The algorithm expects as input two cell arrays (1 x T) of T matrices
+    % (c x N) containing the conditional probability of observing a reponse
+    % c given the stimulus N at time t.
+    % The matrices from the first cell array correspond to the conditional
+    % probabilities obtained using a spike rate estimated with all the
+    % trials (NTrials stimulus presentations). The matrices from the second cell
+    % array correspond to the conditional probabilities obtained using a
+    % spike rate estimated through a Jack-knife procedure (e.i. with all-1
+    % the trials or stimulus presentations). This second set of matrices is
+    % used to estimate the error on the calculation of cumulative
+    % information by a Jack-knife procedure.
+    % To see how to obtain matrices of conditional probabilities at each
+    % time bin, please refer to info_model_Calculus.m
     
+    
+% Requires:
+% P_YgivenS_Full a cell array of length equals to the number of time points
+%               T in the neural responses. Each cell contains a c*N matrix
+%               of probabilities,the conditional probability of a given
+%               neural spike count c at the particular time point t for the
+%               stimulus N. These probabilities are obtained by running
+%               info_model_Calculus.m on the spike rate estimated using all
+%               stimulus presentations NTrials.
+%
+% P_YgivenS_JK  a cell array with # of rows equals to the number of Jack-knife
+%               estimations of the conditional probability distributions
+%               and the # of columns equals the number of time points T.
+%               Each cell of P_YgivenS_JK contains a c*N matrix of
+%               probabilities,the conditional probability of a given
+%               neural spike count c at the particular time point t for the
+%               stimulus N. These probabilities are obtained by running
+%               info_model_Calculus.m on the spike rate estimated using all
+%               but one stimulus presentations NTrials, following a
+%               Jack-knife procedure.
+%
+% NTrials       Number of stimulus presentations (trials) used to estimate
+%               the conditional response probabilities reported in
+%               P_YgivenS_Full.
+
+
+
+% Optional parameters
 %   [...] =
-%   info_cumulative_model_Calculus(...,'PARAM1',VAL1,'PARAM2',VAL2,...)
+%   info_cumulative_model_Calculus_MCJK(...,'PARAM1',VAL1,'PARAM2',VAL2,...)
 %   specifies various parameters of the calculation.
 % Valid parameters are the following:
 %  Parameter      Value
@@ -23,134 +65,156 @@ tic
 %                   increased in the MonteCarlo estimation of the entropies
 %   'ConvThresh'  is the targeted maximum error in bits on the calculation of
 %                   cumulative information at each bin
-%   'MinProbThresh'  set to 1 to discard probabilities lower than 1/life of
-%                    a zebra finch in the lab, set to 0 to take into
-%                    acccount all probabilities. Default 0.
 %   'DebugFig'      set to 1 to see some debugging figures
-%   'MinProb'       threshold of probability under which values are set to
-%                   zero. Default is 1/number of 20ms bins in a life of a
-%                   zebra finch in the lab (8 years)
 %   'ScaleY'        Set to 1 to scale the distribution of conditional
 %                   probabilities given the stimulus the same way for both
 %                   entropy calculations
 %   'Verbose'       set to 1 to see a lot of output, 0 for none default is
 %                   none
 
+
+
+% Returns
+% Icum          The cumulative mutual information in bits between N events 
+%               (stimuli, categories of stimuli, motor output...) and an
+%               inhomogenous poisson response of length T bins defined by
+%               the probability distributions of neural response sequences
+%               P_YgivenS_Full. Icum_Full is a 1x1 scalar.
+%
+% H_y           a scalar that specifies the entropy of the neural response 
+%
+% H_y_mu        a scalar that specifies the entropy of the neural response
+%               given the stimulus.
+%
+% Icum_corr_mean  The Jack-knife biais corrected cumulative mutual
+%               information in bits between N events (stimuli, categories
+%               of stimuli, motor output...) and an inhomogenous poisson
+%               response of length T bins defined by the probability
+%               distributions of neural response sequences P_YgivenS_Full
+%               and P_YgivenS_JK. Icum_corr_mean is a 1x1 scalar.
+%
+% Icum_corr_std  The error on Icum_cor_mean as estimated by the Jack-knife
+%               procedure. Icum_corr_sd is a 1x1 scalar
+%
+% N_MC_tot     The number of samples used in the Monte Carlo.
+
+tic
 %% Sorting input arguments
-pnames = {'MaxMCParameter','IncrMCParameter','ConvThresh','MinProbThresh', 'DebugFig','MinProb','ScaleY', 'Verbose'};
-
-% Calculating default values of input arguments
-NStim_local = size(P_YgivenS_Full{end},2);
-
-
-MinProb = 1/(8*365*24*60*60*5); %1/number of 20ms bins in a life of a zebra finch in the lab
+pnames = {'MaxMCParameter','IncrMCParameter','ConvThresh','ScaleY','DebugFig', 'Verbose'};
 
 % Get input arguments
-dflts  = {10^6 10^4 0.3 0 0 MinProb 1 0};
-[N_MC_max, N_MC, ConvThresh, MinProbThresh, DebugFig, MinProb, ScaleY, Verbose] = internal.stats.parseArgs(pnames,dflts,varargin{:});
+dflts  = {5*10^6 10^5 0.2 1 0 0};
+[N_MC_max, N_MC, ConvThresh, ScaleY, DebugFig, Verbose] = internal.stats.parseArgs(pnames,dflts,varargin{:});
 
 %% Set some parameters
 win = length(P_YgivenS_Full);
 Nb_Boot = size(P_YgivenS_JK,1);
 
-%% Construct the data set of individual p for all JK Bootstrap and also for the full dataset
-P_YgivenS_all = cell(win,Nb_Boot+1);
-%parfor
-parfor bb=1:(Nb_Boot+1)
-    if bb==1
-        P_YgivenS_local = P_YgivenS_Full;
-    else
-        bb_local = bb-1;
-        P_YgivenS_local = P_YgivenS_JK(bb_local,:);
-    end
-    % Gather for each window before the current window win the probabilities of
-    % the stimuli that are still part of the calculations at the window win
+%% Construct the data set of individual p for all JK Bootstraps and also for the full dataset
+if ScaleY  % Scale probability distributions so that they sum to 1 for each stimulus
     for ww=1:(win)
-        % Don't keep the probabilities corresponding to least probable spike
-        % count values for all stimuli at the time point win
-        if MinProbThresh
-            Badyy = find(sum((P_YgivenS_local{ww} < MinProb),2)==NStim_local);
-            Goodyy=setdiff(1:size(P_YgivenS_local{1},1), Badyy);
-            if ScaleY
-                P_YgivenS_all{ww,bb}=P_YgivenS_local{ww}(Goodyy,:)./repmat(sum(P_YgivenS_local{ww}(Goodyy,:),1),size(P_YgivenS_local{ww},1),1);
-            else
-                P_YgivenS_all{ww,bb}=P_YgivenS_local{ww}(Goodyy,:);
-            end
-        else
-            if ScaleY
-                P_YgivenS_all{ww,bb}=P_YgivenS_local{ww}(:,:)./repmat(sum(P_YgivenS_local{ww}(:,:),1),size(P_YgivenS_local{ww},1),1);
-            else
-                P_YgivenS_all{ww,bb}=P_YgivenS_local{ww};
-            end
+        P_YgivenS_Full{ww}=P_YgivenS_Full{ww} ./ repmat(sum(P_YgivenS_Full{ww},1),size(P_YgivenS_Full{ww},1),1);
+    end
+    
+    parfor bb=1:(Nb_Boot)
+        for ww=1:(win)
+            P_YgivenS_JK{bb,ww} = P_YgivenS_JK{bb,ww} ./ repmat(sum(P_YgivenS_JK{bb,ww},1),size(P_YgivenS_JK{bb,ww},1),1);
         end
     end
 end
 
 
-%% Information
+%% Calculating Cumulative Mutual Information
+% The startegy used here is to progressively increase the number fo samples
+% used in the Monte Carlo to estimate the information until the error on
+% the calculation drops below a reasonnable threshold set by ConvThresh or
+% the maximum number of samples set by MaxMCParameter is reached.
 
-HY_Full = 0;
-HYgivenS_Full = 0;
+% Initialize output variables
+HY = 0;
+HYgivenS = 0;
 HYgivenS_JK = zeros(1,Nb_Boot);
 HY_JK = zeros(1, Nb_Boot);
 N_MC_tot = 0;
-Icum_std = ConvThresh+1; % set the error on information to an arbitrary value above the threshold
+Icum_corr_std = ConvThresh+1; % set the error on information to an arbitrary value above the threshold
 
-while Icum_std>ConvThresh && N_MC_tot<N_MC_max
-    [HY_Full_local,HYgivenS_Full_local,HY_JK_local,HYgivenS_JK_local]= cuminfo_MC(P_YgivenS_all, N_MC);
-
+% Begin the calculations
+while Icum_corr_std>ConvThresh && N_MC_tot<N_MC_max
+    % Calculating the entropies of the response following a Monte Carlo
+    % estimation, using the number of samples requested N_MC. The function
+    % is defined below.
+    [HY_Full_local,HYgivenS_Full_local,HY_JK_local,HYgivenS_JK_local]= cuminfo_MC(P_YgivenS_Full,P_YgivenS_JK, N_MC);
+    
+    % update the new total number of samples used to estimate entropies
     N_MC_tot_new = N_MC + N_MC_tot;
-    if N_MC_tot ~= 0
-        HY_Full = (HY_Full * N_MC_tot + HY_Full_local * N_MC) / N_MC_tot_new;
-        HYgivenS_Full = (HYgivenS_Full * N_MC_tot + HYgivenS_Full_local * N_MC) / N_MC_tot_new;
-        HYgivenS_JK = (HYgivenS_JK .* N_MC_tot + HYgivenS_JK_local .* N_MC) ./ N_MC_tot_new;
-        HY_JK = (HY_JK .* N_MC_tot + HY_JK_local.*N_MC) ./ N_MC_tot_new;
-    else
-        HY_Full = HY_Full_local;
-        HYgivenS_Full = HYgivenS_Full_local;
+    
+    % Update values of entropies with the values obtained for the last
+    % batch of samples
+    if N_MC_tot == 0 % initialization of entropy values
+        HY = HY_Full_local;
+        HYgivenS = HYgivenS_Full_local;
         HYgivenS_JK = HYgivenS_JK_local;
         HY_JK = HY_JK_local;
+    else
+        HY = (HY * N_MC_tot + HY_Full_local * N_MC) / N_MC_tot_new;
+        HYgivenS = (HYgivenS * N_MC_tot + HYgivenS_Full_local * N_MC) / N_MC_tot_new;
+        HYgivenS_JK = (HYgivenS_JK .* N_MC_tot + HYgivenS_JK_local .* N_MC) ./ N_MC_tot_new;
+        HY_JK = (HY_JK .* N_MC_tot + HY_JK_local.*N_MC) ./ N_MC_tot_new;
     end
+    
+    % update the past total number of samples used in the Monte Carlo
+    % approximation
     N_MC_tot = N_MC_tot_new;
-
-    Icum_Full = HY_Full-HYgivenS_Full;
+    
+    % Calculate the information given the current total number of samples
+    Icum = HY-HYgivenS;
     Icum_JK = HY_JK-HYgivenS_JK;
-
-    Icum_JKcorrected = NTrials * repmat(Icum_Full,1,Nb_Boot) - (NTrials-1) * Icum_JK(1:Nb_Boot);
-    Icum_std = std(Icum_JKcorrected,1);
+    
+    % Calculate the Jack-knife biais corrected value of information and its error 
+    Icum_JKcorrected = NTrials * repmat(Icum,1,Nb_Boot) - (NTrials-1) * Icum_JK;
+    Icum_corr_std = std(Icum_JKcorrected);
+    Icum_corr_mean = mean(Icum_JKcorrected);
 end
 
 
 if Verbose
-    fprintf(1,'Cumulative information = %f bits\n',Icum_Full);
+    fprintf(1,'Cumulative information = %f bits\n',Icum);
     ElapsedTime = toc;
     fprintf(1,'info_cumulative_model_Calculus_MCJK run for %d seconds with %d samples\n',ElapsedTime, N_MC_tot);
-    %fprintf('info_cumulative_model_Calculus run for %d seconds or %d seconds per path for %d paths\n',ElapsedTime, ElapsedTime/NbP, NbP);
 end
 
 
 
 
 %% Strategy: Monte Carlo Estimate of the entropy of the response
-function[HY_Full,HYgivenS_Full,HY_JK,HYgivenS_JK]= cuminfo_MC(P_YgivenS_all, N_MC)
+function[HY_Full,HYgivenS_Full,HY_JK,HYgivenS_JK]= cuminfo_MC(P_YgivenS_Full,P_YgivenS_JK, N_MC)
+% Calculates the entropies of neural response sequences
+% modeled as inhomogenous Poisson functions as defined by their
+% probability distributions P_YgivenS_all, using a Monte Carlo
+% approximation with N_MC samples.
 
 if Verbose
     fprintf(1, 'Calculation of Exact entropy (entropy of the neural response)\nusing the Monte Carlo estimation with %d samples\n',N_MC);
 end
 
-% Calculate the cdf of the marginal probabilities (probabilities of
-% responses at each time point) of the dataset using all trials
-P_Yt=cell(win,1);
-for www=1:win
-    P_Yt{www} = cumsum(mean(P_YgivenS_all{www,1},2)./sum(mean(P_YgivenS_all{www,1},2)));
-end
-
-%% Set the number of MonteCarlo samples N_MC and their values
+%% Set the values of MonteCarlo samples used for all datasets
 MC_Randu = rand(N_MC, win);
 Resp_MC = nan(N_MC, win);
 
-%% First calculate for the full dataset as we need QY_MC of that dataset to
-% implement in the calculation of JK datasets
+%% cdf of the marginal probabilities (probabilities of
+% responses at each time point) using the probability distributions
+% estimated with all the stimulus presentations/trials (full dataset).
+P_Yt=cell(win,1);
+for www=1:win
+    P_Yt{www} = cumsum(mean(P_YgivenS_Full{www},2)./sum(mean(P_YgivenS_Full{www},2)));
+end
+
+
+%% First calculate entropies for the full dataset as we need QY_MC of that
+% dataset to calculate the entropies of JK datasets
+
+% Find the number of stimuli and initialize output variables
+NStim_local = size(P_YgivenS_Full{end},2);
 PYgivenS_MC = nan(N_MC,NStim_local); %exact joint probability of MC sequences of responses for each stimulus
 PY_MC = nan(N_MC,1); %exact joint probability of MC sequences of responses averaged over the stimuli
 QY_MC = nan(N_MC,1); %estimation of the joint probability of MC sequences of responses using the marginals
@@ -160,16 +224,19 @@ for ss=1:N_MC
     if sum(ss==(1:10)*N_MC/10) && Verbose
         fprintf('%d/%d MC samples Full dataset\n',ss,N_MC);
     end
+    
     % Probabilistically determine a sequence of responses using the marginal
-    % probabilities
-    % for each time point, take a random number from the uniform
-    % distribution 0-1 and find the neural response that correspond to
-    % that probability in the full dataset
+    % probabilities and extract the conditional probabilities corresponding
+    % to that response sequence for all the stimuli:
+    % For each time point, take a random number from the uniform
+    % distribution 0-1 and find the neural response that corresponds to
+    % that probability in the full dataset. Then retrieve the conditional
+    % probability of that neural response given each stimuli.
     P_YgivenS_local_Resp = nan(win,NStim_local);
     for www=1:win
         u=MC_Randu(ss,www);
         Resp_MC(ss, www) = sum(P_Yt{www}<u)+1;
-        P_YgivenS_local_Resp(www,:) = P_YgivenS_all{www,1}(Resp_MC(ss,www),:);
+        P_YgivenS_local_Resp(www,:) = P_YgivenS_Full{www}(Resp_MC(ss,www),:);
     end
 
     % Calculate the exact joint probability of that sequence of responses
@@ -178,6 +245,7 @@ for ss=1:N_MC
     QY_MC(ss) = prod(mean(P_YgivenS_local_Resp,2));% Mean over stims (kind of getting the marginal) then product of the probability of the path
     PYgivenS_MC(ss,:) = prod(P_YgivenS_local_Resp,1);
 end
+
 % Calculate the MC estimate of the conditional response entropy to the
 % stimulus
 HYgivenS_Full = - sum(sum(PYgivenS_MC./repmat(QY_MC,1,NStim_local).*log2(PYgivenS_MC),1))/(N_MC*NStim_local);
@@ -185,31 +253,42 @@ if Verbose
     fprintf(1, 'Conditional entropy (entropy of the neural response given the stimulus): %f\n', HYgivenS_Full);
 end
 
-% Calculate the MC estimate of the response entropy
-% Weights
+% Calculate the MC estimate of the response entropy weight corrected
 HY_Full = sum(-PY_MC./QY_MC.*log2(PY_MC))/N_MC;
 
+if DebugFig
+    figure()
+    plot(1:100, QY_MC(1:100), 1:100,PY_MC(1:100))
+    legend('Product of probas','exact joint probas')
+    xlabel('Monte Carlo samples')
+    ylabel('probability')
+end
+
 %% Now calculate for JackKnife sets using the distribution of probabilities calculated for the full dataset to choose the MC samples
+
+% Initialize output variables
 HYgivenS_JK = nan(1,Nb_Boot);
 HY_JK = nan(1, Nb_Boot);
 
-%parfor
+% Loop through bootstrap versions of Jack-Knife estimation of distributions
+% of conditional response probablities 
 parfor bout=1:(Nb_Boot)
+    % initialize variables
     PYgivenS_MC_bb = nan(N_MC,NStim_local); %exact joint probability of MC sequences of responses for each stimulus
     PY_MC_bb = nan(N_MC,1); %exact joint probability of MC sequences of responses averaged over the stimuli
+    
     % Loop through the number of samples
     for ss=1:N_MC
         if sum(ss==(1:10)*N_MC/10) && Verbose
-            fprintf('%d/%d MC samples JK bootstrap %d/%d\n',ss,N_MC,bout-1,Nb_Boot);
+            fprintf('%d/%d MC samples JK bootstrap %d/%d\n',ss,N_MC,bout,Nb_Boot);
         end
-        % Probabilistically determine a sequence of responses using the marginal
-        % probabilities
-        % for each time point, take a random number from the uniform
-        % distribution 0-1 and find the neural response that correspond to
-        % that probability in the full dataset
+        
+        % The sequence of responses previously determine for that MC sample
+        % ss is Resp_MC(ss, :). Here, extract, for all the stimuli,the 
+        % JK conditional probabilities corresponding to that response sequence:
         P_YgivenS_local_Resp = nan(win,NStim_local);
         for www=1:win
-            P_YgivenS_local_Resp(www,:) = P_YgivenS_all{www,bout}(Resp_MC(ss, www),:);
+            P_YgivenS_local_Resp(www,:) = P_YgivenS_JK{bout,www}(Resp_MC(ss, www),:);
         end
     
         % Calculate the exact joint probability of that sequence of responses
@@ -219,38 +298,21 @@ parfor bout=1:(Nb_Boot)
     end
 
 
-    % Calculate the MC estimate of the conditional response entropy to the
+    % Calculate the MC estimate of the JK conditional response entropy to the
     % stimulus
     HYgivenS_JK(bout) = - sum(sum(PYgivenS_MC_bb./repmat(QY_MC,1,NStim_local).*log2(PYgivenS_MC_bb),1))/(N_MC*NStim_local);
     if Verbose
         fprintf(1, 'JK Bootstrap %d: Conditional entropy (entropy of the neural response given the stimulus): %f\n',bout, HYgivenS_JK(bout));
     end
 
-    % Calculate the MC estimate of the response entropy
-    % Weights
+    % Calculate the JK MC estimate of the response entropy weight corrected
     HY_JK(bout) = sum(-PY_MC_bb./QY_MC.*log2(PY_MC_bb))/N_MC;
-
-    % % Estimate the Error on MC estimates (based on the asymptotics method
-    % % of Koehler et al. 2009 Am. Stat.
-    % PYgivenS_MC_PY = PYgivenS_MC./repmat(PY_MC, 1,length(Stim_local));
-    % Icum_supp = sum(PY_MC./QY_MC.*sum(PYgivenS_MC_PY.*log2(PYgivenS_MC_PY),2))/(length(Stim_local)*N_MC);
-    % Icum_MCE = ((sum(PY_MC./QY_MC.*(sum(PYgivenS_MC_PY.*log2(PYgivenS_MC_PY),2)./length(Stim_local) - Icum(1)).^2)).^0.5)/N_MC;
-
-
-    if DebugFig
-        figure()
-        plot(1:100, QY_MC(1:100), 1:100,PY_MC(1:100))
-        legend('Product of probas','exact joint probas')
-        xlabel('Monte Carlo samples')
-        ylabel('probability')
-    end
-
 
     if Verbose
         fprintf(1, 'JK Bootstrap %d: Exact entropy (entropy of the neural response)\nusing the Monte Carlo estimation with %d samples: %f\n',bout,N_MC, HY_JK(bout));
     end
-
 end
 
 end
+
 end
