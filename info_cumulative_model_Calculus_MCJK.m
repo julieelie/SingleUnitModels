@@ -1,12 +1,16 @@
 function [Icum, HY, HYgivenS, Icum_corr_mean, Icum_corr_std, N_MC_tot]=info_cumulative_model_Calculus_MCJK(P_YgivenS_Full,P_YgivenS_JK, NTrials, varargin)
-%% Calculates the cumulative information in a neural response following an...
-... inhomogenous poisson model
+%% Calculates the cumulative information in a neural response given conditional probability distribution of responses given stims
+% at each time point.  Although it is assumed that this stimulus conditional probability is time
+% independent (i.e know that stim identity and the rate at a previous time does not tell you 
+% about the rate at the current time - as in a poisson distribution), the joint probability
+% distribution is not making the cumulative information calculation
+% difficult.
     % To calculate the cumulative information at a given time bin T, one
     % needs to estimate the distribution of joint probabilities of reponse
     % sequences. This distribution can be very very large as the number of
     % time bins in the neural response sequence increases. This algorithm
-    % uses a Monte Carlo approximation with a weight correction to estimate
-    % the distribution and calculate the entropy of the response and the
+    % uses a Monte Carlo approximation to estimate
+    % this joint distribution and calculate the entropy of the response and the
     % conditional entropy (entropy of the response given the event
     % (stimulus)), and finally the cumulative mutual information. The
     % number of samples used in the Monte Carlo is upper bounded by
@@ -48,7 +52,9 @@ function [Icum, HY, HYgivenS, Icum_corr_mean, Icum_corr_std, N_MC_tot]=info_cumu
 %
 % NTrials       Number of stimulus presentations (trials) used to estimate
 %               the conditional response probabilities reported in
-%               P_YgivenS_Full.
+%               P_YgivenS_Full.  %%%% FET: isn't this just the row
+%               dimension of P_YgivenS_JK?  Maybe full flexibility needs
+%               both.
 
 
 
@@ -204,6 +210,8 @@ Resp_MC = nan(N_MC, win);
 %% cdf of the marginal probabilities (probabilities of
 % responses at each time point) using the probability distributions
 % estimated with all the stimulus presentations/trials (full dataset).
+
+% FET: move outside of function for speeding
 P_Yt=cell(win,1);
 for www=1:win
     P_Yt{www} = cumsum(mean(P_YgivenS_Full{www},2)./sum(mean(P_YgivenS_Full{www},2)));
@@ -241,9 +249,16 @@ for ss=1:N_MC
 
     % Calculate the exact joint probability of that sequence of responses
     % and store it
-    PY_MC(ss) = mean(prod(P_YgivenS_local_Resp,1));% Joint proba over bins (product of elements percolumn) then average over stimuli
-    QY_MC(ss) = prod(mean(P_YgivenS_local_Resp,2));% Mean over stims (kind of getting the marginal) then product of the probability of the path
+    % FET 
+    % PY is the actual joint probability (the unconditional prob) calculated by estimating the
+    % prob of a path for each stimulus and then averaging.
+    % 
+    % QY is the proposal distribution used to find monte carlo estimates - it assumed that the joint probability disribution
+    % is independent across time and can be obtained from the product at each time window.
     PYgivenS_MC(ss,:) = prod(P_YgivenS_local_Resp,1);
+    PY_MC(ss) = mean(PYgivenS_MC(ss,:));           
+    QY_MC(ss) = prod(mean(P_YgivenS_local_Resp,2));
+
 end
 
 % Calculate the MC estimate of the conditional response entropy to the
@@ -293,8 +308,9 @@ parfor bout=1:(Nb_Boot)
     
         % Calculate the exact joint probability of that sequence of responses
         % and store it
-        PY_MC_bb(ss) = mean(prod(P_YgivenS_local_Resp,1));% Joint proba over bins (product of elements percolumn) then average over stimuli
         PYgivenS_MC_bb(ss,:) = prod(P_YgivenS_local_Resp,1);
+        PY_MC_bb(ss) = mean(PYgivenS_MC_bb(ss,:));% Joint proba over bins (product of elements percolumn) then average over stimuli
+        
     end
 
 
