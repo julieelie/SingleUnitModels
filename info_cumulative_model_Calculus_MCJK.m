@@ -52,9 +52,8 @@ function [Icum, HY, HYgivenS, Icum_corr_mean, Icum_corr_std, N_MC_tot]=info_cumu
 %
 % NTrials       Number of stimulus presentations (trials) used to estimate
 %               the conditional response probabilities reported in
-%               P_YgivenS_Full.  %%%% FET: isn't this just the row
-%               dimension of P_YgivenS_JK?  Maybe full flexibility needs
-%               both.
+%               P_YgivenS_Full. NTrials can be the number of rows
+%               in P_YgivenS_JK depending on your setting.
 
 
 
@@ -144,12 +143,20 @@ HY_JK = zeros(1, Nb_Boot);
 N_MC_tot = 0;
 Icum_corr_std = ConvThresh+1; % set the error on information to an arbitrary value above the threshold
 
+% cdf of the marginal probabilities (probabilities of
+% responses at each time point) using the probability distributions
+% estimated with all the stimulus presentations/trials (full dataset).
+P_Yt=cell(win,1);
+for ww=1:win
+    P_Yt{ww} = cumsum(mean(P_YgivenS_Full{ww},2)./sum(mean(P_YgivenS_Full{ww},2)));
+end
+
 % Begin the calculations
 while Icum_corr_std>ConvThresh && N_MC_tot<N_MC_max
     % Calculating the entropies of the response following a Monte Carlo
     % estimation, using the number of samples requested N_MC. The function
     % is defined below.
-    [HY_Full_local,HYgivenS_Full_local,HY_JK_local,HYgivenS_JK_local]= cuminfo_MC(P_YgivenS_Full,P_YgivenS_JK, N_MC);
+    [HY_Full_local,HYgivenS_Full_local,HY_JK_local,HYgivenS_JK_local]= cuminfo_MC(P_YgivenS_Full,P_YgivenS_JK, P_Yt, N_MC);
     
     % update the new total number of samples used to estimate entropies
     N_MC_tot_new = N_MC + N_MC_tot;
@@ -193,7 +200,7 @@ end
 
 
 %% Strategy: Monte Carlo Estimate of the entropy of the response
-function[HY_Full,HYgivenS_Full,HY_JK,HYgivenS_JK]= cuminfo_MC(P_YgivenS_Full,P_YgivenS_JK, N_MC)
+function[HY_Full,HYgivenS_Full,HY_JK,HYgivenS_JK]= cuminfo_MC(P_YgivenS_Full,P_YgivenS_JK, P_Yt, N_MC)
 % Calculates the entropies of neural response sequences
 % modeled as inhomogenous Poisson functions as defined by their
 % probability distributions P_YgivenS_all, using a Monte Carlo
@@ -206,16 +213,6 @@ end
 %% Set the values of MonteCarlo samples used for all datasets
 MC_Randu = rand(N_MC, win);
 Resp_MC = nan(N_MC, win);
-
-%% cdf of the marginal probabilities (probabilities of
-% responses at each time point) using the probability distributions
-% estimated with all the stimulus presentations/trials (full dataset).
-
-% FET: move outside of function for speeding
-P_Yt=cell(win,1);
-for www=1:win
-    P_Yt{www} = cumsum(mean(P_YgivenS_Full{www},2)./sum(mean(P_YgivenS_Full{www},2)));
-end
 
 
 %% First calculate entropies for the full dataset as we need QY_MC of that
@@ -248,13 +245,18 @@ for ss=1:N_MC
     end
 
     % Calculate the exact joint probability of that sequence of responses
-    % and store it
-    % FET 
-    % PY is the actual joint probability (the unconditional prob) calculated by estimating the
-    % prob of a path for each stimulus and then averaging.
+    % and store it.
+    % PYgivenS_MC is the conditional joint probabilities of the neural
+    % response sequence defined by the Monte Carlo sample for all
+    % stimuli.
+    %
+    % PY is the actual joint probability (the unconditional probability)
+    % calculated by averaging the conditional joint probabilities over stimuli.
     % 
-    % QY is the proposal distribution used to find monte carlo estimates - it assumed that the joint probability disribution
-    % is independent across time and can be obtained from the product at each time window.
+    % QY is the joint probability of the neural response sequence in the 
+    % proposal distribution used to find Monte Carlo estimates - it assumes
+    % that the joint probability disribution is independent across time and
+    % can be obtained from the product at each time bin.
     PYgivenS_MC(ss,:) = prod(P_YgivenS_local_Resp,1);
     PY_MC(ss) = mean(PYgivenS_MC(ss,:));           
     QY_MC(ss) = prod(mean(P_YgivenS_local_Resp,2));
@@ -305,11 +307,16 @@ parfor bout=1:(Nb_Boot)
         for www=1:win
             P_YgivenS_local_Resp(www,:) = P_YgivenS_JK{bout,www}(Resp_MC(ss, www),:);
         end
-    
+        
+        
         % Calculate the exact joint probability of that sequence of responses
         % and store it
+        % Conditional joint probability of that neural sequence for each
+        % stimulus
         PYgivenS_MC_bb(ss,:) = prod(P_YgivenS_local_Resp,1);
-        PY_MC_bb(ss) = mean(PYgivenS_MC_bb(ss,:));% Joint proba over bins (product of elements percolumn) then average over stimuli
+        
+        % actual joint probability (the unconditional probability)
+        PY_MC_bb(ss) = mean(PYgivenS_MC_bb(ss,:));
         
     end
 

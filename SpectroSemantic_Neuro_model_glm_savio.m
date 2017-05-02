@@ -347,29 +347,33 @@ if SWITCH.BestBin
     
     % Calculate the frequency of the gaussian filtered PSTH below which 99%
     % of the spectrum power density is contained
-    Kth_Neigh_local =unique(cell2mat(Res.Kth_Neigh'));
-    EffectifK = nan(1,length(Kth_Neigh_local));
-    ValidKth = 1;
-    for kk=1:length(Kth_Neigh_local)
-        EffectifK(kk) = sum(cell2mat(Res.Kth_Neigh') == Kth_Neigh_local(kk));
-        if kk>1 && (EffectifK(kk) == EffectifK(kk-1))
-              ValidKth = ValidKth + 1;
-        end
-    end
-      
+   
     
-    KthNeigh = cell2mat(Res.Kth_Neigh(DataSel)');
-    SignalTot = cell2mat(Res.PSTH_GaussFiltered(DataSel));
     OptimalFreqCutOff.Thresh = 80:99;
-    for kk=1:ValidKth
-        KthNeigh_local = find(KthNeigh == kk);
-        SignalTot_local = SignalTot(KthNeigh_local,:);
-        SignalTot_1dim=reshape(SignalTot_local',[size(SignalTot_local,1)*size(SignalTot_local,2),1]);
+    for kk=1:5
+        % First retrieve the PSTH calculated with the same # of nearest
+        % neighbour Ntrial/d where d=1:Ntrials
+        SignalTot_local = nan(nvoc,size(Res.PSTH_GaussFiltered{1},2));
+        if kk<5 % Treating Neigh = NT/2, NT/3, NT/4, NT/5
+            for vv=1:nvoc
+                NT = size(Res.PSTH_GaussFiltered{vv},1);
+                SignalTot_local(vv,:) = Res.PSTH_GaussFiltered{vv}(NT-kk,:);
+            end
+        else % Treating Neigh =1 = NT/NT
+            for vv=1:nvoc
+                SignalTot_local(vv,:) = Res.PSTH_GaussFiltered{vv}(1,:);
+            end
+            SignalTot_1dim=reshape(SignalTot_local',[size(SignalTot_local,1)*size(SignalTot_local,2),1]);
+        end
+        
+        % Calculate the power spectrum of the signal
         Window = 0.2*Res.Response_samprate;
         [Pxx,F] = pwelch(SignalTot_1dim, Window, [],[],10000);
         Pxx_Perc = 100*cumsum(Pxx / sum(Pxx));
-        OptimalFreqCutOff.(sprintf('PowerSpectrumDensityKth%d',kk)) = nan(1,length(80:99));
         
+        % Identify the frequency cut-off corresponding to the list of
+        % thresholds
+        OptimalFreqCutOff.(sprintf('PowerSpectrumDensityKth%d',kk)) = nan(1,length(80:99));
         for Thresh = OptimalFreqCutOff.Thresh
             IndMax=find(Pxx_Perc > Thresh);
             OptimalFreqCutOff.(sprintf('PowerSpectrumDensityKth%d',kk))(Thresh) = F(IndMax(1));
