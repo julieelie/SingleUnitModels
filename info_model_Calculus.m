@@ -112,10 +112,8 @@ for mm=1:Nb_Unq_mu
     % Deal with cases where mu is below muLims
     if Mu < MuLims
         Mu = MuLims;
-        Log_P = Y_world.*log2(Mu) - log2(Fac_y) - Mu/log(2);
-    else
-        Log_P = Y_world.*log2(Mu) - log2(Fac_y) - Mu/log(2);
     end
+    Log_P = Y_world.*log2(Mu) - log2(Fac_y) - Mu/log(2);
     
     % From logP to P
     P = 2.^(Log_P);
