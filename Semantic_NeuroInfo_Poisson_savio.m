@@ -309,8 +309,8 @@ if SWITCH.InfoCal
         for vv=1:nvoc
             NT = size(Res.PSTH_GaussFiltered{vv},1);
             Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
-            PSTH_GaussFilteredK{vv} = PSTH_All{vv}(NT-kk,:);
-            JK_GaussFilteredK{vv} = JK_All{vv}{NT-kk};
+            PSTH_GaussFilteredK{vv} = PSTH_All{vv}(NT-Kth_i,:);
+            JK_GaussFilteredK{vv} = JK_All{vv}{NT-Kth_i};
         end
     else % Treating Neigh =1 = NT/NT
         for vv=1:nvoc
