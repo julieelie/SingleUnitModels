@@ -29,7 +29,7 @@ end
 
 % Set the maximum value of Y investigated for the calculation of
 % information
-MaxY = 2*(LastTimePoint - FirstTimePoint +1)*1000/Response_samprate; % response sampling  rate should be in hertz
+MaxY = 4*(LastTimePoint - FirstTimePoint +1)*1000/Response_samprate; % response sampling  rate should be in hertz
 
 
 % Format the input
