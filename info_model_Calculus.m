@@ -76,7 +76,7 @@ dflts  = {MuLims Ymax_def};
 [MuLims, Ymax] = internal.stats.parseArgs(pnames,dflts,varargin{:});
 if fix(Ymax)<Ymax_def
     ERRMSG= 'The range of neural response values that are used to calculate mutual information is too small.\nThe maximum value investigated is %d when it should be at least %d given the maximum mean entered as input to the function.\n';
-    error(ERRMSG, Ymax)
+    error(ERRMSG, Ymax, Ymax_def)
 end
     
 
