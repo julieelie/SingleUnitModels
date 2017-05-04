@@ -65,7 +65,7 @@ function [Icum, HY, HYgivenS, Icum_corr_mean, Icum_corr_std, N_MC_tot]=info_cumu
 %  Parameter      Value
 %         
 %   'MaxMCParameter' is the maximum number of samples in the Monte Carlo estimation
-%                    of the entropy of the response defaulted to 10^6
+%                    of the entropy of the response defaulted to 5*10^6
 %   'IncrMCParameter' is the increment by which the number of samples is
 %                   increased in the MonteCarlo estimation of the entropies
 %   'ConvThresh'  is the targeted maximum error in bits on the calculation of

@@ -292,6 +292,8 @@ if SWITCH.InfoCal
     ParamModel.MarkovParameters_Cum_Info = [];% supressing the calculation of Markov approximation for the cumulative information
     ParamModel.ExactHist = [];% supressing the exact calculation of the cumulative information
     ParamModel.Response_samprate = Res.Response_samprate;
+    ParamModel.MaxNumSamples_MCopt_Cum_Info = 5.10^6;
+    ParamModel.NumSamples_MC_Cum_Info = [];
     
     PSTH_All = Res.PSTH_GaussFiltered(DataSel);
     JK_All = Res.JackKnife_GaussFiltered(DataSel);

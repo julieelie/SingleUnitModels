@@ -1,8 +1,5 @@
-function [Info]=info_model_Calculus_wrapper2(PSTH, FirstTimePoint, LastTimePoint, CatList, Response_samprate, Bootstrap_switch)
+function [Info]=info_model_Calculus_wrapper2(PSTH, FirstTimePoint, LastTimePoint, CatList, Response_samprate)
 
-if nargin<6
-    Bootstrap_switch =0;
-end
 
 NbStim = length(PSTH);
 % Change the grouping parameter to a vector if not a vector
@@ -37,26 +34,18 @@ MaxY = 2*(LastTimePoint - FirstTimePoint +1)*1000/Response_samprate; % response 
 
 % Format the input
 Info.InputdataStim = nan(1,NbStim);
-if ~Bootstrap_switch
-    if size(PSTH,1)==NbStim
-        PSTH_Local = cell2mat(PSTH);
-    else
-        PSTH_Local = cell2mat(PSTH');
-    end
-    Info.InputdataStim = sum(PSTH_Local(:,FirstTimePoint:LastTimePoint),2);
+if size(PSTH,1)==NbStim
+    PSTH_Local = cell2mat(PSTH);
 else
-    for ss = 1:NbStim
-        PSTH_Local = cell2mat(PSTH{ss});
-        NJK = size(PSTH_Local,1);
-        Info.InputdataStim(ss) = sum(PSTH_Local(randperm(NJK,1),FirstTimePoint:LastTimePoint),2);
-    end
+    PSTH_Local = cell2mat(PSTH');
 end
+Info.InputdataStim = sum(PSTH_Local(:,FirstTimePoint:LastTimePoint),2);
 
 % Entropy of the stimulus dataset
 Info.stim_entropy = log2(NbStim);
     
 % Calculate information about stimuli   
-[Info.stim_value,Info.P_YgivenS,~] = info_model_Calculus(Info.InputdataStim, MaxY);
+[Info.stim_value,Info.P_YgivenS,~] = info_model_Calculus(Info.InputdataStim, 'Ymax',MaxY);
 
 if ~isempty(CatList_in)
     % Derive P_YgivenC and calculate information about categories
@@ -72,7 +61,7 @@ if ~isempty(CatList_in)
     % Calculate log probability
     H_y = sum(-P_y_i.*log2(P_y_i + (P_y_i==0)));% entropy of the response
 
-    %% Calculate the model information
+    %% Calculate the mutual information about categories
     Info.cat_value = (H_y - H_ycat);
     % Entropy of the categories in the dataset
     Info.cat_entropy = log2(NbCat);

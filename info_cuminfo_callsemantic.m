@@ -1,5 +1,7 @@
 function [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(PSTH,JackKnifeTrials,VocType, ParamModel,  Calfilename)
 FIG=0;
+
+%% Deals with input parameters
 if nargin<4
     ParamModel = struct();
 end
@@ -44,7 +46,15 @@ end
 if ~isfield(ParamModel, 'NumSamples_MC_Cum_Info')
     ParamModel.NumSamples_MC_Cum_Info = 10^6; %Set the number of samples for the Monte Carlo approximation of the cumulative information 10^7 takes too much memory prefers lower numbers
 elseif isempty(ParamModel.NumSamples_MC_Cum_Info)
-    fprintf(1,'No Monte Carlo approximation of the cumulative information will be calculated\n');
+    fprintf(1,'No Monte Carlo approximation of the cumulative information with a fix number of samples will be calculated\n');
+end
+
+% Set parameters for the max number of samples that should be tested in the
+% optimal MonteCarlo estimation of the cumulative information
+if ~isfield(ParamModel, 'MaxNumSamples_MCopt_Cum_Info')
+    ParamModel.MaxNumSamples_MCopt_Cum_Info = 5*10^6; %Set the number of samples for the Monte Carlo approximation of the cumulative information 10^7 takes too much memory prefers lower numbers
+elseif isempty(ParamModel.MaxNumSamples_MCopt_Cum_Info)
+    fprintf(1,'No Monte Carlo approximation of the cumulative information with an optimized number of samples will be calculated\n');
 end
 
 % Set the Parameters of the Markov approximation of the cumulative
@@ -69,20 +79,17 @@ else
     saveonline = 1;
 end
 
+%% Set up parameters of the function and initialize output variables
 % define the list of end points of spectrogram and neural responses windows
 Wins = ParamModel.MinWin:ParamModel.Increment:ParamModel.MaxWin;
 Wins_cumInfo = ParamModel.MinWin:ParamModel.Increment:ParamModel.MaxWin_cumInfo;
 
-% # of models to run on the data
+% # of bins in the data
 WinNum = length(Wins);
 WinNum_cumInfo = length(Wins_cumInfo);
 
 % Number of stims in the data set
 NbStims = length(PSTH);
-
-% Number of stimulus categories
-IdCats = unique(VocType);
-NbCat = length(IdCats);
 
 %% Configure Parallel computing
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
@@ -95,7 +102,6 @@ end
 %% Initialize output variables
 Rate4InfoStim = nan(NbStims,WinNum);
 Rate4InfoStim_Boot = cell(1,ParamModel.NbBoot_Info);
-InputData.VocType = VocType;
 Stim_entropy = nan(1,WinNum);
 Category_entropy = nan(1,WinNum);
 Stim_info = nan(1,WinNum);
@@ -108,7 +114,8 @@ P_YgivenC = cell(1,WinNum);
 P_YgivenS_Bootstrap = cell(ParamModel.NbBoot_CumInfo,WinNum);
 P_YgivenC_Bootstrap = cell(ParamModel.NbBoot_CumInfo,WinNum);
 
-%% Now loop through bins and calculate spike rates and instantaneous information
+
+%% Now loop through bins: bin spike patterns and calculate instantaneous information
 %parfor
 parfor ww = 1:WinNum
     Tstart=tic;
@@ -137,7 +144,6 @@ parfor bb=1:ParamModel.NbBoot_Info
     % Choosing a different set of JK trials for the stims for each bootstrap
     NbStim = length(JackKnifeTrials);
     JackKnifePSTH = cell(1,NbStim);
-    Rate4InfoStim_Boot{bb} = nan(NbStims,WinNum);
     for st = 1:NbStim
         PSTH_Local = JackKnifeTrials{st};
         NJK = size(PSTH_Local,1);
@@ -145,6 +151,7 @@ parfor bb=1:ParamModel.NbBoot_Info
     end
 
     % Then run the calculation of information on all windows
+    Rate4InfoStim_Boot{bb} = nan(NbStims,WinNum);
     for ww_in = 1:WinNum
         fprintf(1,'JK instantaneous info Boostrap %d %d/%d window\n',bb, ww_in, WinNum);
         Win = Wins(ww_in);
@@ -339,13 +346,12 @@ Data.category_info_JKBoot = Category_info_JKBoot;
      ylabel('Category Information in bits')
      pause()
  end
-%% Now calculating cumulative information
-% Getting output variables ready
-if isempty(ParamModel.ExactHist) && isempty(ParamModel.MarkovParameters_Cum_Info) && isempty(ParamModel.NumSamples_MC_Cum_Info)
-    % skip the next calculation we're not running the calculation of
-    % cumulative information
-else
+ 
+%% Now calculating cumulative information if requested by the presence of input parameters
+if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_Info) || ~isempty(ParamModel.NumSamples_MC_Cum_Info) || ~isempty(ParamModel.MaxNumSamples_MCopt_Cum_Info)
     fprintf(1,'Starting calculation of cumulative information\n')
+    
+    % Initializing output variables
     Data.cum_info_stim = struct();
     Data.cum_info_cat = struct();
     
@@ -373,6 +379,21 @@ else
             Data.cum_info_cat.(sprintf('%s_Samples',ModelType)) = cell(1, WinNum_cumInfo);
         end
     end
+    if ~isempty(ParamModel.MaxNumSamples_MCopt_Cum_Info)
+        ModelType='MonteCarloOpt';
+        Data.cum_info_stim.(sprintf('%s_raw',ModelType))= nan(1,WinNum_cumInfo);
+        Data.cum_info_stim.(sprintf('%s_raw',ModelType))(1)= Data.stim_info(1);
+        Data.cum_info_stim.(sprintf('%s_corr',ModelType))= nan(1,WinNum_cumInfo);
+        Data.cum_info_stim.(sprintf('%s_corr',ModelType))(1)= Data.stim_info(1);
+        Data.cum_info_stim.(sprintf('%s_se',ModelType))= nan(1,WinNum_cumInfo);
+        Data.cum_info_stim.(sprintf('%s_Samples',ModelType)) = nan(1, WinNum_cumInfo);
+        Data.cum_info_cat.(sprintf('%s_raw',ModelType))= nan(1,WinNum_cumInfo);
+        Data.cum_info_cat.(sprintf('%s_raw',ModelType))(1)= Data.category_info(1);
+        Data.cum_info_cat.(sprintf('%s_corr',ModelType))= nan(1,WinNum_cumInfo);
+        Data.cum_info_cat.(sprintf('%s_corr',ModelType))(1)= Data.category_info(1);
+        Data.cum_info_cat.(sprintf('%s_se',ModelType))= nan(1,WinNum_cumInfo);
+        Data.cum_info_cat.(sprintf('%s_Samples',ModelType)) = nan(1, WinNum_cumInfo);
+    end
     if ~isempty(ParamModel.ExactHist)
         ModelType = sprintf('ExactMem0_%d',ParamModel.ExactHist);
         Data.cum_info_stim.(sprintf('%s',ModelType)) = nan(1,WinNum_cumInfo);
@@ -394,6 +415,16 @@ else
                 % categories
                 [Data.cum_info_cat.(sprintf('%s',ModelType))(:,ww),~,~,Data.cum_info_cat.(sprintf('%s_Samples',ModelType)){ww}]=info_cumulative_model_Calculus(Data.P_YgivenC(1:ww),'Model#',2,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(ss));
             end
+        end
+        
+        if ~isempty(ParamModel.MaxNumSamples_MCopt_Cum_Info)
+            ModelType='MonteCarloOpt';
+            % Monte Carlo estimation with full memory and optimum # of MC
+            % samples - cumulative information stimuli
+            [Data.cum_info_stim.(sprintf('%s_raw',ModelType))(ww),~,~,Data.cum_info_stim.(sprintf('%s_corr',ModelType))(ww),Data.cum_info_stim.(sprintf('%s_se',ModelType))(ww),Data.cum_info_stim.(sprintf('%s_Samples',ModelType))(ww)]=info_cumulative_model_Calculus_MCJK(Data.P_YgivenS(1:ww),Data.P_YgivenS_Bootstrap(:,1:ww), ParamModel.Mean_Ntrials_perstim(1), 'MaxMCParameter', ParamModel.MaxNumSamples_MCopt_Cum_Info);
+            % Monte Carlo estimation with full memory and optimum # of MC
+            % samples - cumulative information categories
+            [Data.cum_info_cat.(sprintf('%s_raw',ModelType))(ww),~,~,Data.cum_info_cat.(sprintf('%s_corr',ModelType))(ww),Data.cum_info_cat.(sprintf('%s_se',ModelType))(ww),Data.cum_info_cat.(sprintf('%s_Samples',ModelType))(ww)]=info_cumulative_model_Calculus_MCJK(Data.P_YgivenC(1:ww),Data.P_YgivenC_Bootstrap(:,1:ww), ParamModel.Mean_Ntrials_perstim(1), 'MaxMCParameter', ParamModel.MaxNumSamples_MCopt_Cum_Info);
         end
         
         if ~isempty(ParamModel.ExactHist)
@@ -450,146 +481,88 @@ else
         xlabel('Time ms')
         ylabel('Category Information in bits')
     end
-    %% Calculating bootstrap values accross stims and across trials within stims
-    fprintf(1,'Bootstraping calculation of cumulative information\n')
-    if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
-        Cum_info_stim_LastMonteCarlo_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
-        Cum_info_cat_LastMonteCarlo_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
-        Cum_info_stim_LastMonteCarlo_Bootstrap(:,1) = repmat(Data.stim_info(1),ParamModel.NbBoot_CumInfo,1);
-        Cum_info_cat_LastMonteCarlo_Bootstrap(:,1) = repmat(Data.category_info(1),ParamModel.NbBoot_CumInfo,1);
-        %Cum_info_stim_LastMonteCarlo_Bootsample = nan(ParamModel.NbBoot_cumInfo,WinNum_cumInfo);
-        %Cum_info_cat_LastMonteCarlo_Bootsample = nan(ParamModel.NbBoot_cumInfo,WinNum_cumInfo);
-        ModelTypeMC = sprintf('MonteCarlo%d_',log10(ParamModel.NumSamples_MC_Cum_Info(end)));
-        MC_Carlo_Samp_stim = Data.cum_info_stim.(sprintf('%s_Samples',ModelTypeMC));
-        MC_Carlo_Samp_cat = Data.cum_info_cat.(sprintf('%s_Samples',ModelTypeMC));
-    end
     
-    if ~isempty(ParamModel.ExactHist)
-        Cum_info_stim_ExactMem0_4_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
-        Cum_info_cat_ExactMem0_4_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
-    end
     
-    if ~isempty(ParamModel.MarkovParameters_Cum_Info)
-        Cum_info_stim_LastMarkov_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
-        Cum_info_cat_LastMarkov_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
-    end
     
-%     if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
-%         delete(gcp)
-%         parpool(str2num(getenv('SLURM_CPUS_ON_NODE')));
-%         system('mkdir -p /global/scratch/$USER/$SLURM_JOB_ID')
-%         [~,JobID] = system('echo $SLURM_JOB_ID');
-%         parcluster.JobStorageLocation = ['/global/scratch/jelie/' JobID];
-%     end
+    %% Calculating Jackknife values of cumulative information for all
+    % methods except Monte Carlo which is done properly in the previous
+    % section for the optimal # of samples only
     
-    %parfor
-    parfor bb=1:ParamModel.NbBoot_CumInfo
-        Tstart3=tic;
-        fprintf('Bootstrap CumInfo %d/%d\n', bb, ParamModel.NbBoot_CumInfo);
+    if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_Info) || ~isempty(ParamModel.NumSamples_MC_Cum_Info)
+        fprintf(1,'Bootstraping calculation of cumulative information\n');
+    
+        if ~isempty(ParamModel.ExactHist)
+            Cum_info_stim_ExactMem0_4_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
+            Cum_info_cat_ExactMem0_4_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
+        end
+
         if ~isempty(ParamModel.MarkovParameters_Cum_Info)
-            HY_Markov4_stim_bbstim = nan(1,WinNum_cumInfo);
-            HY_Markov4_cat_bbstim = nan(1,WinNum_cumInfo);
+            Cum_info_stim_LastMarkov_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
+            Cum_info_cat_LastMarkov_Bootstrap = nan(ParamModel.NbBoot_CumInfo,WinNum_cumInfo);
         end
-        for ww=2:WinNum_cumInfo
-            fprintf('Bootstrap CumInfo %d/%d Time point %d/%d\n',bb, ParamModel.NbBoot_CumInfo, ww, WinNum_cumInfo);
-            
-            % First for the cumulative information about stimuli
-            P_YgivenS_local = P_YgivenS_Bootstrap(bb,1:ww);
-            
-            if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
-                % Monte Carlo estimation with full memory
-                [Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(P_YgivenS_local,'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end),'MCSamp_input', MC_Carlo_Samp_stim{ww});
-                Cum_info_stim_LastMonteCarlo_Bootstrap(bb,ww)=Icum_EstMonteCarlo_temp(1);
-                % if you want to restore the bootstrap of MC on same
-                % estimations of spike rate restore the following lines
-                %[Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(Data.P_YgivenS(1,1:ww),'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end));
-                %Cum_info_stim_LastMonteCarlo_Bootsample(bb,ww) = Icum_EstMonteCarlo_temp(1);
-            end
-            
-            if ~isempty(ParamModel.ExactHist)
-                % Exact calculation with 50 ms memory
-                [Cum_info_stim_ExactMem0_4_Bootstrap(bb,ww),~]=info_cumulative_model_Calculus(P_YgivenC_local,'Model#',bb,'CalMode','Exact_Mem', 'Exact_history',4);
-            end
-            
+    
+    
+        %parfor
+        parfor bb=1:ParamModel.NbBoot_CumInfo
+            Tstart3=tic;
+            fprintf('Bootstrap CumInfo %d/%d\n', bb, ParamModel.NbBoot_CumInfo);
             if ~isempty(ParamModel.MarkovParameters_Cum_Info)
-                if ww==2
-                    % Markov chain estimation 50 ms
-                    [Cum_info_stim_LastMarkov_Bootstrap(bb,ww),HY_Markov4_stim_bbstim(ww),~]=info_cumulative_model_Calculus(P_YgivenC_local,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,end));
-                else
-                    % Markov chain estimation 50 ms
-                    [Cum_info_stim_LastMarkov_Bootstrap(bb,ww),HY_Markov4_stim_bbstim(ww),~]=info_cumulative_model_Calculus(P_YgivenC_local,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,end), 'HY_old', HY_Markov4_stim_bbstim(ww-1));
+                HY_Markov4_stim_bbstim = nan(1,WinNum_cumInfo);
+                HY_Markov4_cat_bbstim = nan(1,WinNum_cumInfo);
+            end
+            for ww=2:WinNum_cumInfo
+                fprintf('Bootstrap CumInfo %d/%d Time point %d/%d\n',bb, ParamModel.NbBoot_CumInfo, ww, WinNum_cumInfo);
+
+                % First for the cumulative information about stimuli
+                P_YgivenS_local = P_YgivenS_Bootstrap(bb,1:ww);
+
+                if ~isempty(ParamModel.ExactHist)
+                    % Exact calculation with 50 ms memory
+                    [Cum_info_stim_ExactMem0_4_Bootstrap(bb,ww),~]=info_cumulative_model_Calculus(P_YgivenS_local,'Model#',bb,'CalMode','Exact_Mem', 'Exact_history',4);
+                end
+
+                if ~isempty(ParamModel.MarkovParameters_Cum_Info)
+                    if ww==2
+                        % Markov chain estimation 50 ms
+                        [Cum_info_stim_LastMarkov_Bootstrap(bb,ww),HY_Markov4_stim_bbstim(ww),~]=info_cumulative_model_Calculus(P_YgivenS_local,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,end));
+                    else
+                        % Markov chain estimation 50 ms
+                        [Cum_info_stim_LastMarkov_Bootstrap(bb,ww),HY_Markov4_stim_bbstim(ww),~]=info_cumulative_model_Calculus(P_YgivenS_local,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,end), 'HY_old', HY_Markov4_stim_bbstim(ww-1));
+                    end
+                end
+
+                % Then same thing for the cumulative information about categories
+                P_YgivenC_local = P_YgivenC_Bootstrap(bb,1:ww);
+
+                if ~isempty(ParamModel.ExactHist)
+                    % Exact calculation with 40 ms memory
+                    [Cum_info_cat_ExactMem0_4_Bootstrap(bb,ww),~]=info_cumulative_model_Calculus(P_YgivenC_local,'Model#',bb,'CalMode','Exact_Mem', 'Exact_history',4);
+                end
+
+                if ~isempty(ParamModel.MarkovParameters_Cum_Info)
+                    if ww==2
+                        % Markov chain estimation 50 ms
+                        [Cum_info_cat_LastMarkov_Bootstrap(bb,ww),HY_Markov4_cat_bbstim(ww),~]=info_cumulative_model_Calculus(P_YgivenC_local,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,end));
+                    else
+                        % Markov chain estimation 50 ms
+                        [Cum_info_cat_LastMarkov_Bootstrap(bb,ww),HY_Markov4_cat_bbstim(ww),~]=info_cumulative_model_Calculus(P_YgivenC_local,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,end), 'HY_old', HY_Markov4_cat_bbstim(ww-1));
+                    end
                 end
             end
-            
-            % Then same thing for the cumulative information about categories
-            P_YgivenC_local = P_YgivenC_Bootstrap(bb,1:ww);
-            
-            if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
-                % Monte Carlo estimation with full memory
-                [Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(P_YgivenC_local,'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end),'MCSamp_input', MC_Carlo_Samp_cat{ww});
-                Cum_info_cat_LastMonteCarlo_Bootstrap(bb,ww)=Icum_EstMonteCarlo_temp(1);
-                
-                % if you want to restore the bootstrap of MC on same
-                % estimations of spike rate restore the following lines
-                %[Icum_EstMonteCarlo_temp,~]=info_cumulative_model_Calculus(Data.P_YgivenC(1,1:ww),'Model#',bb,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(end));
-                %Cum_info_cat_LastMonteCarlo_Bootsample(bb,ww) = Icum_EstMonteCarlo_temp(1);
-            end
-            
-            if ~isempty(ParamModel.ExactHist)
-                % Exact calculation with 40 ms memory
-                [Cum_info_cat_ExactMem0_4_Bootstrap(bb,ww),~]=info_cumulative_model_Calculus(P_YgivenC_local,'Model#',bb,'CalMode','Exact_Mem', 'Exact_history',4);
-            end
-            
-            if ~isempty(ParamModel.MarkovParameters_Cum_Info)
-                if ww==2
-                    % Markov chain estimation 50 ms
-                    [Cum_info_cat_LastMarkov_Bootstrap(bb,ww),HY_Markov4_cat_bbstim(ww),~]=info_cumulative_model_Calculus(P_YgivenC_local,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,end));
-                else
-                    % Markov chain estimation 50 ms
-                    [Cum_info_cat_LastMarkov_Bootstrap(bb,ww),HY_Markov4_cat_bbstim(ww),~]=info_cumulative_model_Calculus(P_YgivenC_local,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,end), 'HY_old', HY_Markov4_cat_bbstim(ww-1));
-                end
-            end
+            fprintf('Done bootstrap %d on cumulative information after %f sec\n', bb, toc(Tstart3));
         end
-        fprintf('Done bootstrap %d on cumulative information after %f sec\n', bb, toc(Tstart3));
-    end
     
-    if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
-        ModelTypeMCstim = sprintf('MonteCarlo%d_JKBootstrap',log10(ParamModel.NumSamples_MC_Cum_Info(end)));
-        Data.cum_info_stim.(sprintf('%s',ModelTypeMCstim)) = Cum_info_stim_LastMonteCarlo_Bootstrap;
-        Data.cum_info_cat.(sprintf('%s',ModelTypeMCstim)) = Cum_info_cat_LastMonteCarlo_Bootstrap;
+        if ~isempty(ParamModel.ExactHist)
+            Data.cum_info_stim.ExactMem0_4_BootJK = Cum_info_stim_ExactMem0_4_Bootstrap;
+            Data.cum_info_cat.ExactMem0_4_BootJK = Cum_info_cat_ExactMem0_4_Bootstrap;
+        end
+    
+        if ~isempty(ParamModel.MarkovParameters_Cum_Info)
+            ModelTypeMarJK = sprintf('MarkovEst%d_BootJK',ParamModel.MarkovParameters_Cum_Info(1,end));
+            Data.cum_info_stim.(sprintf('%s',ModelTypeMarJK)) = Cum_info_stim_LastMarkov_Bootstrap;
+            Data.cum_info_cat.(sprintf('%s',ModelTypeMarJK)) = Cum_info_cat_LastMarkov_Bootstrap;
 
-        % Estimate cumulative information for infinite number of trials and
-        % stuff in results in structure
-            % ordonnée à l'origine: b = (y1*x2 - y2*x1)/(x2-x1)
-        ModelTypeMC = sprintf('MonteCarlo%d_',log10(ParamModel.NumSamples_MC_Cum_Info(end)));
-        ModelType=sprintf('MonteCarlo%d',log10(ParamModel.NumSamples_MC_Cum_Info(ss)));
-        
-        Data.cum_info_stim.(sprintf('%sinfT',ModelTypeMC)) = (Data.cum_info_stim.(sprintf('%s',ModelType))(1,:) ./ ParamModel.Mean_Ntrials_perstim(2) - mean(Cum_info_stim_LastMonteCarlo_Bootstrap,1)./ParamModel.Mean_Ntrials_perstim(1))./(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-        Data.cum_info_stim.(sprintf('%sJK_std',ModelTypeMC)) = std(Cum_info_stim_LastMonteCarlo_Bootstrap);
-        Data.cum_info_cat.(sprintf('%sinfT',ModelTypeMC)) = (Data.cum_info_cat.(sprintf('%s',ModelType))(1,:)./ParamModel.Mean_Ntrials_perstim(2) - mean(Cum_info_cat_LastMonteCarlo_Bootstrap,1)./ParamModel.Mean_Ntrials_perstim(1))./(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-        Data.cum_info_cat.(sprintf('%sJK_std',ModelTypeMC)) = std(Cum_info_cat_LastMonteCarlo_Bootstrap);
-        Data.cum_info_stim.(sprintf('%sJKBoot_infT',ModelTypeMC)) = (repmat(Data.cum_info_stim.(sprintf('%s',ModelType))(1,:) ./ ParamModel.Mean_Ntrials_perstim(2), ParamModel.NbBoot_CumInfo,1) - Cum_info_stim_LastMonteCarlo_Bootstrap ./ ParamModel.Mean_Ntrials_perstim(1)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-        Data.cum_info_cat.(sprintf('%sJKBoot_infT',ModelTypeMC)) = (repmat(Data.cum_info_cat.(sprintf('%s',ModelType))(1,:) ./ ParamModel.Mean_Ntrials_perstim(2), ParamModel.NbBoot_CumInfo,1) - Cum_info_cat_LastMonteCarlo_Bootstrap ./ ParamModel.Mean_Ntrials_perstim(1)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-        Data.cum_info_stim.(sprintf('%sJKBoot_infT_std',ModelTypeMC)) = std(Data.cum_info_stim.(sprintf('%sJKBoot_infT',ModelTypeMC)));
-        Data.cum_info_cat.(sprintf('%sJKBoot_infT_std',ModelTypeMC)) = std(Data.cum_info_cat.(sprintf('%sJKBoot_infT',ModelTypeMC)));
-        
-        % if you want to restore the bootstrap of MC on same
-        % estimations of spike rate restore the following lines
-        %ModelTypeMCsample = sprintf('MonteCarlo%d_Bootsample',log10(ParamModel.NumSamples_MC_Cum_Info(end)));
-        %Data.cum_info_stim.(sprintf('%s',ModelTypeMCsample)) = Cum_info_stim_LastMonteCarlo_Bootsample;
-        %Data.cum_info_cat.(sprintf('%s',ModelTypeMCsample)) = Cum_info_cat_LastMonteCarlo_Bootsample;
-    end
-    
-    if ~isempty(ParamModel.ExactHist)
-        Data.cum_info_stim.ExactMem0_4_Bootstim = Cum_info_stim_ExactMem0_4_Bootstrap;
-        Data.cum_info_cat.ExactMem0_4_Bootstim = Cum_info_cat_ExactMem0_4_Bootstrap;
-    end
-    
-    if ~isempty(ParamModel.MarkovParameters_Cum_Info)
-        ModelTypeMarstim = sprintf('MarkovEst%d_Bootstim',ParamModel.MarkovParameters_Cum_Info(1,end));
-        Data.cum_info_stim.(sprintf('%s',ModelTypeMarstim)) = Cum_info_stim_LastMarkov_Bootstrap;
-        Data.cum_info_cat.(sprintf('%s',ModelTypeMarstim)) = Cum_info_cat_LastMarkov_Bootstrap;
-
+        end
     end
 end
 
