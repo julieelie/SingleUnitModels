@@ -353,16 +353,16 @@ end
    
 
 %%
- if Savio
-     KeepLocalFile = 1;
-     [Status1]=transfertoTdrive_savio(calfilename_local,calfilename_final,KeepLocalFile);
-     [Status2]=transfertoTdrive_savio(outfilename_local,[OutputDir_final '/'],KeepLocalFile);
-     if ~(Status1 || Status2)
-         system(['mv ' OutputDirEx_local '/JobToDoSavio/Ex*' Res.Site '*.txt ' OutputDirEx_local '/JobDoneSavio/'])
-     end
-     fprintf(1,'Ready to quit');
-     quit
- end
+%  if Savio
+%      KeepLocalFile = 1;
+%      [Status1]=transfertoTdrive_savio(calfilename_local,calfilename_final,KeepLocalFile);
+%      [Status2]=transfertoTdrive_savio(outfilename_local,[OutputDir_final '/'],KeepLocalFile);
+%      if ~(Status1 || Status2)
+%          system(['mv ' OutputDirEx_local '/JobToDoSavio/Ex*' Res.Site '*.txt ' OutputDirEx_local '/JobDoneSavio/'])
+%      end
+%      fprintf(1,'Ready to quit');
+%      quit
+%  end
 
 end
 
