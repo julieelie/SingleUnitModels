@@ -308,39 +308,43 @@ if SWITCH.InfoCal
     Ntrials_perstim = nan(length(DataSel),1);
     PSTH_GaussFilteredK = cell(nvoc,1);
     JK_GaussFilteredK = cell(nvoc,1);
+    Kth_Neigh = nan(nvoc,1);
+    Kth_Neigh_JK = nan(nvoc,1);
     
     % First retrieve the PSTH calculated with the same # of nearest
     % neighbour Ntrial/d where d=1:Ntrials
     if Kth_i<5 % Treating Neigh = NT/2, NT/3, NT/4, NT/5
         for vv=1:nvoc
-            NT = size(Res.PSTH_GaussFiltered{vv},1);
+            NT = size(Res.PSTH_GaussFiltered{vv},1); % This is the number of nearest neighbor tested
             Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
             PSTH_GaussFilteredK{vv} = PSTH_All{vv}(NT-Kth_i,:);
             JK_GaussFilteredK{vv} = JK_All{vv}{NT-Kth_i};
+            Kth_Neigh(vv) = Res.Kth_Neigh{vv}(NT-Kth_i);
+            Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{vv}(NT-Kth_i);
         end
     else % Treating Neigh =1 = NT/NT
         for vv=1:nvoc
             Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
             PSTH_GaussFilteredK{vv} = PSTH_All{vv}(1,:);
             JK_GaussFilteredK{vv} = JK_All{vv}{1};
+            Kth_Neigh(vv) = Res.Kth_Neigh{vv}(NT-Kth_i);
+            Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{vv}(NT-Kth_i);
         end
     end
     ParamModel.Mean_Ntrials_perstim = [mean(Ntrials_perstim) mean(Ntrials_perstim - 1)];
     
     % Calculate information
     Calfilename_localKth = sprintf('%s_Kth%d_%s',calfilename_local(1:(end-4)),Kth_i,calfilename_local((end-4):end));
-    [ParamModel, Data_local.(sprintf('Kth%d',Kth_i)), InputData_local.(sprintf('Kth%d',Kth_i)), Wins]=info_cuminfo_callsemantic(PSTH_GaussFilteredK,JK_GaussFilteredK,Res.VocType(DataSel), ParamModel, Calfilename_localKth);
-        
-   if PrevData 
-       fprintf(1,'appending to the file\n');
-        Data.(sprintf('Kth%d',Kth_i)) = Data_local.(sprintf('Kth%d',Kth_i));
-        InputData.(sprintf('Kth%d',Kth_i)) = InputData_local.(sprintf('Kth%d',Kth_i));
+    [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(PSTH_GaussFilteredK,JK_GaussFilteredK,Res.VocType(DataSel), ParamModel,Calfilename_localKth);
+     
+    InputData.Kth_Neigh = Kth_Neigh;
+    InputData.Kth_Neigh_JK = Kth_Neigh_JK;
+    if exist(Calfilename_localKth, 'file') == 2
+        fprintf(1,'appending to the file\n');
+        save(Calfilename_localKth,'Data', 'InputData','Wins','ParamModel','-append');
+    else
         save(Calfilename_localKth,'Data', 'InputData','Wins','ParamModel');
-   else
-       Data.(sprintf('Kth%d',Kth_i)) = Data_local.(sprintf('Kth%d',Kth_i));
-       InputData.(sprintf('Kth%d',Kth_i)) = InputData_local.(sprintf('Kth%d',Kth_i));
-       save(Calfilename_localKth,'Data', 'InputData','Wins','ParamModel');
-   end
+    end
     
     ElapsedTime = toc(TimerVal);
     Days = floor(ElapsedTime/(60*60*24));
