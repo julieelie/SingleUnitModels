@@ -315,20 +315,21 @@ if SWITCH.InfoCal
     % neighbour Ntrial/d where d=1:Ntrials
     if Kth_i<5 % Treating Neigh = NT/2, NT/3, NT/4, NT/5
         for vv=1:nvoc
-            NT = size(Res.PSTH_GaussFiltered{vv},1); % This is the number of nearest neighbor tested
             Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
-            PSTH_GaussFilteredK{vv} = PSTH_All{vv}(NT-Kth_i,:);
-            JK_GaussFilteredK{vv} = JK_All{vv}{NT-Kth_i};
-            Kth_Neigh(vv) = Res.Kth_Neigh{vv}(NT-Kth_i);
-            Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{vv}(NT-Kth_i);
+            NNT = size(PSTH_All{vv},1); % This is the number of nearest neighbor tested for full PSTH
+            PSTH_GaussFilteredK{vv} = PSTH_All{vv}(NNT-Kth_i,:);
+            NNT_JK = length(JK_All{vv}); % This is the number of nearest neighbor tested for JK PSTH
+            JK_GaussFilteredK{vv} = JK_All{vv}{NNT_JK-Kth_i};
+            Kth_Neigh(vv) = Res.Kth_Neigh{vv}(NNT-Kth_i);
+            Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{vv}(NNT_JK-Kth_i);
         end
     else % Treating Neigh =1 = NT/NT
         for vv=1:nvoc
             Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
             PSTH_GaussFilteredK{vv} = PSTH_All{vv}(1,:);
             JK_GaussFilteredK{vv} = JK_All{vv}{1};
-            Kth_Neigh(vv) = Res.Kth_Neigh{vv}(NT-Kth_i);
-            Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{vv}(NT-Kth_i);
+            Kth_Neigh(vv) = Res.Kth_Neigh{vv}(1);
+            Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{vv}(1);
         end
     end
     ParamModel.Mean_Ntrials_perstim = [mean(Ntrials_perstim) mean(Ntrials_perstim - 1)];
