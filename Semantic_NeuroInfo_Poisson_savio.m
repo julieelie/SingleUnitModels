@@ -299,9 +299,6 @@ if SWITCH.InfoCal
     ParamModel.MaxNumSamples_MCopt_Cum_Info = 5.10^6;
     ParamModel.NumSamples_MC_Cum_Info = [];
     
-    PSTH_All = Res.PSTH_GaussFiltered(DataSel);
-    JK_All = Res.JackKnife_GaussFiltered(DataSel);
-    
     
     % Find out the number of trials per stimulus and feed-in PSTH and
     % PSTH_JackKnife
@@ -316,20 +313,20 @@ if SWITCH.InfoCal
     if Kth_i<5 % Treating Neigh = NT/2, NT/3, NT/4, NT/5
         for vv=1:nvoc
             Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
-            NNT = size(PSTH_All{vv},1); % This is the number of nearest neighbor tested for full PSTH
-            PSTH_GaussFilteredK{vv} = PSTH_All{vv}(NNT-Kth_i,:);
-            NNT_JK = length(JK_All{vv}); % This is the number of nearest neighbor tested for JK PSTH
-            JK_GaussFilteredK{vv} = JK_All{vv}{NNT_JK-Kth_i};
-            Kth_Neigh(vv) = Res.Kth_Neigh{vv}(NNT-Kth_i);
-            Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{vv}(NNT_JK-Kth_i);
+            NNT = size(Res.PSTH_GaussFiltered{DataSel(vv)},1); % This is the number of nearest neighbor tested for full PSTH
+            PSTH_GaussFilteredK{vv} = Res.PSTH_GaussFiltered{DataSel(vv)}(NNT-Kth_i,:);
+            NNT_JK = length(Res.JackKnife_GaussFiltered{DataSel(vv)}); % This is the number of nearest neighbor tested for JK PSTH
+            JK_GaussFilteredK{vv} = Res.JackKnife_GaussFiltered{DataSel(vv)}{NNT_JK-Kth_i};
+            Kth_Neigh(vv) = Res.Kth_Neigh{DataSel(vv)}(NNT-Kth_i);
+            Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{DataSel(vv)}(NNT_JK-Kth_i);
         end
     else % Treating Neigh =1 = NT/NT
         for vv=1:nvoc
             Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
-            PSTH_GaussFilteredK{vv} = PSTH_All{vv}(1,:);
-            JK_GaussFilteredK{vv} = JK_All{vv}{1};
-            Kth_Neigh(vv) = Res.Kth_Neigh{vv}(1);
-            Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{vv}(1);
+            PSTH_GaussFilteredK{vv} = Res.PSTH_GaussFiltered{DataSel(vv)}(1,:);
+            JK_GaussFilteredK{vv} = Res.JackKnife_GaussFiltered{DataSel(vv)}{1};
+            Kth_Neigh(vv) = Res.Kth_Neigh{DataSel(vv)}(1);
+            Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{DataSel(vv)}(1);
         end
     end
     ParamModel.Mean_Ntrials_perstim = [mean(Ntrials_perstim) mean(Ntrials_perstim - 1)];
