@@ -42,23 +42,23 @@ if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
 end
 % Checking the number of possible jackknike given the dataset size
 NbStim = length(JackKnifeTrials);
-NJK = nan(NbStim);
+NJK = nan(NbStim,1);
 for st = 1:NbStim
     PSTH_Local = JackKnifeTrials{st};
     NJK(st) = size(PSTH_Local,1);
 end
 Min_NJK = min(NJK);
 if ParamModel.NbBoot_Info > Min_NJK
-    fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of information\n', Min_NJK, ParamMocel.NbBoot_info);
+    fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of information\n', Min_NJK, ParamModel.NbBoot_Info);
     ParamModel.NbBoot_Info = Min_NJK;
 else
-    fprintf('WARNING: %d possible calculations of JK points. you are asking for %d in the calculation of information\n', Min_NJK, ParamMocel.NbBoot_info);
+    fprintf('WARNING: %d possible calculations of JK points. you are asking for %d in the calculation of information\n', Min_NJK, ParamModel.NbBoot_Info);
 end
 if ParamModel.NbBoot_CumInfo > Min_NJK
-    fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of cumulative information\n', Min_NJK, ParamMocel.NbBoot_CumInfo);
+    fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of cumulative information\n', Min_NJK, ParamModel.NbBoot_CumInfo);
     ParamModel.NbBoot_CumInfo = Min_NJK;
 else
-    fprintf('WARNING: %d possible calculations of JK points. you are asking for %d in the calculation of cumulative information\n', Min_NJK, ParamMocel.NbBoot_CumInfo);
+    fprintf('WARNING: %d possible calculations of JK points. you are asking for %d in the calculation of cumulative information\n', Min_NJK, ParamModel.NbBoot_CumInfo);
 end
 
 
