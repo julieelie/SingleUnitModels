@@ -48,9 +48,9 @@ for st = 1:NbStim
     NJK(st) = size(PSTH_Local,1);
 end
 Min_NJK = min(NJK);
-if ParamModel.NbBoot_info > Min_NJK
+if ParamModel.NbBoot_Info > Min_NJK
     fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of information\n', Min_NJK, ParamMocel.NbBoot_info);
-    ParamModel.NbBoot_info = Min_NJK;
+    ParamModel.NbBoot_Info = Min_NJK;
 end
 if ParamModel.NbBoot_CumInfo > Min_NJK
     fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of cumulative information\n', Min_NJK, ParamMocel.NbBoot_CumInfo);
