@@ -40,6 +40,24 @@ end
 if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
     ParamModel.NbBoot_CumInfo = 16;
 end
+% Checking the number of possible jackknike given the dataset size
+NbStim = length(JackKnifeTrials);
+NJK = nan(NbStim);
+for st = 1:NbStim
+    PSTH_Local = JackKnifeTrials{st};
+    NJK(st) = size(PSTH_Local,1);
+end
+Min_NJK = min(NJK);
+if ParamModel.NbBoot_info > Min_NJK
+    fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of information\n', Min_NJK, ParamMocel.NbBoot_info);
+    ParamModel.NbBoot_info = Min_NJK;
+end
+if ParamModel.NbBoot_CumInfo > Min_NJK
+    fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of cumulative information\n', Min_NJK, ParamMocel.NbBoot_CumInfo);
+    ParamModel.NbBoot_CumInfo = Min_NJK;
+end
+
+
 
 % Set parameters for the number of samples that should be tested in the
 % MonteCarlo estimation of the cumulative information
@@ -142,12 +160,19 @@ parfor bb=1:ParamModel.NbBoot_Info
     fprintf(1,'%d/%d bootstrap instantaneous info with Jackknife estimates of spike rates\n', bb, ParamModel.NbBoot_Info);
     
     % Choosing a different set of JK trials for the stims for each bootstrap
-    NbStim = length(JackKnifeTrials);
-    JackKnifePSTH = cell(1,NbStim);
-    for st = 1:NbStim
+%     NbStim = length(JackKnifeTrials);
+%     JackKnifePSTH = cell(1,NbStim);
+%     for st = 1:NbStim
+%         PSTH_Local = JackKnifeTrials{st};
+%         NJK = size(PSTH_Local,1);
+%         JackKnifePSTH{st} = PSTH_Local(randperm(NJK,1),:);
+%     end
+    
+     % systematically choose without replacement a different set of JK trials for the stims for each bootstrap
+     JackKnifePSTH = cell(1,NbStim);
+     for st = 1:NbStim
         PSTH_Local = JackKnifeTrials{st};
-        NJK = size(PSTH_Local,1);
-        JackKnifePSTH{st} = PSTH_Local(randperm(NJK,1),:);
+        JackKnifePSTH{st} = PSTH_Local(bb,:);
     end
 
     % Then run the calculation of information on all windows
