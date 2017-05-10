@@ -7,6 +7,15 @@ addpath(genpath('/global/home/usres/jelie/CODE/GeneralCode'));
 addpath(genpath('/global/home/users/jelie/CODE/tlab/src'));
 rmpath(genpath('/global/home/usres/jelie/CODE/tlab/src/hedi'));
 
+%% Configure Parallel computing
+if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
+    MyParPool = parpool(str2num(getenv('SLURM_CPUS_ON_NODE')),'IdleTimeout', Inf);
+    system('mkdir -p /global/scratch/$USER/$SLURM_JOB_ID')
+    [~,JobID] = system('echo $SLURM_JOB_ID');
+    parcluster.JobStorageLocation = ['/global/scratch/jelie/' JobID];    
+end
+
+%% load data and start calculations
 Dir_local='/global/scratch/jelie/MatFiles/';
 DataCell=loadfromTdrive_savio(InputFile, Dir_local,1);
 
