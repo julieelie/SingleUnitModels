@@ -8,7 +8,7 @@ addpath(genpath('/global/home/users/jelie/CODE/tlab/src'));
 rmpath(genpath('/global/home/usres/jelie/CODE/tlab/src/hedi'));
 
 Dir_local='/global/scratch/jelie/MatFiles/';
-DataCell=loadfromTdrive_savio(InputFile, Dir_local);
+DataCell=loadfromTdrive_savio(InputFile, Dir_local,1);
 
 Cum_boot=20;
 fprintf('------------------------------------------------------\n')
@@ -30,6 +30,11 @@ Nb_Win = length(P_YgivenS)/2;
 Icum_EstMonteCarloOpt = nan(1,Nb_Win);
 Icum_EstMonteCarloOpt_err = nan(1,Nb_Win);
 Icum_EstMonteCarloOpt_bcorr = nan(1,Nb_Win);
+Icum_EstMonteCarloOpt(1) = DataCell.(sprintf('Kth%d',kk)).Info(1); % Initializing the first value of cumulative info
+Icum_EstMonteCarloOpt_bcorr(1) = DataCell.(sprintf('Kth%d',kk)).Info(1); % Initializing the first value of cumulative info
+
+save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KNeigh%d%s.mat',Dir_local,kk,Cell),'-struct','DataCell');
+
 MC_Samp = nan(1,Nb_Win);
 tstart2 = tic;
 fprintf('**** Monte Carlo with optimal # samples and Jackknife kk=%d/%d *****\n', kk, Nb_Kth);
@@ -48,17 +53,16 @@ for tt=2:Nb_Win
         fprintf('Error is too high at this point stop here: %.2f\n', Icum_EstMonteCarloOpt_err(tt))
         return
     end
+    DataCell.(sprintf('Kth%d',kk)).Nb_Win = Nb_Win;
+    DataCell.(sprintf('Kth%d',kk)).Cum_boot = Cum_boot;
+    DataCell.(sprintf('Kth%d',kk)).Icum_EstMonteCarloOpt = Icum_EstMonteCarloOpt;
+    DataCell.(sprintf('Kth%d',kk)).Icum_EstMonteCarloOpt_bcorr = Icum_EstMonteCarloOpt_bcorr;
+    DataCell.(sprintf('Kth%d',kk)).Icum_EstMonteCarloOpt_err = Icum_EstMonteCarloOpt_err;
+    DataCell.(sprintf('Kth%d',kk)).MC_Samp =MC_Samp;
+    save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KNeigh%d%s.mat',Dir_local,kk,Cell),'-struct','DataCell','-append');
 end
 telapsed2 = toc(tstart2);
 fprintf('MC Opt total elapsed time: %d s\n', telapsed2)
+quit
 
-Icum_EstMonteCarloOpt(1) = DataCell.(sprintf('Kth%d',kk)).Info(1); % Initializing the first value of cumulative info
-Icum_EstMonteCarloOpt_bcorr(1) = DataCell.(sprintf('Kth%d',kk)).Info(1); % Initializing the first value of cumulative info
-DataCell.(sprintf('Kth%d',kk)).Nb_Win = Nb_Win;
-DataCell.(sprintf('Kth%d',kk)).Cum_boot = Cum_boot;
-DataCell.(sprintf('Kth%d',kk)).Icum_EstMonteCarloOpt = Icum_EstMonteCarloOpt;
-DataCell.(sprintf('Kth%d',kk)).Icum_EstMonteCarloOpt_bcorr = Icum_EstMonteCarloOpt_bcorr;
-DataCell.(sprintf('Kth%d',kk)).Icum_EstMonteCarloOpt_err = Icum_EstMonteCarloOpt_err;
-DataCell.(sprintf('Kth%d',kk)).MC_Samp =MC_Samp;
-save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KNeigh%s.mat',Dir_local,Cell),'-struct','DataCell','-append');
 end
