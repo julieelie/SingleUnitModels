@@ -68,7 +68,11 @@ for tt=2:Nb_Win
     DataCell.(sprintf('Kth%d',kk)).Icum_EstMonteCarloOpt_bcorr = Icum_EstMonteCarloOpt_bcorr;
     DataCell.(sprintf('Kth%d',kk)).Icum_EstMonteCarloOpt_err = Icum_EstMonteCarloOpt_err;
     DataCell.(sprintf('Kth%d',kk)).MC_Samp =MC_Samp;
-    save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KNeigh%d%s.mat',Dir_local,kk,Cell),'-struct','DataCell','-append');
+    %if tt/10 == fix(tt/10)
+        save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KNeigh%d%s.mat',Dir_local,kk,Cell),'-struct','DataCell','-append');
+    %end
+    telapsed = toc(tstart);
+    fprintf('Elapsed time after saving line: %d s\n', telapsed)
 end
 telapsed2 = toc(tstart2);
 fprintf('MC Opt total elapsed time: %d s\n', telapsed2)
