@@ -42,7 +42,7 @@ Icum_EstMonteCarloOpt_bcorr = nan(1,Nb_Win);
 Icum_EstMonteCarloOpt(1) = DataCell.(sprintf('Kth%d',kk)).Info(1); % Initializing the first value of cumulative info
 Icum_EstMonteCarloOpt_bcorr(1) = DataCell.(sprintf('Kth%d',kk)).Info(1); % Initializing the first value of cumulative info
 
-save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KNeigh%d%s.mat',Dir_local,kk,Cell),'-struct','DataCell');
+save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KNeigh%dms%d%s.mat',Dir_local,DataCell.StepInfo,kk,Cell),'-struct','DataCell');
 
 MC_Samp = nan(1,Nb_Win);
 tstart2 = tic;
@@ -69,7 +69,7 @@ for tt=2:Nb_Win
     DataCell.(sprintf('Kth%d',kk)).Icum_EstMonteCarloOpt_err = Icum_EstMonteCarloOpt_err;
     DataCell.(sprintf('Kth%d',kk)).MC_Samp =MC_Samp;
     %if tt/10 == fix(tt/10)
-    save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KNeigh%dms%d%s.mat',Path2Data,DataCell.StepInfo,kk,Cell),'-struct','DataCell','-append');
+    save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KNeigh%dms%d%s.mat',Dir_local,DataCell.StepInfo,kk,Cell),'-struct','DataCell','-append');
 %     save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KNeigh%d%s.mat',Dir_local,kk,Cell),'-struct','DataCell','-append');
     %end
     telapsed = toc(tstart);
