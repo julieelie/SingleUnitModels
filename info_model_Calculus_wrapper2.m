@@ -45,7 +45,7 @@ Info.InputdataStim = sum(PSTH_Local(:,FirstTimePoint:LastTimePoint),2);
 Info.stim_entropy = log2(NbStim);
     
 % Calculate information about stimuli   
-[Info.stim_value,Info.P_YgivenS,~] = info_model_Calculus(Info.InputdataStim, 'Ymax',MaxY);
+[Info.stim_value,Info.P_YgivenS,~] = info_poisson_model_calculus(Info.InputdataStim, 'Ymax',MaxY);
 
 if ~isempty(CatList_in)
     % Derive P_YgivenC and calculate information about categories

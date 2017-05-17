@@ -113,7 +113,8 @@ dflts  = {5*10^6 10^5 0.2 1 0 0};
 
 %% Set some parameters
 win = length(P_YgivenS_Full);
-Nb_Boot = size(P_YgivenS_JK,1);
+Nb_Boot = length(P_YgivenS_JK);
+Nb_JKSet = size(P_YgivenS_JK{1},1);
 
 %% Construct the data set of individual p for all JK Bootstraps and also for the full dataset
 if ScaleY  % Scale probability distributions so that they sum to 1 for each stimulus
@@ -122,8 +123,10 @@ if ScaleY  % Scale probability distributions so that they sum to 1 for each stim
     end
     
     parfor bb=1:(Nb_Boot)
-        for ww=1:(win)
-            P_YgivenS_JK{bb,ww} = P_YgivenS_JK{bb,ww} ./ repmat(sum(P_YgivenS_JK{bb,ww},1),size(P_YgivenS_JK{bb,ww},1),1);
+        for jk=1:(Nb_JKSet)
+            for ww=1:(win)
+                P_YgivenS_JK{bb}{jk,ww} = P_YgivenS_JK{bb}{jk,ww} ./ repmat(sum(P_YgivenS_JK{bb}{jk,ww},1),size(P_YgivenS_JK{bb}{jk,ww},1),1);
+            end
         end
     end
 end
@@ -136,10 +139,6 @@ end
 % the maximum number of samples set by MaxMCParameter is reached.
 
 % Initialize output variables
-HY = 0;
-HYgivenS = 0;
-HYgivenS_JK = zeros(1,Nb_Boot);
-HY_JK = zeros(1, Nb_Boot);
 N_MC_tot = 0;
 Icum_corr_std = ConvThresh+1; % set the error on information to an arbitrary value above the threshold
 
@@ -184,9 +183,9 @@ while Icum_corr_std>ConvThresh && N_MC_tot<N_MC_max
     Icum_JK = HY_JK-HYgivenS_JK;
     
     % Calculate the Jack-knife biais corrected value of information and its error 
-    Icum_JKcorrected = NTrials * repmat(Icum,1,Nb_Boot) - (NTrials-1) * Icum_JK;
-    Icum_corr_std = std(Icum_JKcorrected);
-    Icum_corr_mean = mean(Icum_JKcorrected);
+    Icum_JKcorrected = NTrials * repmat(Icum,Nb_Boot,Nb_JKSet) - (NTrials-1) * Icum_JK;
+    Icum_corr_std = (mean(var(Icum_JKcorrected,0,2)))^0.5;
+    Icum_corr_mean = mean(mean(Icum_JKcorrected));
 end
 
 
@@ -284,55 +283,57 @@ end
 %% Now calculate for JackKnife sets using the distribution of probabilities calculated for the full dataset to choose the MC samples
 
 % Initialize output variables
-HYgivenS_JK = nan(1,Nb_Boot);
-HY_JK = nan(1, Nb_Boot);
+HYgivenS_JK = nan(Nb_Boot, Nb_JKSet);
+HY_JK = nan(Nb_Boot,Nb_JKSet);
 
 % Loop through bootstrap versions of Jack-Knife estimation of distributions
 % of conditional response probablities 
 parfor bout=1:(Nb_Boot)
-    % initialize variables
-    PYgivenS_MC_bb = nan(N_MC,NStim_local); %exact joint probability of MC sequences of responses for each stimulus
-    PY_MC_bb = nan(N_MC,1); %exact joint probability of MC sequences of responses averaged over the stimuli
+    for jkk=1:Nb_JKSet
+        % initialize variables
+        PYgivenS_MC_bb = nan(N_MC,NStim_local); %exact joint probability of MC sequences of responses for each stimulus
+        PY_MC_bb = nan(N_MC,1); %exact joint probability of MC sequences of responses averaged over the stimuli
     
-    % Loop through the number of samples
-    for ss=1:N_MC
-        if sum(ss==(1:10)*N_MC/10) && Verbose
-            fprintf('%d/%d MC samples JK bootstrap %d/%d\n',ss,N_MC,bout,Nb_Boot);
+        % Loop through the number of samples
+        for ss=1:N_MC
+            if sum(ss==(1:10)*N_MC/10) && Verbose
+                fprintf('%d/%d MC samples JK bootstrap %d/%d\n',ss,N_MC,bout,Nb_Boot);
+            end
+        
+            % The sequence of responses previously determine for that MC sample
+            % ss is Resp_MC(ss, :). Here, extract, for all the stimuli,the 
+            % JK conditional probabilities corresponding to that response sequence:
+            P_YgivenS_local_Resp = nan(win,NStim_local);
+            for www=1:win
+                P_YgivenS_local_Resp(www,:) = P_YgivenS_JK{bout}{jkk,www}(Resp_MC(ss, www),:);
+            end
+        
+        
+            % Calculate the exact joint probability of that sequence of responses
+            % and store it
+            % Conditional joint probability of that neural sequence for each
+            % stimulus
+            PYgivenS_MC_bb(ss,:) = prod(P_YgivenS_local_Resp,1);
+        
+            % actual joint probability (the unconditional probability)
+            PY_MC_bb(ss) = mean(PYgivenS_MC_bb(ss,:));
+        
         end
-        
-        % The sequence of responses previously determine for that MC sample
-        % ss is Resp_MC(ss, :). Here, extract, for all the stimuli,the 
-        % JK conditional probabilities corresponding to that response sequence:
-        P_YgivenS_local_Resp = nan(win,NStim_local);
-        for www=1:win
-            P_YgivenS_local_Resp(www,:) = P_YgivenS_JK{bout,www}(Resp_MC(ss, www),:);
-        end
-        
-        
-        % Calculate the exact joint probability of that sequence of responses
-        % and store it
-        % Conditional joint probability of that neural sequence for each
+
+
+        % Calculate the MC estimate of the JK conditional response entropy to the
         % stimulus
-        PYgivenS_MC_bb(ss,:) = prod(P_YgivenS_local_Resp,1);
-        
-        % actual joint probability (the unconditional probability)
-        PY_MC_bb(ss) = mean(PYgivenS_MC_bb(ss,:));
-        
-    end
+        HYgivenS_JK(bout,jkk) = - sum(sum(PYgivenS_MC_bb./repmat(QY_MC,1,NStim_local).*log2(PYgivenS_MC_bb),1))/(N_MC*NStim_local);
+        if Verbose
+            fprintf(1, 'JKSet %d Bootstrap %d: Conditional entropy (entropy of the neural response given the stimulus): %f\n',jkk,bout, HYgivenS_JK(bout,jkk));
+        end
 
+        % Calculate the JK MC estimate of the response entropy weight corrected
+        HY_JK(bout,jkk) = sum(-PY_MC_bb./QY_MC.*log2(PY_MC_bb))/N_MC;
 
-    % Calculate the MC estimate of the JK conditional response entropy to the
-    % stimulus
-    HYgivenS_JK(bout) = - sum(sum(PYgivenS_MC_bb./repmat(QY_MC,1,NStim_local).*log2(PYgivenS_MC_bb),1))/(N_MC*NStim_local);
-    if Verbose
-        fprintf(1, 'JK Bootstrap %d: Conditional entropy (entropy of the neural response given the stimulus): %f\n',bout, HYgivenS_JK(bout));
-    end
-
-    % Calculate the JK MC estimate of the response entropy weight corrected
-    HY_JK(bout) = sum(-PY_MC_bb./QY_MC.*log2(PY_MC_bb))/N_MC;
-
-    if Verbose
-        fprintf(1, 'JK Bootstrap %d: Exact entropy (entropy of the neural response)\nusing the Monte Carlo estimation with %d samples: %f\n',bout,N_MC, HY_JK(bout));
+        if Verbose
+            fprintf(1, 'JKSet %d Bootstrap %d: Exact entropy (entropy of the neural response)\nusing the Monte Carlo estimation with %d samples: %f\n',jkk,bout,N_MC, HY_JK(bout,jkk));
+        end
     end
 end
 

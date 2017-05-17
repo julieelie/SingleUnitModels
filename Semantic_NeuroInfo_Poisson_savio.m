@@ -216,69 +216,97 @@ for ii=1:length(Res.VocType)
 end
 DataSel=DataSel(1:nvoc);
 
-%% Compute coherence and or the spectrum of the gaussian filtered PSTH to determine the optimal window size, the scale at which neural response information is maximized
+%% Compute coherence and or the spectrum of the KDE of PSTH to determine the optimal window size, the scale at which neural response information is maximized
 if SWITCH.BestBin
     ParamModel.Response_samprate = Res.Response_samprate;
     
-    %Data processing
-%     ParamModel.NeuroRes = 'count';
-%     [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials(DataSel),Res.PSTH(DataSel),ParamModel);
+    % COHERENCE on RAW spike trains
+    %Data processing group spike trains in two sets containing all stims
+    %but half of the trials each
+    [HalfTrain1, HalfTrain2]=organiz_SpikeArray4coherence(Res.Spike_array(DataSel),ParamModel);
     
-    % compute coherence
-%     [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,Res.Response_samprate);
-%     OptimalFreqCutOff.CoherenceRaw = CoherenceStruct.freqCutoff;
+    % Compute coherence
+    [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,Res.Response_samprate);
+    OptimalFreqCutOff.CoherenceStruct = CoherenceStruct;
     
-%     ParamModel.NeuroRes = 'count_gaussfiltered';
-    %Data processing
-%     [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials_GaussFiltered(DataSel),Res.PSTH_GaussFiltered(DataSel),ParamModel);
-%     [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,Res.Response_samprate);
-    % Compute coherence on gaussian filtered spike trains
-%     OptimalFreqCutOff.CoherenceGaussFilt = CoherenceStruct.freqCutoff;
     
-    % Calculate the frequency of the gaussian filtered PSTH below which 99%
-    % of the spectrum power density is contained
-    OptimalFreqCutOff.Thresh = 80:99;
-    for kk=1:5
-        % First retrieve the PSTH calculated with the same # of nearest
-        % neighbour Ntrial/d where d=1:Ntrials
-        SignalTot_local = nan(nvoc,size(Res.PSTH_GaussFiltered{1},2));
-        if kk<5 % Treating Neigh = NT/2, NT/3, NT/4, NT/5
-            for vv=1:nvoc
-                NT = size(Res.PSTH_GaussFiltered{DataSel(vv)},1);
-                SignalTot_local(vv,:) = Res.PSTH_GaussFiltered{DataSel(vv)}(NT-kk,:);
-            end
-        else % Treating Neigh =1 = NT/NT
-            for vv=1:nvoc
-                SignalTot_local(vv,:) = Res.PSTH_GaussFiltered{DataSel(vv)}(1,:);
-            end
-        end
-        SignalTot_1dim=reshape(SignalTot_local',[size(SignalTot_local,1)*size(SignalTot_local,2),1]);
-        
-        % Calculate the power spectrum of the signal
-        Window = 0.2*Res.Response_samprate;
-        [Pxx,F] = pwelch(SignalTot_1dim, Window, [],[],10000);
-        Pxx_Perc = 100*cumsum(Pxx / sum(Pxx));
-        
-        % Identify the frequency cut-off corresponding to the list of
-        % thresholds
-        OptimalFreqCutOff.(sprintf('PowerSpectrumDensityKth%d',kk)) = nan(1,length(80:99));
-        for tt = 1:length(OptimalFreqCutOff.Thresh)
-            Thresh = OptimalFreqCutOff.Thresh(tt);
-            IndMax=find(Pxx_Perc > Thresh);
-            OptimalFreqCutOff.(sprintf('PowerSpectrumDensityKth%d',kk))(tt) = F(IndMax(1));
-        end
+    % Power spectrum density of KDE of spike rates
+    % First retrieve the KDE of the spike patterns
+    SignalTot_local = nan(nvoc,size(Res.PSTH_KDE_Filtered{1},2));
+    for vv=1:nvoc
+        SignalTot_local(vv,:) = Res.PSTH_KDE_Filtered{DataSel(vv)};
     end
     
-    % According to this code 10ms is the best size for 97% of cells see
-    % fig BestPSTHBin.fig
-    % At that window size, the values of the FanoFactor over cells is very
-    % close to 1. see fig PoissonFanoFactor.fig
+    % Calculate the cumulative power spectrum of the signal
+    Window = 0.2*Res.Response_samprate;
+    SignalTot_1dim=reshape(SignalTot_local',[size(SignalTot_local,1)*size(SignalTot_local,2),1]);
+    [Pxx,F] = pwelch(SignalTot_1dim, Window, [],[],10000);
+    OptimalFreqCutOff.PowerSpectrum.Pxx_Perc = 100*cumsum(Pxx / sum(Pxx));
+    
+    % Identify the frequency cut-off corresponding to the list of
+    % thresholds
+    OptimalFreqCutOff.PowerSpectrum.Thresh = 80:99;
+    OptimalFreqCutOff.PowerSpectrum.LowerBandPassOpt = nan(1,length(80:99));
+    for tt = 1:length(OptimalFreqCutOff.PowerSpectrum.Thresh)
+        Thresh = OptimalFreqCutOff.PowerSpectrum.Thresh(tt);
+        IndMax=find(OptimalFreqCutOff.PowerSpectrum.Pxx_Perc > Thresh);
+        OptimalFreqCutOff.PowerSpectrum.LowerBandPassOpt(tt) = F(IndMax(1));
+    end
+    
+    % save data for each semantic cell in its own file
     if PrevData
         save(calfilename_local,'MatfilePath', 'OptimalFreqCutOff', '-append');
     else
         save(calfilename_local,'MatfilePath', 'OptimalFreqCutOff');
     end
-end
+    
+    %     OLD CODE
+    %     ParamModel.NeuroRes = 'count_gaussfiltered';
+    %Data processing
+    %     [HalfTrain1, HalfTrain2, NumTrials]=organiz_data4coherence(Res.Trials_GaussFiltered(DataSel),Res.PSTH_GaussFiltered(DataSel),ParamModel);
+    %     [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,Res.Response_samprate);
+    % Compute coherence on gaussian filtered spike trains
+    %     OptimalFreqCutOff.CoherenceGaussFilt = CoherenceStruct.freqCutoff;
+    
+    % Calculate the frequency of the gaussian filtered PSTH below which 99%
+    % of the spectrum power density is contained
+    %    OptimalFreqCutOff.Thresh = 80:99;
+    %     for kk=1:5
+    %         % First retrieve the PSTH calculated with the same # of nearest
+    %         % neighbour Ntrial/d where d=1:Ntrials
+    %         SignalTot_local = nan(nvoc,size(Res.PSTH_GaussFiltered{1},2));
+    %         if kk<5 % Treating Neigh = NT/2, NT/3, NT/4, NT/5
+    %             for vv=1:nvoc
+    %                 NT = size(Res.PSTH_GaussFiltered{DataSel(vv)},1);
+    %                 SignalTot_local(vv,:) = Res.PSTH_GaussFiltered{DataSel(vv)}(NT-kk,:);
+    %             end
+    %         else % Treating Neigh =1 = NT/NT
+    %             for vv=1:nvoc
+    %                 SignalTot_local(vv,:) = Res.PSTH_GaussFiltered{DataSel(vv)}(1,:);
+    %             end
+    %         end
+    %         SignalTot_1dim=reshape(SignalTot_local',[size(SignalTot_local,1)*size(SignalTot_local,2),1]);
+    %
+    %         % Calculate the power spectrum of the signal
+    %         Window = 0.2*Res.Response_samprate;
+    %         [Pxx,F] = pwelch(SignalTot_1dim, Window, [],[],10000);
+    %         Pxx_Perc = 100*cumsum(Pxx / sum(Pxx));
+    %
+    %         % Identify the frequency cut-off corresponding to the list of
+    %         % thresholds
+    %         OptimalFreqCutOff.(sprintf('PowerSpectrumDensityKth%d',kk)) = nan(1,length(80:99));
+    %         for tt = 1:length(OptimalFreqCutOff.Thresh)
+    %             Thresh = OptimalFreqCutOff.Thresh(tt);
+    %             IndMax=find(Pxx_Perc > Thresh);
+    %             OptimalFreqCutOff.(sprintf('PowerSpectrumDensityKth%d',kk))(tt) = F(IndMax(1));
+    %         end
+    %     end
+    
+    % According to this code 10ms is the best size for 97% of cells see
+    % fig BestPSTHBin.fig
+    % At that window size, the values of the FanoFactor over cells is very
+    % close to 1. see fig PoissonFanoFactor.fig
+end    
 
 %% Estimate Poisson assumption for data at the choosen bining
 if SWITCH.FanoFactor
@@ -330,6 +358,10 @@ if SWITCH.InfoCal
         end
     end
     ParamModel.Mean_Ntrials_perstim = [mean(Ntrials_perstim) mean(Ntrials_perstim - 1)];
+    
+    % add as input to the parameters the set of indices for predetermined
+    % JK sets
+    ParamModel.SetIndices_JK = Res.SetIndices_JK;
     
     % Calculate information
     Calfilename_localKth = sprintf('%s_Kth%d_%s',calfilename_local(1:(end-4)),Kth_i,calfilename_local((end-4):end));

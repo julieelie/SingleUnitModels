@@ -40,25 +40,31 @@ end
 if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
     ParamModel.NbBoot_CumInfo = 16;
 end
+
 % Checking the number of possible jackknike given the dataset size
-NbStim = length(JackKnifeTrials);
-NJK = nan(NbStim,1);
-for st = 1:NbStim
-    PSTH_Local = JackKnifeTrials{st};
-    NJK(st) = size(PSTH_Local,1);
-end
-Min_NJK = min(NJK);
-if ParamModel.NbBoot_Info > Min_NJK
-    fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of information\n', Min_NJK, ParamModel.NbBoot_Info);
-    ParamModel.NbBoot_Info = Min_NJK;
+% NbStim = length(JackKnifeTrials);
+% NJK = nan(NbStim,1);
+% for st = 1:NbStim
+%     PSTH_Local = JackKnifeTrials{st};
+%     NJK(st) = size(PSTH_Local,1);
+% end
+% Avail_NJK = min(NJK);
+
+% now use the predetermined sets of JK indices
+Avail_NJK = length(ParamModel.SetIndices_JK);
+
+
+if ParamModel.NbBoot_Info > Avail_NJK
+    fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of information\n', Avail_NJK, ParamModel.NbBoot_Info);
+    ParamModel.NbBoot_Info = Avail_NJK;
 else
-    fprintf('WARNING: %d possible calculations of JK points. you are asking for %d in the calculation of information\n', Min_NJK, ParamModel.NbBoot_Info);
+    fprintf('WARNING: %d possible calculations of JK points. you are asking for %d in the calculation of information\n', Avail_NJK, ParamModel.NbBoot_Info);
 end
-if ParamModel.NbBoot_CumInfo > Min_NJK
-    fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of cumulative information\n', Min_NJK, ParamModel.NbBoot_CumInfo);
-    ParamModel.NbBoot_CumInfo = Min_NJK;
+if ParamModel.NbBoot_CumInfo > Avail_NJK
+    fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of cumulative information\n', Avail_NJK, ParamModel.NbBoot_CumInfo);
+    ParamModel.NbBoot_CumInfo = Avail_NJK;
 else
-    fprintf('WARNING: %d possible calculations of JK points. you are asking for %d in the calculation of cumulative information\n', Min_NJK, ParamModel.NbBoot_CumInfo);
+    fprintf('WARNING: %d possible calculations of JK points. you are asking for %d in the calculation of cumulative information\n', Avail_NJK, ParamModel.NbBoot_CumInfo);
 end
 
 
@@ -127,14 +133,24 @@ Rate4InfoStim_Boot = cell(1,ParamModel.NbBoot_Info);
 Stim_entropy = nan(1,WinNum);
 Category_entropy = nan(1,WinNum);
 Stim_info = nan(1,WinNum);
-Stim_info_JKBoot = nan(ParamModel.NbBoot_Info,WinNum);
 Category_info = nan(1,WinNum);
-Category_info_JKBoot = nan(ParamModel.NbBoot_Info,WinNum);
 
 P_YgivenS = cell(1,WinNum);
 P_YgivenC = cell(1,WinNum);
-P_YgivenS_Bootstrap = cell(ParamModel.NbBoot_CumInfo,WinNum);
-P_YgivenC_Bootstrap = cell(ParamModel.NbBoot_CumInfo,WinNum);
+P_YgivenS_Bootstrap = cell(ParamModel.NbBoot_CumInfo);
+P_YgivenC_Bootstrap = cell(ParamModel.NbBoot_CumInfo);
+stim_info_infT = cell(ParamModel.NbBoot_Info,1);
+category_info_infT = cell(ParamModel.NbBoot_Info,1);
+stim_info_JKBoot_std =nan(ParamModel.NbBoot_Info,1);
+category_info_JKBoot_std =nan(ParamModel.NbBoot_Info,1);
+
+stim_info_JKBoot_infT = cell(ParamModel.NbBoot_Info,1);
+category_info_JKBoot_infT = cell(ParamModel.NbBoot_Info,1);
+Stim_info_JKBoot = cell(ParamModel.NbBoot_Info,1);
+Category_info_JKBoot = cell(ParamModel.NbBoot_Info,1);
+stim_info_infT_std = nan(ParamModel.NbBoot_Info,1);
+category_info_infT_std = nan(ParamModel.NbBoot_Info,1);
+    
 
 
 %% Now loop through bins: bin spike patterns and calculate instantaneous information
@@ -172,44 +188,62 @@ parfor bb=1:ParamModel.NbBoot_Info
 %         JackKnifePSTH{st} = PSTH_Local(randperm(NJK,1),:);
 %     end
     
-     % systematically choose without replacement a different set of JK trials for the stims for each bootstrap
-     JackKnifePSTH = cell(1,NbStim);
-     for st = 1:NbStim
-        PSTH_Local = JackKnifeTrials{st};
-        JackKnifePSTH{st} = PSTH_Local(bb,:);
-    end
-
-    % Then run the calculation of information on all windows
+    % Initialize some variables for that bootstrap
+    NJKsets = size(ParamModel.SetIndices_JK{bb});
     Rate4InfoStim_Boot{bb} = nan(NbStims,WinNum);
-    for ww_in = 1:WinNum
-        fprintf(1,'JK instantaneous info Boostrap %d %d/%d window\n',bb, ww_in, WinNum);
-        Win = Wins(ww_in);
-        FirstTimePoint = (Win - ParamModel.NeuroBin+ ParamModel.ResDelay)*ParamModel.Response_samprate/1000 +1;
-        LastTimePoint = (Win + ParamModel.ResDelay)*ParamModel.Response_samprate/1000;        
+    Stim_info_JKSets = nan(NJKsets,WinNum);
+    Category_info_JKSets = nan(NJKsets,WinNum);
+    P_YgivenS_JKSets = cell(NJKsets, WinNum);
+    P_YgivenC_JKSets = cell(NJKsets, WinNum);
+
+    % Loop through JK sets for that bootstrap
+    for jk = 1:NJKsets
+        % systematically choose without replacement a different set of JK trials for the stims for each bootstrap
+        JackKnifePSTH = cell(1,NbStim);
+        for st = 1:NbStim
+            PSTH_Local = JackKnifeTrials{st};
+            JackKnifePSTH{st} = PSTH_Local(ParamModel.SetIndices_JK{bb}(jk,st),:);
+        end
+
+        % Then run the calculation of information on all windows
+        for ww_in = 1:WinNum
+            fprintf(1,'JK instantaneous info Boostrap %d set %d %d/%d window\n',bb, jk, ww_in, WinNum);
+            Win = Wins(ww_in);
+            FirstTimePoint = (Win - ParamModel.NeuroBin+ ParamModel.ResDelay)*ParamModel.Response_samprate/1000 +1;
+            LastTimePoint = (Win + ParamModel.ResDelay)*ParamModel.Response_samprate/1000;        
         
-        [Local_Output] = info_model_Calculus_wrapper2(JackKnifePSTH, FirstTimePoint, LastTimePoint, VocType, ParamModel.Response_samprate);
+            [Local_Output] = info_model_Calculus_wrapper2(JackKnifePSTH, FirstTimePoint, LastTimePoint, VocType, ParamModel.Response_samprate);
         
-        Rate4InfoStim_Boot{bb}(:,ww_in) = Local_Output.InputdataStim;
-        Stim_info_JKBoot(bb,ww_in) = Local_Output.stim_value;
-        Category_info_JKBoot(bb,ww_in) = Local_Output.cat_value;
-        if bb <= ParamModel.NbBoot_CumInfo
-            P_YgivenS_Bootstrap{bb,ww_in} = Local_Output.P_YgivenS;
-            P_YgivenC_Bootstrap{bb,ww_in} = Local_Output.P_YgivenC;
+            Rate4InfoStim_Boot{bb}{jk}(:,ww_in) = Local_Output.InputdataStim;
+            Stim_info_JKSets(jk,ww_in) = Local_Output.stim_value;
+            Category_info_JKSets(jk,ww_in) = Local_Output.cat_value;
+            if bb <= ParamModel.NbBoot_CumInfo
+                P_YgivenS_JKSets{jk,ww_in} = Local_Output.P_YgivenS;
+                P_YgivenC_JKSets{jk,ww_in} = Local_Output.P_YgivenC;
+            end
         end
     end
+    % Estimate information for infinite number of trials
+    % ordonnée à l'origine: b = (y1*x2 - y2*x1)/(x2-x1)
+    stim_info_infT{bb} = (Stim_info./ParamModel.Mean_Ntrials_perstim(2) - mean(Stim_info_JKSets,1)./ParamModel.Mean_Ntrials_perstim(1))./(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
+    category_info_infT{bb} = (Category_info./ParamModel.Mean_Ntrials_perstim(2) - mean(Category_info_JKSets,1)./ParamModel.Mean_Ntrials_perstim(1))./(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
+    Stim_info_JKBoot{bb} = Stim_info_JKSets;
+    Category_info_JKBoot{bb} = Category_info_JKSets;
+    stim_info_JKBoot_std(bb) =std(Stim_info_JKSets);
+    category_info_JKBoot_std(bb) =std(Category_info_JKSets);
+
+    stim_info_JKBoot_infT{bb} = (repmat(Stim_info ./ ParamModel.Mean_Ntrials_perstim(2), ParamModel.NbBoot_Info,1) - Stim_info_JKSets ./ ParamModel.Mean_Ntrials_perstim(1)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
+    category_info_JKBoot_infT{bb} = (repmat(Category_info ./ ParamModel.Mean_Ntrials_perstim(2), ParamModel.NbBoot_Info,1) - Category_info_JKSets ./ ParamModel.Mean_Ntrials_perstim(1)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
+    stim_info_infT_std(bb) = std(stim_info_JKBoot_infT{bb});
+    category_info_infT_std(bb) = std(category_info_JKBoot_infT{bb});
+    
+    if bb <= ParamModel.NbBoot_CumInfo
+        P_YgivenS_Bootstrap{bb} = P_YgivenS_JKSets;
+        P_YgivenC_Bootstrap{bb} = P_YgivenC_JKSets;
+    end
 end
+    
 
-% Estimate information for infinite number of trials
-% ordonnée à l'origine: b = (y1*x2 - y2*x1)/(x2-x1)
-Data.stim_info_infT = (Stim_info./ParamModel.Mean_Ntrials_perstim(2) - mean(Stim_info_JKBoot,1)./ParamModel.Mean_Ntrials_perstim(1))./(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-Data.category_info_infT = (Category_info./ParamModel.Mean_Ntrials_perstim(2) - mean(Category_info_JKBoot,1)./ParamModel.Mean_Ntrials_perstim(1))./(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-Data.stim_info_JKBoot_std=std(Stim_info_JKBoot);
-Data.category_info_JKBoot_std=std(Category_info_JKBoot);
-
-Data.stim_info_JKBoot_infT = (repmat(Stim_info ./ ParamModel.Mean_Ntrials_perstim(2), ParamModel.NbBoot_Info,1) - Stim_info_JKBoot ./ ParamModel.Mean_Ntrials_perstim(1)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-Data.category_info_JKBoot_infT = (repmat(Category_info ./ ParamModel.Mean_Ntrials_perstim(2), ParamModel.NbBoot_Info,1) - Category_info_JKBoot ./ ParamModel.Mean_Ntrials_perstim(1)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-Data.stim_info_infT_std = std(Data.stim_info_JKBoot_infT);
-Data.category_info_infT_std = std(Data.category_info_JKBoot_infT);
 
 
 % Stuff in results in structure
@@ -229,6 +263,16 @@ Data.stim_info = Stim_info;
 Data.stim_info_JKBoot = Stim_info_JKBoot;
 Data.category_info = Category_info;
 Data.category_info_JKBoot = Category_info_JKBoot;
+
+Data.stim_info_infT = stim_info_infT;
+Data.category_info_infT = category_info_infT;
+Data.stim_info_JKBoot_std =stim_info_JKBoot_std;
+Data.category_info_JKBoot_std =category_info_JKBoot_std;
+
+Data.stim_info_JKBoot_infT = stim_info_JKBoot_infT;
+Data.category_info_JKBoot_infT = category_info_JKBoot_infT;
+Data.stim_info_infT_std = stim_info_infT_std;
+Data.category_info_infT_std = category_info_infT_std;
 
  %% Save what we have for now
  if saveonline
