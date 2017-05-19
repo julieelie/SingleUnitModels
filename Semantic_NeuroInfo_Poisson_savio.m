@@ -52,7 +52,7 @@ if ~isfield(SWITCH,'InfoCal') || isempty(SWITCH.InfoCal)
 end
 
 
-if nargin<4
+if nargin<3
     ParamModel = struct();
 end
 if ~isfield(ParamModel,'LINK') || isempty(ParamModel.LINK)
@@ -61,9 +61,9 @@ end
 if ~isfield(ParamModel,'DISTR') || isempty(ParamModel.DISTR)
     ParamModel.DISTR='poisson';%'normal'
 end
-if ~isfield(ParamModel,'NeuroRes') || isempty(ParamModel.NeuroRes)
-    ParamModel.NeuroRes = 'count_gaussfiltered';
-end
+% if ~isfield(ParamModel,'NeuroRes') || isempty(ParamModel.NeuroRes)
+%     ParamModel.NeuroRes = 'count_gaussfiltered';
+% end
 if  ~isfield(ParamModel,'MinWin') || isempty(ParamModel.MinWin)
     ParamModel.MinWin = 1; % end point of the first analysis window (spectrogram and neural response)
 end
