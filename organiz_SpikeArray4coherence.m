@@ -33,7 +33,7 @@ for dd = 1:NbStim
         Trialset1=1:2:(NTrials-1);
         Trialset2=2:2:(NTrials-1);
     end
-    fprintf('Stim %d\n',dd)
+%    fprintf('Stim %d\n',dd)
     HalfTrain1 = [HalfTrain1 mean(Spike_array{dd}(Trialset1,1:MaxWin_local),1)];
     HalfTrain2 = [HalfTrain2 mean(Spike_array{dd}(Trialset2,1:MaxWin_local),1)];
     
