@@ -251,7 +251,9 @@ if SWITCH.BestBin
     for tt = 1:length(OptimalFreqCutOff.PowerSpectrum.Thresh)
         Thresh = OptimalFreqCutOff.PowerSpectrum.Thresh(tt);
         IndMax=find(OptimalFreqCutOff.PowerSpectrum.Pxx_Perc > Thresh);
-        OptimalFreqCutOff.PowerSpectrum.LowerBandPassOpt(tt) = F(IndMax(1));
+        if numel(IndMax)~=0
+            OptimalFreqCutOff.PowerSpectrum.LowerBandPassOpt(tt) = F(IndMax(1));
+        end
     end
     
     % save data for each semantic cell in its own file
