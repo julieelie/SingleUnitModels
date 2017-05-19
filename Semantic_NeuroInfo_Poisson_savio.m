@@ -242,8 +242,9 @@ if SWITCH.BestBin
     % Calculate the cumulative power spectrum of the signal
     Window = 0.2*Res.Response_samprate;
     SignalTot_1dim=reshape(SignalTot_local',[size(SignalTot_local,1)*size(SignalTot_local,2),1]);
-    [Pxx,F] = pwelch(SignalTot_1dim, Window, [],[],10000);
+    [Pxx,F] = pwelch(SignalTot_1dim, Window, [],[],Res.Response_samprate);
     OptimalFreqCutOff.PowerSpectrum.Pxx_Perc = 100*cumsum(Pxx / sum(Pxx));
+    OptimalFreqCutOff.PowerSpectrum.F = F;
     
     % Identify the frequency cut-off corresponding to the list of
     % thresholds
@@ -251,11 +252,19 @@ if SWITCH.BestBin
     OptimalFreqCutOff.PowerSpectrum.LowerBandPassOpt = nan(1,length(80:99));
     for tt = 1:length(OptimalFreqCutOff.PowerSpectrum.Thresh)
         Thresh = OptimalFreqCutOff.PowerSpectrum.Thresh(tt);
-        IndMax=find(OptimalFreqCutOff.PowerSpectrum.Pxx_Perc > Thresh);
+        IndMax=find(OptimalFreqCutOff.PowerSpectrum.Pxx_Perc > Thresh,1);
         if numel(IndMax)~=0
-            OptimalFreqCutOff.PowerSpectrum.LowerBandPassOpt(tt) = F(IndMax(1));
+            OptimalFreqCutOff.PowerSpectrum.LowerBandPassOpt(tt) = F(IndMax);
         end
     end
+    
+    % Identify optimal frequency cut-off (point where an increase of 10Hz per 1%
+    % increase of cumsum power)
+    dPower = OptimalFreqCutOff.PowerSpectrum.Pxx_Perc(2:end) - OptimalFreqCutOff.PowerSpectrum.Pxx_Perc(1:(end-1));
+    dF = F(2:end)-F(1:(end-1));
+    CutOffIndOpt = find(dF./dPower>10,1);
+    OptimalFreqCutOff.PowerSpectrum.LowerBandPassOpt_as4slope = F(CutOffIndOpt-1);
+    
     
     % save data for each semantic cell in its own file
     if PrevData
