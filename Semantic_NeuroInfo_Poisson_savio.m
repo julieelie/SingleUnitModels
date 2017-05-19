@@ -224,10 +224,11 @@ if SWITCH.BestBin
     % COHERENCE on RAW spike trains
     %Data processing group spike trains in two sets containing all stims
     %but half of the trials each
-    [HalfTrain1, HalfTrain2]=organiz_SpikeArray4coherence(Res.Spike_array(DataSel),ParamModel);
+    [HalfTrain1, HalfTrain2, ResponseDuration]=organiz_SpikeArray4coherence(Res.Spike_array(DataSel),ParamModel);
     
     % Compute coherence
     [CoherenceStruct]=compute_coherence_mean(HalfTrain1, HalfTrain2,Res.Response_samprate);
+    CoherenceStruct.ResponseDuration = ResponseDuration;
     OptimalFreqCutOff.CoherenceStruct = CoherenceStruct;
     
     
