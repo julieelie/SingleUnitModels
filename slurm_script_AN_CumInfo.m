@@ -1,8 +1,8 @@
 function slurm_script_AN_CumInfo(Cell)
-addpath(genpath('/auto/fhome/julie/Code/SingleUnitModels'));
-addpath(genpath('/auto/fhome/julie/Code/GeneralCode'));
-addpath(genpath('/auto/fhome/julie/Code/tlab/src'));
-rmpath(genpath('/auto/fhome/julie/Code/tlab/src/hedi'));
+addpath(genpath('/global/home/users/jelie/CODE/SingleUnitModels'));
+addpath(genpath('/global/home/users/jelie/CODE/GeneralCode'));
+addpath(genpath('/global/home/users/jelie/CODE/tlab/src'));
+rmpath(genpath('/global/home/users/jelie/CODE/tlab/src/hedi'));
 Path2Data='/auto/tdrive/julie/NeuralData/SemanticInfoPoisson/';
 Storage_path = '/global/scratch/jelie/MatFiles';
 
