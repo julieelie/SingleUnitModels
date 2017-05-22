@@ -14,7 +14,6 @@ fprintf('**************** Calculating cumulative information *****************\n
 From_file = sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell);
 KeepF=1;
 
-load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell), 'P_YgivenS','P_YgivenS_BootJK','Bin_Trials' );
 [Data]=loadfromTdrive_savio(From_file,Storage_path, KeepF);
 P_YgivenS = Data.P_YgivenS;
 P_YgivenS_BootJK = Data.P_YgivenS_BootJK;
