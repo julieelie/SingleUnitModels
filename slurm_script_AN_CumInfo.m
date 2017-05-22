@@ -4,14 +4,22 @@ addpath(genpath('/auto/fhome/julie/Code/GeneralCode'));
 addpath(genpath('/auto/fhome/julie/Code/tlab/src'));
 rmpath(genpath('/auto/fhome/julie/Code/tlab/src/hedi'));
 Path2Data='/auto/tdrive/julie/NeuralData/SemanticInfoPoisson/';
+Storage_path = '/global/scratch/jelie/MatFiles';
 
 Cum_boot=10;
 fprintf('------------------------------------------------------\n')
 fprintf('---------- %s cell Dataset-----------\n', Cell)
 fprintf('------------------------------------------------------\n')
 fprintf('**************** Calculating cumulative information *****************\n')
-load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell), 'P_YgivenS','P_YgivenS_BootJK','Bin_Trials' );
+From_file = sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell);
+KeepF=1;
 
+load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell), 'P_YgivenS','P_YgivenS_BootJK','Bin_Trials' );
+[Data]=loadfromTdrive_savio(From_file,Storage_path, KeepF);
+P_YgivenS = Data.P_YgivenS;
+P_YgivenS_BootJK = Data.P_YgivenS_BootJK;
+Bin_Trials = Data.Bin_Trials;
+clear Data
 
 %% Calculate the Monte Carlo estimation with optimum number of samples
 MaxMCParameter = 5*10^6;
@@ -47,15 +55,15 @@ for tt=2:Nb_Win
 end
 telapsed2 = toc(tstart2);
 fprintf('MC Opt total elapsed time: %d s\n', telapsed2)
-load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_%s.mat',Path2Data,Cell),'Info');
-Icum_EstMonteCarloOpt(1) = Info(1); % Initializing the first value of cumulative info
-Icum_EstMonteCarloOpt_bcorr(1) = Info(1); % Initializing the first value of cumulative info
-save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell),'Nb_Win','Cum_boot','Icum_EstMonteCarloOpt','Icum_EstMonteCarloOpt_bcorr','Icum_EstMonteCarloOpt_err','MC_Samp','-append');
+load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_%s.mat',Storage_path,Cell),'Info_bcorr');
+Icum_EstMonteCarloOpt(1) = Info_bcorr(1); % Initializing the first value of cumulative info
+Icum_EstMonteCarloOpt_bcorr(1) = Info_bcorr(1); % Initializing the first value of cumulative info
+save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'Nb_Win','Cum_boot','Icum_EstMonteCarloOpt','Icum_EstMonteCarloOpt_bcorr','Icum_EstMonteCarloOpt_err','MC_Samp','-append');
 clear P_Y* Icum*
 
 %% Calculate the cumulative information with Markov and exact calculation with 5 bin memory
 fprintf('**** Exact calculation and Markov with 5 bins memory *****\n');
-load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell),'P_YgivenS');
+load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'P_YgivenS');
 Nb_Win = length(P_YgivenS);
 Icum_ExactMem0_5 = nan(1,Nb_Win);
 Icum_EstMarkov5 = Icum_ExactMem0_5;
@@ -77,15 +85,15 @@ for tt=2:Nb_Win
     telapsed = toc(tstart);
     fprintf('Markov + Exact calculation: total elapsed time: %d s\n', telapsed)
 end
-load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell),'Info');
-Icum_ExactMem0_5(1) =  Info(1);
-Icum_EstMarkov5(1) = Info(1);
-save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell),'Icum_ExactMem0_5','Icum_EstMarkov5','-append');
+load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'Info_bcorr');
+Icum_ExactMem0_5(1) =  Info_bcorr(1);
+Icum_EstMarkov5(1) = Info_bcorr(1);
+save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'Icum_ExactMem0_5','Icum_EstMarkov5','-append');
 clear P_Y* Icum* HY*
 
 % jackknife the calculations
 fprintf('**** Jackknife Exact calculation and Markov with 5 bins memory *****\n');
-load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell),'P_YgivenS_BootJK', 'Nb_Win','Cum_boot','NTrials','Icum_ExactMem0_5','Icum_EstMarkov5');
+load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'P_YgivenS_BootJK', 'Nb_Win','Cum_boot','NTrials','Icum_ExactMem0_5','Icum_EstMarkov5');
 Icum_ExactMem0_5_JK_mean = nan(Cum_boot,Nb_Win);
 Icum_ExactMem0_5_JK_var = nan(Cum_boot,Nb_Win);
 Icum_EstMarkov5_JK_mean = nan(Cum_boot,Nb_Win);
@@ -126,7 +134,7 @@ parfor bb=1:Cum_boot
     Icum_EstMarkov5_JK_var(bb,:) = var(Icum_EstMarkov5_JK_Setcorrected,0,1);
 end
 
-load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell),'Info_bcorr');
+load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'Info_bcorr');
 Icum_ExactMem0_5_JK_mean(:,1) = repmat(Info_bcorr(1),Cum_boot,1);
 Icum_ExactMem0_5_bcorr = mean(Icum_ExactMem0_5_JK_mean,1);
 Icum_ExactMem0_5_err = (mean(Icum_ExactMem0_5_JK_var,1)).^0.5;
@@ -135,12 +143,12 @@ Icum_EstMarkov5_JK_mean(:,1) = repmat(Info_bcorr(1),Cum_boot,1);
 Icum_EstMarkov5_bcorr = mean(Icum_EstMarkov5_JK_mean,1);
 Icum_EstMarkov5_err = (mean(Icum_EstMarkov5_JK_var,1)).^0.5;
 
-save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell),'Icum_ExactMem0_5_JK_mean','Icum_EstMarkov5_JK_mean','Icum_ExactMem0_5_JK_var','Icum_EstMarkov5_JK_var','Icum_ExactMem0_5_bcorr','Icum_EstMarkov5_bcorr','Icum_ExactMem0_5_err','Icum_EstMarkov5_err','-append');
+save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'Icum_ExactMem0_5_JK_mean','Icum_EstMarkov5_JK_mean','Icum_ExactMem0_5_JK_var','Icum_EstMarkov5_JK_var','Icum_ExactMem0_5_bcorr','Icum_EstMarkov5_bcorr','Icum_ExactMem0_5_err','Icum_EstMarkov5_err','-append');
 clear P_Y* Icum* HY*
 
 %% Calculate theoretical values if the spike rate was exactly known
 fprintf('**** Theoretical values: Monte Carlo 10^6, Exact calculation and Markov with 5 bins memory *****\n');
-load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell),'P_YgivenS_Theo', 'Nb_Win','Cum_boot');
+load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'P_YgivenS_Theo', 'Nb_Win','Cum_boot');
 Icum_EstMonteCarlo6_Theo = nan(1,Nb_Win);
 Icum_ExactMem0_5_Theo = nan(1,Nb_Win);
 Icum_EstMarkov5_Theo = nan(1,Nb_Win);
@@ -165,10 +173,10 @@ for tt=2:Nb_Win
     telapsed = toc(tstart);
     fprintf('Markov + Exact calculation: total elapsed time: %d s\n', telapsed)
 end
-load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell),'Info');
-Icum_EstMonteCarlo6_Theo(1) = Info(1); % Initializing the first value of cumulative info
-Icum_ExactMem0_5_Theo(1) =  Info(1);
-Icum_EstMarkov5_Theo(1) = Info(1);
+load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'Info_bcorr');
+Icum_EstMonteCarlo6_Theo(1) = Info_bcorr(1); % Initializing the first value of cumulative info
+Icum_ExactMem0_5_Theo(1) =  Info_bcorr(1);
+Icum_EstMarkov5_Theo(1) = Info_bcorr(1);
 save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell),'Icum_EstMonteCarlo6_Theo','Icum_ExactMem0_5_Theo','Icum_EstMarkov5_Theo', '-append');
 clear P_Y* Icum* HY*
 end
