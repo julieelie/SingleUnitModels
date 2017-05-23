@@ -33,7 +33,10 @@ Icum_EstMonteCarloOpt_bcorr = nan(1,Nb_Win);
 MC_Samp = nan(1,Nb_Win);
 tstart2 = tic;
 fprintf('**** Monte Carlo with optimal # samples and Jackknife *****\n');
-for tt=2:Nb_Win
+Error_local = 0;
+tt=1;
+while ((Error_local<=(3*ConvThresh)) && (tt<Nb_Win))
+    tt= tt+1;
     tstart = tic;
     fprintf('Time point %d/%d\n', tt, Nb_Win);
     P_YgivenS_local = P_YgivenS(1:tt);
@@ -47,11 +50,9 @@ for tt=2:Nb_Win
     fprintf('# MC samples %d Error:%.2f\n', MC_Samp(tt),Icum_EstMonteCarloOpt_err(tt));
     telapsed = toc(tstart);
     fprintf('Elapsed time: %d s\n', telapsed)
-    if Icum_EstMonteCarloOpt_err(tt)>(3*ConvThresh)
-        fprintf('Error is too high at this point stop here: %.2f\n', Icum_EstMonteCarloOpt_err(tt))
-        return
-    end
+    Error_local=Icum_EstMonteCarloOpt_err(tt);
 end
+fprintf('Calculations stop at %d with an error of: %.2f\n', tt, Icum_EstMonteCarloOpt_err(tt))
 telapsed2 = toc(tstart2);
 fprintf('MC Opt total elapsed time: %d s\n', telapsed2)
 load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_%s.mat',Storage_path,Cell),'Info_bcorr');
