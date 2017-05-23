@@ -6,6 +6,13 @@ rmpath(genpath('/global/home/users/jelie/CODE/tlab/src/hedi'));
 Path2Data='/auto/tdrive/julie/NeuralData/SemanticInfoPoisson/';
 Storage_path = '/global/scratch/jelie/MatFiles';
 
+if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
+        MyParPool = parpool(str2num(getenv('SLURM_CPUS_ON_NODE')),'IdleTimeout', Inf);
+        system('mkdir -p /global/scratch/$USER/$SLURM_JOB_ID')
+        [~,JobID] = system('echo $SLURM_JOB_ID');
+        parcluster.JobStorageLocation = ['/global/scratch/jelie/' JobID];
+end
+
 Cum_boot=10;
 fprintf('------------------------------------------------------\n')
 fprintf('---------- %s cell Dataset-----------\n', Cell)
