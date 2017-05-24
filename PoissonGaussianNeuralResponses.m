@@ -7,7 +7,7 @@ if  ~isfield(ParamModel,'MinWin') || isempty(ParamModel.MinWin)
     ParamModel.MinWin = 10; % end point of the first analysis window (spectrogram and neural response)
 end
 if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
-    ParamModel.MaxWin = 1000; %end point of the last anaysis window for...
+    ParamModel.MaxWin = 600; %end point of the last anaysis window for...
     ... neural response and end point of the largest analysis window for...
         ... spectrogram
 end
@@ -105,7 +105,11 @@ for ww = 1:WinNum
     % neuron
     MAX=max(max(yvar),max(ymean));
     PG_Index(ww) = sum(power(yvar-repmat(mean(yvar),length(yvar),1),2))/sum(power(yvar-ymean,2));
-    FanoFactor_Index(ww) = nanmean(yvar./ymean);
+    yvar_local = yvar;
+    ymean_local = ymean;
+    yvar_local(yvar==ymean)=1;
+    ymean_local(yvar==ymean)=1;
+    FanoFactor_Index(ww) = mean(yvar_local./ymean_local);
     if FIG>0
         figure(1)
         plot(ymean,yvar,'r.', 'MarkerSize',40)

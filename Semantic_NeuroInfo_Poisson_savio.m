@@ -1,4 +1,4 @@
-function [OptimalFreqCutOff] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+function [PG_Index,FanoFactor_Index, Wins] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %[calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath,Kth_i, SWITCH, ParamModel,Cellname)
 % [calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath,ValidKth_i, SWITCH, ParamModel,Cellname)
 % [OptimalFreqCutOff] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
@@ -42,10 +42,10 @@ if nargin<3
     SWITCH = struct();
 end
 if ~isfield(SWITCH,'FanoFactor') || isempty(SWITCH.FanoFactor)
-    SWITCH.FanoFactor=0;
+    SWITCH.FanoFactor=1;
 end
 if ~isfield(SWITCH,'BestBin') || isempty(SWITCH.BestBin)
-    SWITCH.BestBin=1;
+    SWITCH.BestBin=0;
 end
 if ~isfield(SWITCH,'InfoCal') || isempty(SWITCH.InfoCal)
     SWITCH.InfoCal=0;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
@@ -68,12 +68,12 @@ if  ~isfield(ParamModel,'MinWin') || isempty(ParamModel.MinWin)
     ParamModel.MinWin = 1; % end point of the first analysis window (spectrogram and neural response)
 end
 if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
-    ParamModel.MaxWin = 150; %end point of the last anaysis window for...
+    ParamModel.MaxWin = 600; %end point of the last anaysis window for...
     ... neural response and end point of the largest analysis window for...
         ... spectrogram
 end
 if ~isfield(ParamModel,'MaxWin_cumInfo') || isempty(ParamModel.MaxWin_cumInfo)
-    ParamModel.MaxWin_cumInfo = 150; %end point of the last anaysis window for...
+    ParamModel.MaxWin_cumInfo = 600; %end point of the last anaysis window for...
     ... the calculation of cumulative information
 end
 if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
