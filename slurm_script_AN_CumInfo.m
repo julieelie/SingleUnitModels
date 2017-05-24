@@ -62,7 +62,7 @@ end
 fprintf('Calculations stop at %d with an error of: %.2f\n', tt, Icum_EstMonteCarloOpt_err(tt))
 telapsed2 = toc(tstart2);
 fprintf('MC Opt total elapsed time: %d s\n', telapsed2)
-load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_%s.mat',Storage_path,Cell),'Info_bcorr');
+load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'Info_bcorr');
 Icum_EstMonteCarloOpt(1) = Info_bcorr(1); % Initializing the first value of cumulative info
 Icum_EstMonteCarloOpt_bcorr(1) = Info_bcorr(1); % Initializing the first value of cumulative info
 save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'Nb_Win','Cum_boot','Icum_EstMonteCarloOpt','Icum_EstMonteCarloOpt_bcorr','Icum_EstMonteCarloOpt_err','MC_Samp','-append');
