@@ -184,6 +184,6 @@ load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'Info
 Icum_EstMonteCarlo6_Theo(1) = Info_bcorr(1); % Initializing the first value of cumulative info
 Icum_ExactMem0_5_Theo(1) =  Info_bcorr(1);
 Icum_EstMarkov5_Theo(1) = Info_bcorr(1);
-save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Path2Data,Cell),'Icum_EstMonteCarlo6_Theo','Icum_ExactMem0_5_Theo','Icum_EstMarkov5_Theo', '-append');
+save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'Icum_EstMonteCarlo6_Theo','Icum_ExactMem0_5_Theo','Icum_EstMarkov5_Theo', '-append');
 clear P_Y* Icum* HY*
 end
