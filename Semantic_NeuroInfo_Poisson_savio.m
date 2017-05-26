@@ -1,4 +1,5 @@
-function [PG_Index,FanoFactor_Index, Wins] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+function [OptimalFreqCutOff] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+%[calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %[calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath,Kth_i, SWITCH, ParamModel,Cellname)
 % [calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath,ValidKth_i, SWITCH, ParamModel,Cellname)
 % [OptimalFreqCutOff] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
@@ -35,17 +36,17 @@ if nargin<1
 end
 
 %% Deal with input parameters
+% if nargin<2
+%     Kth_i = 1; % This would correspond to nearest neighbor=Ntrials/2;
+% end
 if nargin<2
-    Kth_i = 1; % This would correspond to nearest neighbor=Ntrials/2;
-end
-if nargin<3
     SWITCH = struct();
 end
 if ~isfield(SWITCH,'FanoFactor') || isempty(SWITCH.FanoFactor)
-    SWITCH.FanoFactor=1;
+    SWITCH.FanoFactor=0;
 end
 if ~isfield(SWITCH,'BestBin') || isempty(SWITCH.BestBin)
-    SWITCH.BestBin=0;
+    SWITCH.BestBin=1;
 end
 if ~isfield(SWITCH,'InfoCal') || isempty(SWITCH.InfoCal)
     SWITCH.InfoCal=0;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
@@ -65,7 +66,7 @@ end
 %     ParamModel.NeuroRes = 'count_gaussfiltered';
 % end
 if  ~isfield(ParamModel,'MinWin') || isempty(ParamModel.MinWin)
-    ParamModel.MinWin = 1; % end point of the first analysis window (spectrogram and neural response)
+    ParamModel.MinWin = 10; % end point of the first analysis window (spectrogram and neural response)
 end
 if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
     ParamModel.MaxWin = 600; %end point of the last anaysis window for...
@@ -77,10 +78,10 @@ if ~isfield(ParamModel,'MaxWin_cumInfo') || isempty(ParamModel.MaxWin_cumInfo)
     ... the calculation of cumulative information
 end
 if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
-    ParamModel.Increment = 1; %increase the size of the spectro window with a Xms pace
+    ParamModel.Increment = 10; %increase the size of the spectro window with a Xms pace
 end
 if ~isfield(ParamModel,'NeuroBin') || isempty(ParamModel.NeuroBin)
-    ParamModel.NeuroBin = 1; % size of the window (ms) within which the neural response is analyzed
+    ParamModel.NeuroBin = 10; % size of the window (ms) within which the neural response is analyzed
                                % The end of the window of analysis is
                                % determined by the Increment and ResDelay (see below).
 end
@@ -92,15 +93,15 @@ end
 
 % Number of bootstraps
 if ~isfield(ParamModel, 'NbBoot_Info') || isempty(ParamModel.NbBoot_Info)
-    ParamModel.NbBoot_Info = 20;
+    ParamModel.NbBoot_Info = 10;
 end
 
 if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
-    ParamModel.NbBoot_CumInfo = 20;
+    ParamModel.NbBoot_CumInfo = 10;
 end
 
 
-if nargin<5
+if nargin<4
     [path,Cellname,ext]=fileparts(MatfilePath);
 end
 
@@ -137,7 +138,7 @@ else
     OutputDir_final=fullfile('/auto','tdrive','julie','k6','julie','matfile','ModMatInfo');
     OutputDir_local=OutputDir_final;
 end
-calfilename_local=fullfile(OutputDir_local,['InfoPoissonKDEF_' Res.Site '.mat']);
+Calfilename_local=fullfile(OutputDir_local,['InfoPoissonKDEF_' Res.Site '.mat']);
 calfilename_final=fullfile(OutputDir_final,['InfoPoissonKDEF_' Res.Site '.mat']);
 
 outfilename_local=fullfile(OutputDir_local,['slurm_out*' Res.Site '*.txt']);
@@ -157,7 +158,7 @@ if Savio
 %         fprintf('No Previous Data available or complete, working from the first window\nThe error is %s\n',err.identifier, err.message);
 %         PrevData = 0;
 %     end
-    if exist(calfilename_local, 'file') == 2
+    if exist(Calfilename_local, 'file') == 2
         fprintf('Found some data for this unit\n')
         PrevData = 1;
     else
@@ -276,9 +277,9 @@ if SWITCH.BestBin
     
     % save data for each semantic cell in its own file
     if PrevData
-        save(calfilename_local,'MatfilePath', 'OptimalFreqCutOff', '-append');
+        save(Calfilename_local,'MatfilePath', 'OptimalFreqCutOff', '-append');
     else
-        save(calfilename_local,'MatfilePath', 'OptimalFreqCutOff');
+        save(Calfilename_local,'MatfilePath', 'OptimalFreqCutOff');
     end
     
     %     OLD CODE
@@ -333,9 +334,9 @@ end
 if SWITCH.FanoFactor
     [PG_Index,FanoFactor_Index, Wins] = PoissonGaussianNeuralResponses(Res.Trials(DataSel),ParamModel,SWITCH,Cellname);
     if PrevData
-        save(calfilename_local,'PG_Index', 'FanoFactor_Index','Wins','-append');
+        save(Calfilename_local,'PG_Index', 'FanoFactor_Index','Wins','-append');
     else
-        save(calfilename_local,'PG_Index', 'FanoFactor_Index','Wins');
+        save(Calfilename_local,'PG_Index', 'FanoFactor_Index','Wins');
     end
     
 end
@@ -352,49 +353,61 @@ if SWITCH.InfoCal
     % Find out the number of trials per stimulus and feed-in PSTH and
     % PSTH_JackKnife
     Ntrials_perstim = nan(length(DataSel),1);
-    PSTH_GaussFilteredK = cell(nvoc,1);
-    JK_GaussFilteredK = cell(nvoc,1);
-    Kth_Neigh = nan(nvoc,1);
-    Kth_Neigh_JK = nan(nvoc,1);
     
     % First retrieve the PSTH calculated with the same # of nearest
     % neighbour Ntrial/d where d=1:Ntrials
-    if Kth_i<5 % Treating Neigh = NT/2, NT/3, NT/4, NT/5
-        for vv=1:nvoc
-            Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
-            NNT = size(Res.PSTH_GaussFiltered{DataSel(vv)},1); % This is the number of nearest neighbor tested for full PSTH
-            PSTH_GaussFilteredK{vv} = Res.PSTH_GaussFiltered{DataSel(vv)}(NNT-Kth_i,:);
-            NNT_JK = length(Res.JackKnife_GaussFiltered{DataSel(vv)}); % This is the number of nearest neighbor tested for JK PSTH
-            JK_GaussFilteredK{vv} = Res.JackKnife_GaussFiltered{DataSel(vv)}{NNT_JK-Kth_i};
-            Kth_Neigh(vv) = Res.Kth_Neigh{DataSel(vv)}(NNT-Kth_i);
-            Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{DataSel(vv)}(NNT_JK-Kth_i);
-        end
-    else % Treating Neigh =1 = NT/NT
-        for vv=1:nvoc
-            Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
-            PSTH_GaussFilteredK{vv} = Res.PSTH_GaussFiltered{DataSel(vv)}(1,:);
-            JK_GaussFilteredK{vv} = Res.JackKnife_GaussFiltered{DataSel(vv)}{1};
-            Kth_Neigh(vv) = Res.Kth_Neigh{DataSel(vv)}(1);
-            Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{DataSel(vv)}(1);
-        end
-    end
-    ParamModel.Mean_Ntrials_perstim = [mean(Ntrials_perstim) mean(Ntrials_perstim - 1)];
+%     if Kth_i<5 % Treating Neigh = NT/2, NT/3, NT/4, NT/5
+%         for vv=1:nvoc
+%             Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
+%             NNT = size(Res.PSTH_GaussFiltered{DataSel(vv)},1); % This is the number of nearest neighbor tested for full PSTH
+%             PSTH_GaussFilteredK{vv} = Res.PSTH_GaussFiltered{DataSel(vv)}(NNT-Kth_i,:);
+%             NNT_JK = length(Res.JackKnife_GaussFiltered{DataSel(vv)}); % This is the number of nearest neighbor tested for JK PSTH
+%             JK_GaussFilteredK{vv} = Res.JackKnife_GaussFiltered{DataSel(vv)}{NNT_JK-Kth_i};
+%             Kth_Neigh(vv) = Res.Kth_Neigh{DataSel(vv)}(NNT-Kth_i);
+%             Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{DataSel(vv)}(NNT_JK-Kth_i);
+%         end
+%     else % Treating Neigh =1 = NT/NT
+%         for vv=1:nvoc
+%             Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
+%             PSTH_GaussFilteredK{vv} = Res.PSTH_GaussFiltered{DataSel(vv)}(1,:);
+%             JK_GaussFilteredK{vv} = Res.JackKnife_GaussFiltered{DataSel(vv)}{1};
+%             Kth_Neigh(vv) = Res.Kth_Neigh{DataSel(vv)}(1);
+%             Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{DataSel(vv)}(1);
+%         end
+%     end
     
+    % Find out # of trials per stim
+    for vv=1:nvoc
+            Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
+    end
+    ParamModel.Mean_Ntrials_perstim = mean(Ntrials_perstim);
+    if mean(Ntrials_perstim - 1) ~= (mean(Ntrials_perstim) - 1)
+        fprintf('check number of trials something weirds going on...\n')
+        return
+    end
+        
     % add as input to the parameters the set of indices for predetermined
     % JK sets
     ParamModel.SetIndices_JK = Res.SetIndices_JK;
     
     % Calculate information
-    Calfilename_localKth = sprintf('%s_Kth%d_%s',calfilename_local(1:(end-4)),Kth_i,calfilename_local((end-4):end));
-    [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(PSTH_GaussFilteredK,JK_GaussFilteredK,Res.VocType(DataSel), ParamModel,Calfilename_localKth);
+    %Calfilename_localKth = sprintf('%s_Kth%d_%s',calfilename_local(1:(end-4)),Kth_i,calfilename_local((end-4):end));
+    [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(Res.PSTH_KDE_Filtered(DataSel),Res.JackKnife_KDE_Filtered(DataSel),Res.VocType(DataSel), ParamModel,Calfilename_local);
      
-    InputData.Kth_Neigh = Kth_Neigh;
-    InputData.Kth_Neigh_JK = Kth_Neigh_JK;
-    if exist(Calfilename_localKth, 'file') == 2
+%     InputData.Kth_Neigh = Kth_Neigh;
+%     InputData.Kth_Neigh_JK = Kth_Neigh_JK;
+%     if exist(Calfilename_localKth, 'file') == 2
+%         fprintf(1,'appending to the file\n');
+%         save(Calfilename_localKth,'Data', 'InputData','Wins','ParamModel','-append');
+%     else
+%         save(Calfilename_localKth,'Data', 'InputData','Wins','ParamModel');
+%     end
+
+    if exist(Calfilename_local, 'file') == 2
         fprintf(1,'appending to the file\n');
-        save(Calfilename_localKth,'Data', 'InputData','Wins','ParamModel','-append');
+        save(Calfilename_local,'Data', 'InputData','Wins','ParamModel','-append');
     else
-        save(Calfilename_localKth,'Data', 'InputData','Wins','ParamModel');
+        save(Calfilename_local,'Data', 'InputData','Wins','ParamModel');
     end
     
     ElapsedTime = toc(TimerVal);

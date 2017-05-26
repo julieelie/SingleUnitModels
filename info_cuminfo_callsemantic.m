@@ -34,11 +34,11 @@ end
 
 % Number of bootstraps
 if ~isfield(ParamModel, 'NbBoot_Info') || isempty(ParamModel.NbBoot_Info)
-    ParamModel.NbBoot_Info = 16;
+    ParamModel.NbBoot_Info = 10;
 end
 
 if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
-    ParamModel.NbBoot_CumInfo = 16;
+    ParamModel.NbBoot_CumInfo = 10;
 end
 
 % Checking the number of possible jackknike given the dataset size
@@ -55,22 +55,23 @@ Avail_NJK = length(ParamModel.SetIndices_JK);
 
 
 if ParamModel.NbBoot_Info > Avail_NJK
-    fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of information\n', Avail_NJK, ParamModel.NbBoot_Info);
+    fprintf('WARNING: Only %d possible calculations of sets of JK points while you are asking for %d in the calculation of information\n', Avail_NJK, ParamModel.NbBoot_Info);
     ParamModel.NbBoot_Info = Avail_NJK;
 else
-    fprintf('WARNING: %d possible calculations of JK points. you are asking for %d in the calculation of information\n', Avail_NJK, ParamModel.NbBoot_Info);
+    fprintf('WARNING: %d possible calculations of sets of JK points. you are asking for %d in the calculation of information\n', Avail_NJK, ParamModel.NbBoot_Info);
 end
 if ParamModel.NbBoot_CumInfo > Avail_NJK
-    fprintf('WARNING: Only %d possible calculations of JK points while you are asking for %d in the calculation of cumulative information\n', Avail_NJK, ParamModel.NbBoot_CumInfo);
+    fprintf('WARNING: Only %d possible calculations of sets of JK points while you are asking for %d in the calculation of cumulative information\n', Avail_NJK, ParamModel.NbBoot_CumInfo);
     ParamModel.NbBoot_CumInfo = Avail_NJK;
 else
-    fprintf('WARNING: %d possible calculations of JK points. you are asking for %d in the calculation of cumulative information\n', Avail_NJK, ParamModel.NbBoot_CumInfo);
+    fprintf('WARNING: %d possible calculations of sets of JK points. you are asking for %d in the calculation of cumulative information\n', Avail_NJK, ParamModel.NbBoot_CumInfo);
 end
 
 
 
 % Set parameters for the number of samples that should be tested in the
-% MonteCarlo estimation of the cumulative information
+% MonteCarlo estimation of the cumulative information with fix number of
+% samples
 if ~isfield(ParamModel, 'NumSamples_MC_Cum_Info')
     ParamModel.NumSamples_MC_Cum_Info = 10^6; %Set the number of samples for the Monte Carlo approximation of the cumulative information 10^7 takes too much memory prefers lower numbers
 elseif isempty(ParamModel.NumSamples_MC_Cum_Info)
@@ -107,8 +108,9 @@ else
     saveonline = 1;
 end
 
-%% Set up parameters of the function and initialize output variables
-% define the list of end points of spectrogram and neural responses windows
+%% Set up parameters of the function
+% define the list of end points of time bins at which information is
+% calculated
 Wins = ParamModel.MinWin:ParamModel.Increment:ParamModel.MaxWin;
 Wins_cumInfo = ParamModel.MinWin:ParamModel.Increment:ParamModel.MaxWin_cumInfo;
 
@@ -127,7 +129,7 @@ if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HO
     parcluster.JobStorageLocation = ['/global/scratch/jelie/' JobID];    
 end
 
-%% Initialize output variables
+%% Initialize output variables for the calculation of instantaneous information
 Rate4InfoStim = nan(NbStims,WinNum);
 Rate4InfoStim_Boot = cell(1,ParamModel.NbBoot_Info);
 Stim_entropy = nan(1,WinNum);
@@ -137,23 +139,21 @@ Category_info = nan(1,WinNum);
 
 P_YgivenS = cell(1,WinNum);
 P_YgivenC = cell(1,WinNum);
-P_YgivenS_Bootstrap = cell(ParamModel.NbBoot_CumInfo);
-P_YgivenC_Bootstrap = cell(ParamModel.NbBoot_CumInfo);
-stim_info_infT = cell(ParamModel.NbBoot_Info,1);
-category_info_infT = cell(ParamModel.NbBoot_Info,1);
-stim_info_JKBoot_std =nan(ParamModel.NbBoot_Info,1);
-category_info_JKBoot_std =nan(ParamModel.NbBoot_Info,1);
+P_YgivenS_Bootstrap = cell(1,ParamModel.NbBoot_CumInfo);
+P_YgivenC_Bootstrap = cell(1,ParamModel.NbBoot_CumInfo);
+stim_info_JKBoot_infT_mean = nan(ParamModel.NbBoot_Info,WinNum);
+category_info_JKBoot_infT_mean = nan(ParamModel.NbBoot_Info,WinNum);
 
 stim_info_JKBoot_infT = cell(ParamModel.NbBoot_Info,1);
 category_info_JKBoot_infT = cell(ParamModel.NbBoot_Info,1);
 Stim_info_JKBoot = cell(ParamModel.NbBoot_Info,1);
 Category_info_JKBoot = cell(ParamModel.NbBoot_Info,1);
-stim_info_infT_std = nan(ParamModel.NbBoot_Info,1);
-category_info_infT_std = nan(ParamModel.NbBoot_Info,1);
+stim_info_JKBoot_infT_var = nan(ParamModel.NbBoot_Info,WinNum);
+category_info_JKBoot_infT_var = nan(ParamModel.NbBoot_Info,WinNum);
     
 
 
-%% Now loop through bins: bin spike patterns and calculate instantaneous information
+%% Now loop through bins: bin spike patterns, calculate instantaneous information and output the distribution probabilities of neural responses givn the stimulus or category
 %parfor
 parfor ww = 1:WinNum
     Tstart=tic;
@@ -189,8 +189,8 @@ parfor bb=1:ParamModel.NbBoot_Info
 %     end
     
     % Initialize some variables for that bootstrap
-    NJKsets = size(ParamModel.SetIndices_JK{bb});
-    Rate4InfoStim_Boot{bb} = nan(NbStims,WinNum);
+    NJKsets = size(ParamModel.SetIndices_JK{bb},1);
+    Rate4InfoStim_Boot{bb} = cell(NJKsets,1);
     Stim_info_JKSets = nan(NJKsets,WinNum);
     Category_info_JKSets = nan(NJKsets,WinNum);
     P_YgivenS_JKSets = cell(NJKsets, WinNum);
@@ -199,15 +199,16 @@ parfor bb=1:ParamModel.NbBoot_Info
     % Loop through JK sets for that bootstrap
     for jk = 1:NJKsets
         % systematically choose without replacement a different set of JK trials for the stims for each bootstrap
-        JackKnifePSTH = cell(1,NbStim);
-        for st = 1:NbStim
+        JackKnifePSTH = cell(1,NbStims);
+        for st = 1:NbStims
             PSTH_Local = JackKnifeTrials{st};
             JackKnifePSTH{st} = PSTH_Local(ParamModel.SetIndices_JK{bb}(jk,st),:);
         end
 
         % Then run the calculation of information on all windows
+        Rate4InfoStim_Boot{bb}{jk} = nan(NbStims,WinNum);
         for ww_in = 1:WinNum
-            fprintf(1,'JK instantaneous info Boostrap %d set %d %d/%d window\n',bb, jk, ww_in, WinNum);
+            fprintf(1,'JK instantaneous info Boostrap %d/%d set %d/%d window %d/%d\n',bb,ParamModel.NbBoot_Info, jk,NJKsets, ww_in, WinNum);
             Win = Wins(ww_in);
             FirstTimePoint = (Win - ParamModel.NeuroBin+ ParamModel.ResDelay)*ParamModel.Response_samprate/1000 +1;
             LastTimePoint = (Win + ParamModel.ResDelay)*ParamModel.Response_samprate/1000;        
@@ -224,25 +225,28 @@ parfor bb=1:ParamModel.NbBoot_Info
         end
     end
     % Estimate information for infinite number of trials
-    % ordonnée à l'origine: b = (y1*x2 - y2*x1)/(x2-x1)
-    stim_info_infT{bb} = (Stim_info./ParamModel.Mean_Ntrials_perstim(2) - mean(Stim_info_JKSets,1)./ParamModel.Mean_Ntrials_perstim(1))./(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-    category_info_infT{bb} = (Category_info./ParamModel.Mean_Ntrials_perstim(2) - mean(Category_info_JKSets,1)./ParamModel.Mean_Ntrials_perstim(1))./(1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
+    % ordonnée à l'origine: b = (y1*x2 - y2*x1)/(x2-x1) = I1 - N2 * (I2 -
+    % I1) / (N1 - N2) = I1 * N1 - (N1-1)*I2 (when N2=N1-1)
+    stim_info_JKBoot_infT_mean(bb,:) = ParamModel.Mean_Ntrials_perstim .* Stim_info - (ParamModel.Mean_Ntrials_perstim - 1) .* mean(Stim_info_JKSets,1);
+    category_info_JKBoot_infT_mean(bb,:) = ParamModel.Mean_Ntrials_perstim .* Category_info - (ParamModel.Mean_Ntrials_perstim - 1) .* mean(Category_info_JKSets,1);
     Stim_info_JKBoot{bb} = Stim_info_JKSets;
     Category_info_JKBoot{bb} = Category_info_JKSets;
-    stim_info_JKBoot_std(bb) =std(Stim_info_JKSets);
-    category_info_JKBoot_std(bb) =std(Category_info_JKSets);
+    
 
-    stim_info_JKBoot_infT{bb} = (repmat(Stim_info ./ ParamModel.Mean_Ntrials_perstim(2), ParamModel.NbBoot_Info,1) - Stim_info_JKSets ./ ParamModel.Mean_Ntrials_perstim(1)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-    category_info_JKBoot_infT{bb} = (repmat(Category_info ./ ParamModel.Mean_Ntrials_perstim(2), ParamModel.NbBoot_Info,1) - Category_info_JKSets ./ ParamModel.Mean_Ntrials_perstim(1)) ./ (1/ParamModel.Mean_Ntrials_perstim(2) - 1/ParamModel.Mean_Ntrials_perstim(1));
-    stim_info_infT_std(bb) = std(stim_info_JKBoot_infT{bb});
-    category_info_infT_std(bb) = std(category_info_JKBoot_infT{bb});
+    stim_info_JKBoot_infT{bb} = ParamModel.Mean_Ntrials_perstim .* repmat(Stim_info,NJKsets,1) - (ParamModel.Mean_Ntrials_perstim - 1) .* Stim_info_JKSets;
+    category_info_JKBoot_infT{bb} = ParamModel.Mean_Ntrials_perstim .* repmat(Category_info,NJKsets,1) - (ParamModel.Mean_Ntrials_perstim - 1) .* Category_info_JKSets;
+    stim_info_JKBoot_infT_var(bb,:) = var(stim_info_JKBoot_infT{bb},0,1);
+    category_info_JKBoot_infT_var(bb,:) = var(category_info_JKBoot_infT{bb}, 0,1);
     
     if bb <= ParamModel.NbBoot_CumInfo
         P_YgivenS_Bootstrap{bb} = P_YgivenS_JKSets;
         P_YgivenC_Bootstrap{bb} = P_YgivenC_JKSets;
     end
 end
-    
+stim_info_bcorr = mean(stim_info_JKBoot_infT_mean,1);
+category_info_bcorr = mean(category_info_JKBoot_infT_mean,1);
+stim_info_err = (mean(stim_info_JKBoot_infT_var,1)).^0.5;
+category_info_err = (mean(category_info_JKBoot_infT_var,1)).^0.5;
 
 
 
@@ -256,6 +260,11 @@ Data.P_YgivenC_Bootstrap = P_YgivenC_Bootstrap;
 
 Data.P_YgivenS = P_YgivenS;
 Data.P_YgivenC = P_YgivenC;
+Data.stim_info_bcorr = stim_info_bcorr;
+Data.category_info_bcorr = category_info_bcorr;
+Data.stim_info_err = stim_info_err;
+Data.category_info_err = category_info_err;
+
 
 Data.stim_entropy = Stim_entropy;
 Data.category_entropy = Category_entropy;
@@ -264,15 +273,13 @@ Data.stim_info_JKBoot = Stim_info_JKBoot;
 Data.category_info = Category_info;
 Data.category_info_JKBoot = Category_info_JKBoot;
 
-Data.stim_info_infT = stim_info_infT;
-Data.category_info_infT = category_info_infT;
-Data.stim_info_JKBoot_std =stim_info_JKBoot_std;
-Data.category_info_JKBoot_std =category_info_JKBoot_std;
+Data.stim_info_bcorr = stim_info_JKBoot_infT_mean;
+Data.category_info_bcorr = category_info_JKBoot_infT_mean;
 
 Data.stim_info_JKBoot_infT = stim_info_JKBoot_infT;
 Data.category_info_JKBoot_infT = category_info_JKBoot_infT;
-Data.stim_info_infT_std = stim_info_infT_std;
-Data.category_info_infT_std = category_info_infT_std;
+Data.stim_info_err = stim_info_JKBoot_infT_var;
+Data.category_info_err = category_info_JKBoot_infT_var;
 
  %% Save what we have for now
  if saveonline
@@ -287,47 +294,47 @@ Data.category_info_infT_std = category_info_infT_std;
  if FIG
      figure()
      for ss=1:NbStims
-        plot(InputData.Rate4InfoStim(ss,:)./10,'LineWidth',2, 'Color','g')
-        hold on
-        Local_bootrate = nan(ParamModel.NbBoot_CumInfo, size(InputData.Rate4InfoStim_Boot{1},2));
-        for bb=1:ParamModel.NbBoot_CumInfo
-            plot(InputData.Rate4InfoStim_Boot{bb}(ss,:)./10, 'Color','k')
-            hold on
-            if bb==1
-                plot(mean(Local_bootrate,1), 'LineWidth',2,'Color','r')%this is just for the legend
-                hold on
-                legend('Actual spike rate','individual bootstrap', 'Average bootstrapped spike rate')
-            end
-            Local_bootrate(bb,:) = InputData.Rate4InfoStim_Boot{bb}(ss,:);
-        end
-        plot(mean(Local_bootrate,1)./10, 'LineWidth',2,'Color','r')
-        hold off
-        Xtickposition=get(gca,'XTick');
-        set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
-        xlabel('Time ms')
-        ylabel('Spike rate /ms')
-        title(sprintf('Stim %d/%d',ss, NbStims))
-        pause(1)
+         plot(InputData.Rate4InfoStim(ss,:)./ParamModel.NeuroBin,'LineWidth',2, 'Color','g')
+         hold on
+         Local_bootrate = nan(ParamModel.NbBoot_CumInfo, size(InputData.Rate4InfoStim_Boot{1},2));
+         for bb=1:ParamModel.NbBoot_CumInfo
+             plot(InputData.Rate4InfoStim_Boot{bb}(ss,:)./ParamModel.NeuroBin, 'Color','k')
+             hold on
+             if bb==1
+                 plot(mean(Local_bootrate,1), 'LineWidth',2,'Color','r')%this is just for the legend
+                 hold on
+                 legend('Actual spike rate','individual bootstrap', 'Average bootstrapped spike rate')
+             end
+             Local_bootrate(bb,:) = InputData.Rate4InfoStim_Boot{bb}(ss,:);
+         end
+         plot(mean(Local_bootrate,1)./ParamModel.NeuroBin, 'LineWidth',2,'Color','r')
+         hold off
+         Xtickposition=get(gca,'XTick');
+         set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
+         xlabel('Time ms')
+         ylabel('Spike rate spike/ms')
+         title(sprintf('Stim %d/%d',ss, NbStims))
+         pause(1)
      end
      
-    figure()
-    plot(var(InputData.Rate4InfoStim),'LineWidth',2)
-    hold on
-    for bb=1:ParamModel.NbBoot_CumInfo
-            plot(var(InputData.Rate4InfoStim_Boot{bb}))
-            if bb==1
-                legend('Actual', 'Bootstrapped')
-            end
-            hold on
-    end
-    hold off
-    Xtickposition=get(gca,'XTick');
-    set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
-    xlabel('Time ms')
-    ylabel('Stimulus spike rate variance')
-    pause()
-    
-         
+     figure()
+     plot(var(InputData.Rate4InfoStim),'LineWidth',2)
+     hold on
+     for bb=1:ParamModel.NbBoot_CumInfo
+         plot(var(InputData.Rate4InfoStim_Boot{bb}))
+         if bb==1
+             legend('Actual', 'Bootstrapped')
+         end
+         hold on
+     end
+     hold off
+     Xtickposition=get(gca,'XTick');
+     set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
+     xlabel('Time ms')
+     ylabel('Stimulus spike rate variance')
+     pause()
+     
+     
      
      
      figure()
@@ -428,117 +435,133 @@ if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_In
     Data.cum_info_stim = struct();
     Data.cum_info_cat = struct();
     
-    if ~isempty(ParamModel.MarkovParameters_Cum_Info)
-        HY_Markov_stim = struct();
-        HY_Markov_cat = struct();
-        for ss=1:size(ParamModel.MarkovParameters_Cum_Info,2)
-            ModelType = sprintf('MarkovEst%d',ParamModel.MarkovParameters_Cum_Info(1,ss));
-            Data.cum_info_stim.(sprintf('%s',ModelType))= nan(1,WinNum_cumInfo);
-            Data.cum_info_stim.(sprintf('%s',ModelType))(1,1)= Data.stim_info(1);
-            Data.cum_info_cat.(sprintf('%s',ModelType))= nan(1,WinNum_cumInfo);
-            Data.cum_info_cat.(sprintf('%s',ModelType))(1,1)= Data.category_info(1);
-            HY_Markov_stim.(sprintf('%s',ModelType)) = nan(1,WinNum_cumInfo);
-            HY_Markov_cat.(sprintf('%s',ModelType)) = nan(1,WinNum_cumInfo);
-        end
-    end
-    if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
-        for ss=1:length(ParamModel.NumSamples_MC_Cum_Info)
-            ModelType=sprintf('MonteCarlo%d',log10(ParamModel.NumSamples_MC_Cum_Info(ss)));
-            Data.cum_info_stim.(sprintf('%s',ModelType))= nan(2,WinNum_cumInfo);
-            Data.cum_info_stim.(sprintf('%s',ModelType))(1,1)= Data.stim_info(1);
-            Data.cum_info_stim.(sprintf('%s_Samples',ModelType)) = cell(1, WinNum_cumInfo);
-            Data.cum_info_cat.(sprintf('%s',ModelType))= nan(2,WinNum_cumInfo);
-            Data.cum_info_cat.(sprintf('%s',ModelType))(1,1)= Data.category_info(1);
-            Data.cum_info_cat.(sprintf('%s_Samples',ModelType)) = cell(1, WinNum_cumInfo);
-        end
-    end
+    %% Running optimal Monte Carlo sampling cumulative information
     if ~isempty(ParamModel.MaxNumSamples_MCopt_Cum_Info)
-        ModelType='MonteCarloOpt';
-        Data.cum_info_stim.(sprintf('%s_raw',ModelType))= nan(1,WinNum_cumInfo);
-        Data.cum_info_stim.(sprintf('%s_raw',ModelType))(1)= Data.stim_info(1);
-        Data.cum_info_stim.(sprintf('%s_corr',ModelType))= nan(1,WinNum_cumInfo);
-        Data.cum_info_stim.(sprintf('%s_corr',ModelType))(1)= Data.stim_info(1);
-        Data.cum_info_stim.(sprintf('%s_se',ModelType))= nan(1,WinNum_cumInfo);
-        Data.cum_info_stim.(sprintf('%s_Samples',ModelType)) = nan(1, WinNum_cumInfo);
-        Data.cum_info_cat.(sprintf('%s_raw',ModelType))= nan(1,WinNum_cumInfo);
-        Data.cum_info_cat.(sprintf('%s_raw',ModelType))(1)= Data.category_info(1);
-        Data.cum_info_cat.(sprintf('%s_corr',ModelType))= nan(1,WinNum_cumInfo);
-        Data.cum_info_cat.(sprintf('%s_corr',ModelType))(1)= Data.category_info(1);
-        Data.cum_info_cat.(sprintf('%s_se',ModelType))= nan(1,WinNum_cumInfo);
-        Data.cum_info_cat.(sprintf('%s_Samples',ModelType)) = nan(1, WinNum_cumInfo);
+        % Cumulative information for stimuli
+        [Data.cum_info_stim.MonteCarloOpt_raw, Data.cum_info_stim.MonteCarloOpt_bcorr, Data.cum_info_stim.MonteCarloOpt_err, Data.cum_info_stim.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenS, Data.P_YgivenS_Bootstrap, ParamModel.Mean_Ntrials_perstim, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
+        
+        % Filling in the first value of cumulative info with information
+        % value at bin 1
+        Data.cum_info_stim.MonteCarloOpt_raw = Data.stim_info(1);
+        Data.cum_info_stim.MonteCarloOpt_bcorr = Data.stim_info_bcorr(1);
+        Data.cum_info_stim.MonteCarloOpt_err = Data.stim_info_err(1);
+        
+        % Cumulative information for categories
+        [Data.cum_info_cat.MonteCarloOpt_raw, Data.cum_info_cat.MonteCarloOpt_bcorr, Data.cum_info_cat.MonteCarloOpt_err, Data.cum_info_cat.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenC, Data.P_YgivenC_Bootstrap, ParamModel.Mean_Ntrials_perstim, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
+        
+        % Filling in the first value of cumulative info with information
+        % value at bin 1
+        Data.cum_info_cat.MonteCarloOpt_raw = Data.category_info(1);
+        Data.cum_info_cat.MonteCarloOpt_bcorr = Data.category_info_bcorr(1);
+        Data.cum_info_cat.MonteCarloOpt_err = Data.category_info_err(1);
     end
-    if ~isempty(ParamModel.ExactHist)
-        ModelType = sprintf('ExactMem0_%d',ParamModel.ExactHist);
-        Data.cum_info_stim.(sprintf('%s',ModelType)) = nan(1,WinNum_cumInfo);
-        Data.cum_info_cat.(sprintf('%s',ModelType)) = nan(1,WinNum_cumInfo);
-        Data.cum_info_stim.(sprintf('%s',ModelType))(1) = Data.stim_info(1);
-        Data.cum_info_cat.(sprintf('%s',ModelType))(1) = Data.category_info(1);
-    end
-    
-    
-    %% Running through time bins and calculate cumulative information
-    for ww =2:WinNum_cumInfo
-        Tstart2=tic;
+     %% Save what we have for now
+     if saveonline
+         if exist(Calfilename, 'file')==2
+             save(Calfilename,'Data','ParamModel','-append');
+         else
+             save(Calfilename,'Data','ParamModel');
+         end
+     end
+     
+    %% Running through time bins and calculate cumulative information with other methods
+    if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_Info) || ~isempty(ParamModel.NumSamples_MC_Cum_Info)
+        % Initialize output variables
+        % ... for Markov approximation
+        if ~isempty(ParamModel.MarkovParameters_Cum_Info)
+            HY_Markov_stim = struct();
+            HY_Markov_cat = struct();
+            for ss=1:size(ParamModel.MarkovParameters_Cum_Info,2)
+                ModelType = sprintf('MarkovEst%d',ParamModel.MarkovParameters_Cum_Info(1,ss));
+                Data.cum_info_stim.(sprintf('%s',ModelType))= nan(1,WinNum_cumInfo);
+                Data.cum_info_stim.(sprintf('%s',ModelType))(1,1)= Data.stim_info(1);
+                Data.cum_info_cat.(sprintf('%s',ModelType))= nan(1,WinNum_cumInfo);
+                Data.cum_info_cat.(sprintf('%s',ModelType))(1,1)= Data.category_info(1);
+                HY_Markov_stim.(sprintf('%s',ModelType)) = nan(1,WinNum_cumInfo);
+                HY_Markov_cat.(sprintf('%s',ModelType)) = nan(1,WinNum_cumInfo);
+            end
+        end
+        % ... for Monte Carlo with fix number of samples
         if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
             for ss=1:length(ParamModel.NumSamples_MC_Cum_Info)
                 ModelType=sprintf('MonteCarlo%d',log10(ParamModel.NumSamples_MC_Cum_Info(ss)));
-                % Monte Carlo estimation with full memory cumulative information stimuli
-                [Data.cum_info_stim.(sprintf('%s',ModelType))(:,ww),~,~,Data.cum_info_stim.(sprintf('%s_Samples',ModelType)){ww}]=info_cumulative_model_Calculus(Data.P_YgivenS(1:ww),'Model#',1,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(ss));
-                % Monte Carlo estimation with full memory cumulative information
-                % categories
-                [Data.cum_info_cat.(sprintf('%s',ModelType))(:,ww),~,~,Data.cum_info_cat.(sprintf('%s_Samples',ModelType)){ww}]=info_cumulative_model_Calculus(Data.P_YgivenC(1:ww),'Model#',2,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(ss));
+                Data.cum_info_stim.(sprintf('%s',ModelType))= nan(2,WinNum_cumInfo);
+                Data.cum_info_stim.(sprintf('%s',ModelType))(1,1)= Data.stim_info(1);
+                Data.cum_info_stim.(sprintf('%s_Samples',ModelType)) = cell(1, WinNum_cumInfo);
+                Data.cum_info_cat.(sprintf('%s',ModelType))= nan(2,WinNum_cumInfo);
+                Data.cum_info_cat.(sprintf('%s',ModelType))(1,1)= Data.category_info(1);
+                Data.cum_info_cat.(sprintf('%s_Samples',ModelType)) = cell(1, WinNum_cumInfo);
             end
         end
-        
-        if ~isempty(ParamModel.MaxNumSamples_MCopt_Cum_Info)
-            ModelType='MonteCarloOpt';
-            % Monte Carlo estimation with full memory and optimum # of MC
-            % samples - cumulative information stimuli
-            [Data.cum_info_stim.(sprintf('%s_raw',ModelType))(ww),~,~,Data.cum_info_stim.(sprintf('%s_corr',ModelType))(ww),Data.cum_info_stim.(sprintf('%s_se',ModelType))(ww),Data.cum_info_stim.(sprintf('%s_Samples',ModelType))(ww)]=info_cumulative_model_Calculus_MCJK(Data.P_YgivenS(1:ww),Data.P_YgivenS_Bootstrap(:,1:ww), ParamModel.Mean_Ntrials_perstim(1), 'MaxMCParameter', ParamModel.MaxNumSamples_MCopt_Cum_Info);
-            % Monte Carlo estimation with full memory and optimum # of MC
-            % samples - cumulative information categories
-            [Data.cum_info_cat.(sprintf('%s_raw',ModelType))(ww),~,~,Data.cum_info_cat.(sprintf('%s_corr',ModelType))(ww),Data.cum_info_cat.(sprintf('%s_se',ModelType))(ww),Data.cum_info_cat.(sprintf('%s_Samples',ModelType))(ww)]=info_cumulative_model_Calculus_MCJK(Data.P_YgivenC(1:ww),Data.P_YgivenC_Bootstrap(:,1:ww), ParamModel.Mean_Ntrials_perstim(1), 'MaxMCParameter', ParamModel.MaxNumSamples_MCopt_Cum_Info);
-        end
-        
+        % ... for the exact calculation with short time history
         if ~isempty(ParamModel.ExactHist)
             ModelType = sprintf('ExactMem0_%d',ParamModel.ExactHist);
-            % Exact calculation cumulative information on stims with ParamModel.ExactHist*10 ms memory
-            [Data.cum_info_stim.(sprintf('%s',ModelType))(ww),~]=info_cumulative_model_Calculus(Data.P_YgivenS(1:ww),'Model#',1,'CalMode','Exact_Mem', 'Exact_history',ParamModel.ExactHist);
-            % Exact calculation cumulative information on categories with ParamModel.ExactHist*10 ms memory
-            [Data.cum_info_cat.(sprintf('%s',ModelType))(ww),~]=info_cumulative_model_Calculus(Data.P_YgivenC(1:ww),'Model#',2,'CalMode','Exact_Mem', 'Exact_history',ParamModel.ExactHist);
+            Data.cum_info_stim.(sprintf('%s',ModelType)) = nan(1,WinNum_cumInfo);
+            Data.cum_info_cat.(sprintf('%s',ModelType)) = nan(1,WinNum_cumInfo);
+            Data.cum_info_stim.(sprintf('%s',ModelType))(1) = Data.stim_info(1);
+            Data.cum_info_cat.(sprintf('%s',ModelType))(1) = Data.category_info(1);
         end
         
-        if ~isempty(ParamModel.MarkovParameters_Cum_Info)
-            for ss=1:size(ParamModel.MarkovParameters_Cum_Info,2)
-                ModelType = sprintf('MarkovEst%d',ParamModel.MarkovParameters_Cum_Info(1,ss));
-                if ww>2
-                    % Markov chain estimation of cumulative information on stims
-                    [Data.cum_info_stim.(sprintf('%s',ModelType))(ww), HY_Markov_stim.(sprintf('%s',ModelType))(ww), ~]=info_cumulative_model_Calculus(Data.P_YgivenS(1:ww),'Model#',1,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,ss), 'HY_old', HY_Markov_stim.(sprintf('%s',ModelType))(ww-1));
-                    % Markov chain estimation of cumulative information on
+        % Loop through time bins
+        for ww =2:WinNum_cumInfo
+            Tstart2=tic;
+            
+            % Monte Carlo with fix number of samples
+            if ~isempty(ParamModel.NumSamples_MC_Cum_Info)
+                for ss=1:length(ParamModel.NumSamples_MC_Cum_Info)
+                    ModelType=sprintf('MonteCarlo%d',log10(ParamModel.NumSamples_MC_Cum_Info(ss)));
+                    % Monte Carlo estimation with full memory cumulative information stimuli
+                    [Data.cum_info_stim.(sprintf('%s',ModelType))(:,ww),~,~,Data.cum_info_stim.(sprintf('%s_Samples',ModelType)){ww}]=info_cumulative_model_Calculus(Data.P_YgivenS(1:ww),'Model#',1,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(ss));
+                    % Monte Carlo estimation with full memory cumulative information
                     % categories
-                    [Data.cum_info_cat.(sprintf('%s',ModelType))(ww), HY_Markov_cat.(sprintf('%s',ModelType))(ww),~]=info_cumulative_model_Calculus(Data.P_YgivenC(1:ww),'Model#',1,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,ss),'HY_old', HY_Markov_cat.(sprintf('%s',ModelType))(ww-1));
-                else
-                    % Markov chain estimation of cumulative information on stims
-                    [Data.cum_info_stim.(sprintf('%s',ModelType))(ww), HY_Markov_stim.(sprintf('%s',ModelType))(ww), ~]=info_cumulative_model_Calculus(Data.P_YgivenS(1:ww),'Model#',1,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,ss));
-                    % Markov chain estimation of cumulative information on
-                    % categories
-                    [Data.cum_info_cat.(sprintf('%s',ModelType))(ww), HY_Markov_cat.(sprintf('%s',ModelType))(ww),~]=info_cumulative_model_Calculus(Data.P_YgivenC(1:ww),'Model#',1,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,ss));
+                    [Data.cum_info_cat.(sprintf('%s',ModelType))(:,ww),~,~,Data.cum_info_cat.(sprintf('%s_Samples',ModelType)){ww}]=info_cumulative_model_Calculus(Data.P_YgivenC(1:ww),'Model#',2,'CalMode','MonteCarlo', 'MCParameter',ParamModel.NumSamples_MC_Cum_Info(ss));
                 end
             end
+            
+            % Exact calculation with short time history
+            if ~isempty(ParamModel.ExactHist)
+                ModelType = sprintf('ExactMem0_%d',ParamModel.ExactHist);
+                % Exact calculation cumulative information on stims with ParamModel.ExactHist*10 ms memory
+                [Data.cum_info_stim.(sprintf('%s',ModelType))(ww),~]=info_cumulative_model_Calculus(Data.P_YgivenS(1:ww),'Model#',1,'CalMode','Exact_Mem', 'Exact_history',ParamModel.ExactHist);
+                % Exact calculation cumulative information on categories with ParamModel.ExactHist*10 ms memory
+                [Data.cum_info_cat.(sprintf('%s',ModelType))(ww),~]=info_cumulative_model_Calculus(Data.P_YgivenC(1:ww),'Model#',2,'CalMode','Exact_Mem', 'Exact_history',ParamModel.ExactHist);
+            end
+            % Markov approximation
+            if ~isempty(ParamModel.MarkovParameters_Cum_Info)
+                for ss=1:size(ParamModel.MarkovParameters_Cum_Info,2)
+                    ModelType = sprintf('MarkovEst%d',ParamModel.MarkovParameters_Cum_Info(1,ss));
+                    if ww>2
+                        % Markov chain estimation of cumulative information on stims
+                        [Data.cum_info_stim.(sprintf('%s',ModelType))(ww), HY_Markov_stim.(sprintf('%s',ModelType))(ww), ~]=info_cumulative_model_Calculus(Data.P_YgivenS(1:ww),'Model#',1,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,ss), 'HY_old', HY_Markov_stim.(sprintf('%s',ModelType))(ww-1));
+                        % Markov chain estimation of cumulative information on
+                        % categories
+                        [Data.cum_info_cat.(sprintf('%s',ModelType))(ww), HY_Markov_cat.(sprintf('%s',ModelType))(ww),~]=info_cumulative_model_Calculus(Data.P_YgivenC(1:ww),'Model#',1,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,ss),'HY_old', HY_Markov_cat.(sprintf('%s',ModelType))(ww-1));
+                    else
+                        % Markov chain estimation of cumulative information on stims
+                        [Data.cum_info_stim.(sprintf('%s',ModelType))(ww), HY_Markov_stim.(sprintf('%s',ModelType))(ww), ~]=info_cumulative_model_Calculus(Data.P_YgivenS(1:ww),'Model#',1,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,ss));
+                        % Markov chain estimation of cumulative information on
+                        % categories
+                        [Data.cum_info_cat.(sprintf('%s',ModelType))(ww), HY_Markov_cat.(sprintf('%s',ModelType))(ww),~]=info_cumulative_model_Calculus(Data.P_YgivenC(1:ww),'Model#',1,'CalMode','MarkovChain', 'MarkovParameters',ParamModel.MarkovParameters_Cum_Info(:,ss));
+                    end
+                end
+            end
+            fprintf('Done cumulative information bin %d/%d after %f sec\n', ww, WinNum_cumInfo, toc(Tstart2));
         end
-        fprintf('Done cumulative information bin %d/%d after %f sec\n', ww, WinNum_cumInfo, toc(Tstart2));
     end
-    
     %% Save what we have for now
     if saveonline
-        save(Calfilename,'Data','ParamModel','-append');
+        if exist(Calfilename, 'file')==2
+            save(Calfilename,'Data','ParamModel','-append');
+        else
+            save(Calfilename,'Data','ParamModel');
+        end
     end
     
     %% Plot the cumulative information
     if FIG
         figure()
         subplot(2,1,1)
-        plot(1:WinNum_cumInfo, Data.stim_info(1:WinNum_cumInfo), 1:WinNum_cumInfo,Data.cum_info_stim.MarkovEst4, 1:WinNum_cumInfo,Data.cum_info_stim.MarkovEst3, 1:WinNum_cumInfo,Data.cum_info_stim.MarkovEst2,1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo6(1,:), 1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo5(1,:), 1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo4(1,:), 1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo3(1,:),1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo2(1,:), 1:WinNum_cumInfo, Data.cum_info_stim.ExactMem0_4, 1:WinNum_cumInfo, cumsum(Data.stim_info(1:WinNum_cumInfo)), 'LineWidth',2)
+        plot(1:WinNum_cumInfo, Data.stim_info_bcorr(1:WinNum_cumInfo), 1:WinNum_cumInfo,Data.cum_info_stim.MarkovEst4, 1:WinNum_cumInfo,Data.cum_info_stim.MarkovEst3, 1:WinNum_cumInfo,Data.cum_info_stim.MarkovEst2,1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo6(1,:), 1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo5(1,:), 1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo4(1,:), 1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo3(1,:),1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo2(1,:), 1:WinNum_cumInfo, Data.cum_info_stim.ExactMem0_4, 1:WinNum_cumInfo, cumsum(Data.stim_info(1:WinNum_cumInfo)), 'LineWidth',2)
         Color_Lines = get(gca,'ColorOrder');
         legend('Information', 'Cumulative Info Markov4', 'Cumulative Info Markov3','Cumulative Info Markov2','Cumulative Information MC 10^6','Cumulative Information MC 10^5','Cumulative Information MC 10^4','Cumulative Information MC 10^3', 'Cumulative Information MC 10^2', 'Exact Cumulative Information 40ms history', 'Cumulative sum of info', 'Location', 'NorthWest')
         Xtickposition=get(gca,'XTick');
@@ -558,10 +581,10 @@ if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_In
     
     
     %% Calculating Jackknife values of cumulative information for all
-    % methods except Monte Carlo which is done properly in the previous
+    % methods except Monte Carlo Optimal which is done properly in the previous
     % section for the optimal # of samples only
     
-    if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_Info) || ~isempty(ParamModel.NumSamples_MC_Cum_Info)
+    if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_Info)
         fprintf(1,'Bootstraping calculation of cumulative information\n');
     
         if ~isempty(ParamModel.ExactHist)
@@ -650,7 +673,11 @@ end
 
 
 %% Save what we have for now
- if saveonline
-     save(Calfilename,'Data','ParamModel','-append');
- end
+if saveonline
+    if exist(Calfilename, 'file')==2
+        save(Calfilename,'Data','ParamModel','-append');
+    else
+        save(Calfilename,'Data','ParamModel');
+    end
+end
 end

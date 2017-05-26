@@ -29,7 +29,7 @@ end
 
 % Set the maximum value of Y investigated for the calculation of
 % information
-MaxY = 4*(LastTimePoint - FirstTimePoint +1)*1000/Response_samprate; % response sampling  rate should be in hertz
+MaxY = 2*(LastTimePoint - FirstTimePoint +1)*1000/Response_samprate; % response sampling  rate should be in hertz
 
 
 % Format the input
@@ -45,7 +45,7 @@ Info.InputdataStim = sum(PSTH_Local(:,FirstTimePoint:LastTimePoint),2);
 Info.stim_entropy = log2(NbStim);
     
 % Calculate information about stimuli   
-[Info.stim_value,Info.P_YgivenS,~] = info_poisson_model_calculus(Info.InputdataStim, 'Ymax',MaxY);
+[Info.stim_value,Info.P_YgivenS,~,~] = info_poisson_model_calculus(Info.InputdataStim, 'Ymax',MaxY);
 
 if ~isempty(CatList_in)
     % Derive P_YgivenC and calculate information about categories

@@ -224,7 +224,7 @@ PY_MC = nan(N_MC,1); %exact joint probability of MC sequences of responses avera
 QY_MC = nan(N_MC,1); %estimation of the joint probability of MC sequences of responses using the marginals
 
 % Loop through the number of samples
-for ss=1:N_MC
+parfor ss=1:N_MC
     if sum(ss==(1:10)*N_MC/10) && Verbose
         fprintf('%d/%d MC samples Full dataset\n',ss,N_MC);
     end
