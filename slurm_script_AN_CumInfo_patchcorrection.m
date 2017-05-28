@@ -19,7 +19,7 @@ Icum_ExactMem0_5_JK_mean = nan(Cum_boot,Nb_Win);
 Icum_ExactMem0_5_JK_var = nan(Cum_boot,Nb_Win);
 Icum_EstMarkov5_JK_mean = nan(Cum_boot,Nb_Win);
 Icum_EstMarkov5_JK_var = nan(Cum_boot,Nb_Win);
-
+NTrials=10;
 parfor bb=1:Cum_boot
     Nb_Sets = size(P_YgivenS_BootJK{bb},1);
     Icum_ExactMem0_5_JK_Set = nan(Nb_Sets, Nb_Win);
