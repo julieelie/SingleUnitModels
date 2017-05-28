@@ -74,7 +74,7 @@ if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
         ... spectrogram
 end
 if ~isfield(ParamModel,'MaxWin_cumInfo') || isempty(ParamModel.MaxWin_cumInfo)
-    ParamModel.MaxWin_cumInfo = 50; %end point of the last anaysis window for...
+    ParamModel.MaxWin_cumInfo = 300; %end point of the last anaysis window for...
     ... the calculation of cumulative information
 end
 if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
@@ -93,11 +93,11 @@ end
 
 % Number of bootstraps
 if ~isfield(ParamModel, 'NbBoot_Info') || isempty(ParamModel.NbBoot_Info)
-    ParamModel.NbBoot_Info = 10;
+    ParamModel.NbBoot_Info = 20;
 end
 
 if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
-    ParamModel.NbBoot_CumInfo = 10;
+    ParamModel.NbBoot_CumInfo = 20;
 end
 
 
