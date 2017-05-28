@@ -1,4 +1,4 @@
-function [Icum, HY, HYgivenS, Icum_corr_mean, Icum_corr_std, N_MC_tot]=info_cumulative_model_Calculus_MCJK(P_YgivenS_Full,P_YgivenS_JK, NTrials, varargin)
+function [Icum, HY, HYgivenS, Icum_corr_mean, Icum_corr_std, N_MC_tot]=cumulative_info_poisson_model_calculus_MCJK(P_YgivenS_Full,P_YgivenS_JK, NTrials, varargin)
 %% Calculates the cumulative information in a neural response given conditional probability distribution of responses given stims
 % at each time point.  Although it is assumed that this stimulus conditional probability is time
 % independent (i.e know that stim identity and the rate at a previous time does not tell you 

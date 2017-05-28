@@ -1,5 +1,5 @@
 function [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(PSTH,JackKnifeTrials,VocType, ParamModel,  Calfilename)
-FIG=0;
+FIG=1;
 
 %% Deals with input parameters
 if nargin<4
@@ -273,13 +273,13 @@ Data.stim_info_JKBoot = Stim_info_JKBoot;
 Data.category_info = Category_info;
 Data.category_info_JKBoot = Category_info_JKBoot;
 
-Data.stim_info_bcorr = stim_info_JKBoot_infT_mean;
-Data.category_info_bcorr = category_info_JKBoot_infT_mean;
+Data.stim_info_bcorr_Boot = stim_info_JKBoot_infT_mean;
+Data.category_info_bcorr_Boot = category_info_JKBoot_infT_mean;
 
 Data.stim_info_JKBoot_infT = stim_info_JKBoot_infT;
 Data.category_info_JKBoot_infT = category_info_JKBoot_infT;
-Data.stim_info_err = stim_info_JKBoot_infT_var;
-Data.category_info_err = category_info_JKBoot_infT_var;
+Data.stim_info_Boot_var = stim_info_JKBoot_infT_var;
+Data.category_info_Boot_var = category_info_JKBoot_infT_var;
 
  %% Save what we have for now
  if saveonline
@@ -292,22 +292,27 @@ Data.category_info_err = category_info_JKBoot_infT_var;
 
  %% Plot the results if requested
  if FIG
+     ColorCode = get(groot,'DefaultAxesColorOrder');
+     ColorCode = [ColorCode ; 0.85 0.6940 0.556; 0.301 0.078 0.556; 0.929 0.184 0.188; 0.494 0.6740 0.933;0.466 0.745 0.184;0.635 0.694 0.7410];
      figure()
      for ss=1:NbStims
          plot(InputData.Rate4InfoStim(ss,:)./ParamModel.NeuroBin,'LineWidth',2, 'Color','g')
          hold on
-         Local_bootrate = nan(ParamModel.NbBoot_CumInfo, size(InputData.Rate4InfoStim_Boot{1},2));
          for bb=1:ParamModel.NbBoot_CumInfo
-             plot(InputData.Rate4InfoStim_Boot{bb}(ss,:)./ParamModel.NeuroBin, 'Color','k')
-             hold on
-             if bb==1
-                 plot(mean(Local_bootrate,1), 'LineWidth',2,'Color','r')%this is just for the legend
-                 hold on
-                 legend('Actual spike rate','individual bootstrap', 'Average bootstrapped spike rate')
+             NJK = length(InputData.Rate4InfoStim_Boot{bb});
+             Local_bootrate = nan(NJK, size(InputData.Rate4InfoStim_Boot{1}{1},2));
+             for jk=1:NJK
+                plot(InputData.Rate4InfoStim_Boot{bb}{jk}(ss,:)./ParamModel.NeuroBin, 'Color','k')
+                hold on
+                if bb==1 && jk==1
+                    plot(mean(Local_bootrate,1), 'LineWidth',2,'Color','r')%this is just for the legend
+                    hold on
+                    legend('Actual spike rate','individual bootstrap', 'Average bootstrapped spike rate')
+                end
+                Local_bootrate(jk,:) = InputData.Rate4InfoStim_Boot{bb}{jk}(ss,:);
              end
-             Local_bootrate(bb,:) = InputData.Rate4InfoStim_Boot{bb}(ss,:);
+             plot(mean(Local_bootrate,1)./ParamModel.NeuroBin, 'LineWidth',2,'Color','r')
          end
-         plot(mean(Local_bootrate,1)./ParamModel.NeuroBin, 'LineWidth',2,'Color','r')
          hold off
          Xtickposition=get(gca,'XTick');
          set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
@@ -321,11 +326,14 @@ Data.category_info_err = category_info_JKBoot_infT_var;
      plot(var(InputData.Rate4InfoStim),'LineWidth',2)
      hold on
      for bb=1:ParamModel.NbBoot_CumInfo
-         plot(var(InputData.Rate4InfoStim_Boot{bb}))
-         if bb==1
-             legend('Actual', 'Bootstrapped')
+         NJK = length(InputData.Rate4InfoStim_Boot{bb});
+         for jk=1:NJK
+            plot(var(InputData.Rate4InfoStim_Boot{bb}{jk}))
+            if bb==1 && jk==1
+                legend('Actual', 'Bootstrapped')
+            end
+            hold on
          end
-         hold on
      end
      hold off
      Xtickposition=get(gca,'XTick');
@@ -334,97 +342,68 @@ Data.category_info_err = category_info_JKBoot_infT_var;
      ylabel('Stimulus spike rate variance')
      pause()
      
-     
-     
-     
      figure()
-     subplot(2,1,1)
-     plot(Data.stim_info,'LineWidth',2, 'Color',[0 0 0])
+     subplot(3,1,1)
+     
+     % Plotting the instantaneous information data
+     plot(1:WinNum,Data.stim_info,'LineWidth',2, 'Color',ColorCode(5,:))
      hold on
-     plot(Data.stim_info_infT,'LineWidth',2, 'Color',[0 0 1])
-     hold on
-     plot(mean(Data.stim_info_JKBoot),'LineWidth',2, 'Color',[0 1 0])
-     legend('Information', 'Info 4 Infinite # Trials', 'Info 4 JK Trials', 'Location','NorthEast');
-     hold on
-     plot(Data.stim_info_infT + 2*Data.stim_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
-     hold on
-     plot(Data.stim_info_infT - 2*Data.stim_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
-     hold on
-     line([0 WinNum], [0 0], 'LineStyle','-.','Color','k')
+     plot(1:WinNum,Data.stim_info_bcorr,'LineWidth',2, 'Color',ColorCode(5,:), 'LineStyle', '--')
      hold on
      plot(Data.stim_entropy, 'LineStyle','-.','Color','r')
-     hold off
-     ylim([-0.5 max(Data.stim_entropy)+1])
-     Xtickposition=get(gca,'XTick');
-     set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
-     xlabel('Time ms')
-     ylabel('Stimulus Information in bits')
-     
-     subplot(2,1,2)
-     plot(Data.stim_info,'LineWidth',2, 'Color',[0 0 0])
-     hold on
-     plot(Data.stim_info_infT,'LineWidth',2, 'Color',[0 0 1])
-     hold on
-     plot(mean(Data.stim_info_JKBoot),'LineWidth',2, 'Color',[0 1 0])
-     legend('Information', 'Info 4 Infinite # Trials', 'Info 4 JK Trials', 'Location','NorthEast');
-     hold on
-     plot(Data.stim_info_infT + 2*Data.stim_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
-     hold on
-     plot(Data.stim_info_infT - 2*Data.stim_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
+     legend('Information', 'Information biais corrected','Information upper-bound given dataset size', 'Location','NorthEast');
      hold on
      line([0 WinNum], [0 0], 'LineStyle','-.','Color','k')
-     hold off
-     YL = get(gca,'YLim');
-     ylim([-0.2 YL(2)])
+     hold on
+     ylim([-0.5 log2(NbStims)+1])
      Xtickposition=get(gca,'XTick');
-     set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
+     set(gca,'XTickLabel', Xtickposition*ParamModel.NeuroBin)
      xlabel('Time ms')
      ylabel('Stimulus Information in bits')
+     shadedErrorBar([],Data.stim_info_bcorr, Data.stim_info_err,{'Color',ColorCode(5,:), 'LineStyle','-', 'LineWidth',1},1)
+     title('Instantaneous information about stimulus')
+     hold off
      
-     figure()
-     subplot(2,1,1)
-     plot(Data.category_info,'LineWidth',2, 'Color',[0 0 0])
+     subplot(3,1,2)
+     
+     % Plotting the instantaneous information data
+     plot(1:WinNum,Data.category_info,'LineWidth',2, 'Color',ColorCode(7,:))
      hold on
-     plot(Data.category_info_infT,'LineWidth',2, 'Color',[0 0 1])
-     hold on
-     plot(mean(Data.category_info_JKBoot),'LineWidth',2, 'Color',[0 1 0])
-     legend('Information', 'Info 4 Infinite # Trials', 'Info 4 JK Trials', 'Location','NorthEast');
-     hold on
-     plot(Data.category_info_infT + 2*Data.category_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
-     hold on
-     plot(Data.category_info_infT - 2*Data.category_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
-     hold on
-     line([0 WinNum], [0 0], 'LineStyle','-.','Color','k')
+     plot(1:WinNum,Data.category_info_bcorr,'LineWidth',2, 'Color',ColorCode(7,:), 'LineStyle', '--')
      hold on
      plot(Data.category_entropy, 'LineStyle','-.','Color','r')
-     hold off
-     ylim([-0.5 max(Data.category_entropy)+1])
-     Xtickposition=get(gca,'XTick');
-     set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
-     xlabel('Time ms')
-     ylabel('Category Information in bits')
-     
-     subplot(2,1,2)
-     plot(Data.category_info,'LineWidth',2, 'Color',[0 0 0])
-     hold on
-     plot(Data.category_info_infT,'LineWidth',2, 'Color',[0 0 1])
-     hold on
-     plot(mean(Data.category_info_JKBoot),'LineWidth',2, 'Color',[0 1 0])
-     legend('Information', 'Info 4 Infinite # Trials', 'Info 4 JK Trials', 'Location','NorthEast');
-     hold on
-     plot(Data.category_info_infT + 2*Data.category_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
-     hold on
-     plot(Data.category_info_infT - 2*Data.category_info_infT_std, 'LineWidth',2,'Color',[0 1 0 0.4], 'LineStyle','--')
+     legend('Information', 'Information biais corrected','Information upper-bound given dataset size', 'Location','NorthEast');
      hold on
      line([0 WinNum], [0 0], 'LineStyle','-.','Color','k')
-     hold off
-     YL = get(gca,'YLim');
-     ylim([-0.2 YL(2)])
+     hold on
+     ylim([-0.5 log2(NbStims)+1])
      Xtickposition=get(gca,'XTick');
-     set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
+     set(gca,'XTickLabel', Xtickposition*ParamModel.NeuroBin)
      xlabel('Time ms')
-     ylabel('Category Information in bits')
-     pause()
+     ylabel('Semantic Information in bits')
+     shadedErrorBar([],Data.category_info_bcorr, Data.category_info_err,{'Color',ColorCode(7,:), 'LineStyle','-', 'LineWidth',1},1)
+     title('Instantaneous information about semantic categories')
+     hold off
+     
+     subplot(3,1,3)
+     % Plotting the instantaneous information data
+     plot(1:WinNum,Data.category_info*100 ./ Data.stim_info,'LineWidth',2, 'Color',ColorCode(1,:))
+     hold on
+     plot(1:WinNum,Data.category_info_bcorr*100 ./ Data.stim_info_bcorr,'LineWidth',2, 'Color',ColorCode(1,:), 'LineStyle', '--')
+     hold on
+     plot(Data.category_entropy*100 ./ Data.stim_entropy, 'LineStyle','-.','Color','r')
+     legend('% Semantic Information', ' % Semantic  Information biais corrected',' % Semantic Information upper-bound given dataset size', 'Location','NorthEast');
+     hold on
+     line([0 WinNum], [0 0], 'LineStyle','-.','Color','k')
+     hold on
+     %ylim([-0.5 log2(NbStims)+1])
+     Xtickposition=get(gca,'XTick');
+     set(gca,'XTickLabel', Xtickposition*ParamModel.NeuroBin)
+     xlabel('Time ms')
+     ylabel('% Semantic Information')
+     title('Percentage of Instantaneous information about semantic categories')
+     hold off
+     
  end
  
 %% Now calculating cumulative information if requested by the presence of input parameters
@@ -438,7 +417,7 @@ if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_In
     %% Running optimal Monte Carlo sampling cumulative information
     if ~isempty(ParamModel.MaxNumSamples_MCopt_Cum_Info)
         % Cumulative information for stimuli
-        [Data.cum_info_stim.MonteCarloOpt_raw, Data.cum_info_stim.MonteCarloOpt_bcorr, Data.cum_info_stim.MonteCarloOpt_err, Data.cum_info_stim.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenS, Data.P_YgivenS_Bootstrap, ParamModel.Mean_Ntrials_perstim, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
+        [Data.cum_info_stim.MonteCarloOpt_raw, Data.cum_info_stim.MonteCarloOpt_bcorr, Data.cum_info_stim.MonteCarloOpt_err, Data.cum_info_stim.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenS, Data.P_YgivenS_Bootstrap, ParamModel.Mean_Ntrials_perstim, WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
         
         % Filling in the first value of cumulative info with information
         % value at bin 1
