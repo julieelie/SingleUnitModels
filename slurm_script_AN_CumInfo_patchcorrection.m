@@ -9,6 +9,62 @@ fprintf('------------------------------------------------------\n')
 fprintf('---------- %s cell Dataset-----------\n', Cell)
 fprintf('------------------------------------------------------\n')
 fprintf('**************** Calculating cumulative information *****************\n')
+Cum_boot=10;
+
+%% jackknife the calculations
+fprintf('**** Jackknife Exact calculation and Markov with 5 bins memory *****\n');
+load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'P_YgivenS_BootJK', 'Nb_Win','Cum_boot','NTrials','Icum_ExactMem0_5','Icum_EstMarkov5');
+Icum_ExactMem0_5_JK_mean = nan(Cum_boot,Nb_Win);
+Icum_ExactMem0_5_JK_var = nan(Cum_boot,Nb_Win);
+Icum_EstMarkov5_JK_mean = nan(Cum_boot,Nb_Win);
+Icum_EstMarkov5_JK_var = nan(Cum_boot,Nb_Win);
+
+parfor bb=1:Cum_boot
+    Nb_Sets = size(P_YgivenS_BootJK{bb},1);
+    Icum_ExactMem0_5_JK_Set = nan(Nb_Sets, Nb_Win);
+    Icum_EstMarkov5_JK_Set = nan(Nb_Sets, Nb_Win);
+    for jkk=1:Nb_Sets
+        P_YgivenS_JK_local = P_YgivenS_BootJK{bb}(jkk,:);
+        HY_Markov5 = nan(1,Nb_Win);
+        for tt=2:Nb_Win
+            tstart = tic;
+            fprintf('Bootstrap %d/%d Time point %d/%d\n',bb,Cum_boot, tt, Nb_Win);
+        
+            P_YgivenS_local = P_YgivenS_JK_local(1:tt);
+    
+            % Exact calculation with 5 bins memory
+            [Icum_ExactMem0_5_JK_Set(jkk,tt),~]=info_cumulative_model_Calculus(P_YgivenS_local,'CalMode','Exact_Mem', 'Exact_history',5);
+            if tt==2
+                % Markov chain estimation 5 bins memory
+                [Icum_EstMarkov5_JK_Set(jkk,tt),HY_Markov5(tt),~]=info_cumulative_model_Calculus(P_YgivenS_local,'CalMode','MarkovChain', 'MarkovParameters',[5,1]);
+            else
+                % Markov chain estimation 5 bins memory
+                [Icum_EstMarkov5_JK_Set(jkk,tt),HY_Markov5(tt),~]=info_cumulative_model_Calculus(P_YgivenS_local,'CalMode','MarkovChain', 'MarkovParameters',[5,1], 'HY_old', HY_Markov5(tt-1));
+            end
+            telapsed = toc(tstart);
+            fprintf('Markov + Exact calculation: total elapsed time: %d s\n(Bootstrap %d/%d Time point %d/%d)\n',telapsed,bb,Cum_boot, tt, Nb_Win)
+        end
+    end
+    % Calculate the Jack-knife biais corrected values of information and their errors
+    Icum_ExactMem0_5_JK_Setcorrected = NTrials .* repmat(Icum_ExactMem0_5,Nb_Sets,1) - (NTrials-1) .* Icum_ExactMem0_5_JK_Set;
+    Icum_ExactMem0_5_JK_mean(bb,:) = mean(Icum_ExactMem0_5_JK_Setcorrected,1);
+    Icum_ExactMem0_5_JK_var(bb,:) = var(Icum_ExactMem0_5_JK_Setcorrected,0,1);
+    Icum_EstMarkov5_JK_Setcorrected = NTrials .* repmat(Icum_EstMarkov5,Nb_Sets,1) - (NTrials-1) .* Icum_EstMarkov5_JK_Set;
+    Icum_EstMarkov5_JK_mean(bb,:) = mean(Icum_EstMarkov5_JK_Setcorrected,1);
+    Icum_EstMarkov5_JK_var(bb,:) = var(Icum_EstMarkov5_JK_Setcorrected,0,1);
+end
+
+load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'Info_bcorr');
+Icum_ExactMem0_5_JK_mean(:,1) = repmat(Info_bcorr(1),Cum_boot,1);
+Icum_ExactMem0_5_bcorr = mean(Icum_ExactMem0_5_JK_mean,1);
+Icum_ExactMem0_5_err = (mean(Icum_ExactMem0_5_JK_var,1)).^0.5;
+
+Icum_EstMarkov5_JK_mean(:,1) = repmat(Info_bcorr(1),Cum_boot,1);
+Icum_EstMarkov5_bcorr = mean(Icum_EstMarkov5_JK_mean,1);
+Icum_EstMarkov5_err = (mean(Icum_EstMarkov5_JK_var,1)).^0.5;
+
+save(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'Icum_ExactMem0_5_JK_mean','Icum_EstMarkov5_JK_mean','Icum_ExactMem0_5_JK_var','Icum_EstMarkov5_JK_var','Icum_ExactMem0_5_bcorr','Icum_EstMarkov5_bcorr','Icum_ExactMem0_5_err','Icum_EstMarkov5_err','-append');
+clear P_Y* Icum* HY*
 
 %% Calculate theoretical values if the spike rate was exactly known
 fprintf('**** Theoretical values: Monte Carlo 10^6, Exact calculation and Markov with 5 bins memory *****\n');
