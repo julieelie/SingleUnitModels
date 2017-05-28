@@ -13,7 +13,8 @@ Cum_boot=10;
 
 %% jackknife the calculations
 fprintf('**** Jackknife Exact calculation and Markov with 5 bins memory *****\n');
-load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'P_YgivenS_BootJK', 'Nb_Win','Cum_boot','NTrials','Icum_ExactMem0_5','Icum_EstMarkov5');
+load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'P_YgivenS','P_YgivenS_BootJK', 'Nb_Win','Cum_boot','NTrials','Icum_ExactMem0_5','Icum_EstMarkov5');
+Nb_Win = length(P_YgivenS);
 Icum_ExactMem0_5_JK_mean = nan(Cum_boot,Nb_Win);
 Icum_ExactMem0_5_JK_var = nan(Cum_boot,Nb_Win);
 Icum_EstMarkov5_JK_mean = nan(Cum_boot,Nb_Win);
