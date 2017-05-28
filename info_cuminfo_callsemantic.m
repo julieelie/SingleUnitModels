@@ -1,5 +1,5 @@
 function [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(PSTH,JackKnifeTrials,VocType, ParamModel,  Calfilename)
-FIG=1;
+FIG=0;
 
 %% Deals with input parameters
 if nargin<4
