@@ -22,7 +22,7 @@ load('/auto/tdrive/julie/NeuralData/SemanticGLMModel/FanoFactor_CoherenceOptPSTH
 %% Set up the variables for slurm
 JobParams = struct;
 JobParams.Name = 'Info';
-JobParams.Partition = 'savio';
+JobParams.Partition = 'savio2';
 JobParams.Account = 'fc_birdpow';
 JobParams.Qos = 'savio_normal';
 JobParams.NTasks = 1;
