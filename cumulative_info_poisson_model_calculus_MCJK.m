@@ -59,7 +59,7 @@ function [Icum, HY, HYgivenS, Icum_corr_mean, Icum_corr_std, N_MC_tot]=cumulativ
 
 % Optional parameters
 %   [...] =
-%   info_cumulative_model_Calculus_MCJK(...,'PARAM1',VAL1,'PARAM2',VAL2,...)
+%   cumulative_info_poisson_model_calculus_MCJK(...,'PARAM1',VAL1,'PARAM2',VAL2,...)
 %   specifies various parameters of the calculation.
 % Valid parameters are the following:
 %  Parameter      Value
@@ -192,7 +192,7 @@ end
 if Verbose
     fprintf(1,'Cumulative information = %f bits\n',Icum);
     ElapsedTime = toc;
-    fprintf(1,'info_cumulative_model_Calculus_MCJK run for %d seconds with %d samples\n',ElapsedTime, N_MC_tot);
+    fprintf(1,'cumulative_info_poisson_model_calculus_MCJK run for %d seconds with %d samples\n',ElapsedTime, N_MC_tot);
 end
 
 

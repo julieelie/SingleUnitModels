@@ -123,7 +123,7 @@ NbStims = length(PSTH);
 
 %% Configure Parallel computing
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
-    MyParPool = parpool(str2num(getenv('SLURM_CPUS_ON_NODE')),'IdleTimeout', Inf);
+    MyParPool = parpool(min(ParamModel.NbBoot_Info,str2num(getenv('SLURM_CPUS_ON_NODE'))),'IdleTimeout', Inf);
     system('mkdir -p /global/scratch/$USER/$SLURM_JOB_ID')
     [~,JobID] = system('echo $SLURM_JOB_ID');
     parcluster.JobStorageLocation = ['/global/scratch/jelie/' JobID];    
@@ -421,28 +421,28 @@ if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_In
         
         % Filling in the first value of cumulative info with information
         % value at bin 1
-        Data.cum_info_stim.MonteCarloOpt_raw = Data.stim_info(1);
-        Data.cum_info_stim.MonteCarloOpt_bcorr = Data.stim_info_bcorr(1);
-        Data.cum_info_stim.MonteCarloOpt_err = Data.stim_info_err(1);
+        Data.cum_info_stim.MonteCarloOpt_raw(1) = Data.stim_info(1);
+        Data.cum_info_stim.MonteCarloOpt_bcorr(1) = Data.stim_info_bcorr(1);
+        Data.cum_info_stim.MonteCarloOpt_err(1) = Data.stim_info_err(1);
         
         % Cumulative information for categories
-        [Data.cum_info_cat.MonteCarloOpt_raw, Data.cum_info_cat.MonteCarloOpt_bcorr, Data.cum_info_cat.MonteCarloOpt_err, Data.cum_info_cat.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenC, Data.P_YgivenC_Bootstrap, ParamModel.Mean_Ntrials_perstim, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
+        [Data.cum_info_cat.MonteCarloOpt_raw, Data.cum_info_cat.MonteCarloOpt_bcorr, Data.cum_info_cat.MonteCarloOpt_err, Data.cum_info_cat.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenC, Data.P_YgivenC_Bootstrap, ParamModel.Mean_Ntrials_perstim,WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
         
         % Filling in the first value of cumulative info with information
         % value at bin 1
-        Data.cum_info_cat.MonteCarloOpt_raw = Data.category_info(1);
-        Data.cum_info_cat.MonteCarloOpt_bcorr = Data.category_info_bcorr(1);
-        Data.cum_info_cat.MonteCarloOpt_err = Data.category_info_err(1);
+        Data.cum_info_cat.MonteCarloOpt_raw(1) = Data.category_info(1);
+        Data.cum_info_cat.MonteCarloOpt_bcorr(1) = Data.category_info_bcorr(1);
+        Data.cum_info_cat.MonteCarloOpt_err(1) = Data.category_info_err(1);
+        
+        %% Save what we have for now
+        if saveonline
+            if exist(Calfilename, 'file')==2
+                save(Calfilename,'Data','ParamModel','-append');
+            else
+                save(Calfilename,'Data','ParamModel');
+            end
+        end
     end
-     %% Save what we have for now
-     if saveonline
-         if exist(Calfilename, 'file')==2
-             save(Calfilename,'Data','ParamModel','-append');
-         else
-             save(Calfilename,'Data','ParamModel');
-         end
-     end
-     
     %% Running through time bins and calculate cumulative information with other methods
     if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_Info) || ~isempty(ParamModel.NumSamples_MC_Cum_Info)
         % Initialize output variables
@@ -526,35 +526,96 @@ if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_In
             end
             fprintf('Done cumulative information bin %d/%d after %f sec\n', ww, WinNum_cumInfo, toc(Tstart2));
         end
-    end
-    %% Save what we have for now
-    if saveonline
-        if exist(Calfilename, 'file')==2
-            save(Calfilename,'Data','ParamModel','-append');
-        else
-            save(Calfilename,'Data','ParamModel');
+
+        %% Save what we have for now
+        if saveonline
+            if exist(Calfilename, 'file')==2
+                save(Calfilename,'Data','ParamModel','-append');
+            else
+                save(Calfilename,'Data','ParamModel');
+            end
         end
     end
-    
     %% Plot the cumulative information
     if FIG
         figure()
-        subplot(2,1,1)
-        plot(1:WinNum_cumInfo, Data.stim_info_bcorr(1:WinNum_cumInfo), 1:WinNum_cumInfo,Data.cum_info_stim.MarkovEst4, 1:WinNum_cumInfo,Data.cum_info_stim.MarkovEst3, 1:WinNum_cumInfo,Data.cum_info_stim.MarkovEst2,1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo6(1,:), 1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo5(1,:), 1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo4(1,:), 1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo3(1,:),1:WinNum_cumInfo,Data.cum_info_stim.MonteCarlo2(1,:), 1:WinNum_cumInfo, Data.cum_info_stim.ExactMem0_4, 1:WinNum_cumInfo, cumsum(Data.stim_info(1:WinNum_cumInfo)), 'LineWidth',2)
-        Color_Lines = get(gca,'ColorOrder');
-        legend('Information', 'Cumulative Info Markov4', 'Cumulative Info Markov3','Cumulative Info Markov2','Cumulative Information MC 10^6','Cumulative Information MC 10^5','Cumulative Information MC 10^4','Cumulative Information MC 10^3', 'Cumulative Information MC 10^2', 'Exact Cumulative Information 40ms history', 'Cumulative sum of info', 'Location', 'NorthWest')
+        subplot(3,1,1)
+        Biais_MC = Data.cum_info_stim.MonteCarloOpt_raw - Data.cum_info_stim.MonteCarloOpt_bcorr;
+        plot(1:WinNum,Data.stim_info_bcorr,'LineWidth',2, 'Color',ColorCode(5,:))
+        hold on
+        plot(1:WinNum_cumInfo, Data.cum_info_stim.MonteCarloOpt_raw, 'LineWidth',2, 'Color',ColorCode(6,:))
+        hold on
+        plot(1:WinNum_cumInfo,Data.cum_info_stim.MonteCarloOpt_bcorr, 'LineWidth',2, 'Color',ColorCode(1,:))
+        hold on
+        plot(1:WinNum_cumInfo, Biais_MC, 'LineWidth',2, 'Color', [ColorCode(6,:) 0.5])
+        hold on
+        line(1:WinNum_cumInfo, Data.stim_entropy(1:WinNum_cumInfo), 'LineStyle','-.','Color','r')
+        legend('Information','Cumulative Information','Biais corrected Cumulative Information', 'Biais on cumulative information', 'Information upper-bound given dataset size', 'Location','NorthEast');
+        hold on
+        line([0 WinNum_cumInfo], [0 0], 'LineStyle','-.','Color','k')
+        hold on
+        ylim([-0.5 log2(NbStims)+2])
         Xtickposition=get(gca,'XTick');
-        set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
-        xlabel('Time ms')
-        ylabel('Stimulus Information in bits')
-        subplot(2,1,2)
-        plot(1:WinNum_cumInfo, Data.category_info(1:WinNum_cumInfo), 1:WinNum_cumInfo,Data.cum_info_cat.MarkovEst4, 1:WinNum_cumInfo,Data.cum_info_cat.MarkovEst3, 1:WinNum_cumInfo,Data.cum_info_cat.MarkovEst2,1:WinNum_cumInfo,Data.cum_info_cat.MonteCarlo6(1,:), 1:WinNum_cumInfo,Data.cum_info_cat.MonteCarlo5(1,:), 1:WinNum_cumInfo,Data.cum_info_cat.MonteCarlo4(1,:), 1:WinNum_cumInfo,Data.cum_info_cat.MonteCarlo3(1,:),1:WinNum_cumInfo,Data.cum_info_cat.MonteCarlo2(1,:), 1:WinNum_cumInfo, Data.cum_info_cat.ExactMem0_4, 1:WinNum_cumInfo, cumsum(Data.category_info(1:WinNum_cumInfo)), 'LineWidth',2)
-        Color_Lines = get(gca,'ColorOrder');
-        legend('Information', 'Cumulative Info Markov4', 'Cumulative Info Markov3','Cumulative Info Markov2','Cumulative Information MC 10^6','Cumulative Information MC 10^5','Cumulative Information MC 10^4','Cumulative Information MC 10^3', 'Cumulative Information MC 10^2', 'Exact Cumulative Information 40ms history', 'Cumulative sum of info', 'Location', 'NorthWest')
+        set(gca,'XTickLabel', Xtickposition*ParamModel.NeuroBin)
+        xlabel('Time (ms)')
+        ylabel('Information (bits)')
+        shadedErrorBar([],Data.stim_info_bcorr, Data.stim_info_err,{'Color',ColorCode(5,:), 'LineStyle','-', 'LineWidth',1},1)
+        hold on
+        shadedErrorBar([],Data.cum_info_stim.MonteCarloOpt_raw, Data.cum_info_stim.MonteCarloOpt_err,{'Color',ColorCode(6,:), 'LineStyle','-', 'LineWidth',1},1)
+        hold on
+        shadedErrorBar([],Data.cum_info_stim.MonteCarloOpt_bcorr, Data.cum_info_stim.MonteCarloOpt_err,{'Color',ColorCode(1,:), 'LineStyle','-', 'LineWidth',1},1)
+        hold on
+        plot(1:WinNum_cumInfo, Data.stim_entropy(1:WinNum_cumInfo), 'LineWidth',1, 'LineStyle','-.','Color', [0.8 0.5 0.3])
+        hold off
+        title('Stimulus cumulative information')
+        
+        subplot(3,1,2)
+        Biais_MC = Data.cum_info_cat.MonteCarloOpt_raw - Data.cum_info_cat.MonteCarloOpt_bcorr;
+        plot(1:WinNum,Data.category_info_bcorr,'LineWidth',2, 'Color',ColorCode(5,:))
+        hold on
+        plot(1:WinNum_cumInfo, Data.cum_info_cat.MonteCarloOpt_raw, 'LineWidth',2, 'Color',ColorCode(6,:))
+        hold on
+        plot(1:WinNum_cumInfo,Data.cum_info_cat.MonteCarloOpt_bcorr, 'LineWidth',2, 'Color',ColorCode(1,:))
+        hold on
+        plot(1:WinNum_cumInfo, Biais_MC, 'LineWidth',2, 'Color', [ColorCode(6,:) 0.5])
+        hold on
+        line(1:WinNum_cumInfo, Data.category_entropy(1:WinNum_cumInfo), 'LineStyle','-.','Color','r')
+        legend('Information','Cumulative Information','Biais corrected Cumulative Information', 'Biais on cumulative information', 'Information upper-bound given dataset size', 'Location','NorthEast');
+        hold on
+        line([0 WinNum_cumInfo], [0 0], 'LineStyle','-.','Color','k')
+        hold on
+        ylim([-0.5 log2(NbStims)+2])
         Xtickposition=get(gca,'XTick');
-        set(gca,'XTickLabel', Xtickposition*ParamModel.Increment)
+        set(gca,'XTickLabel', Xtickposition*ParamModel.NeuroBin)
+        xlabel('Time (ms)')
+        ylabel('Information (bits)')
+        shadedErrorBar([],Data.category_info_bcorr, Data.category_info_err,{'Color',ColorCode(5,:), 'LineStyle','-', 'LineWidth',1},1)
+        hold on
+        shadedErrorBar([],Data.cum_info_cat.MonteCarloOpt_raw, Data.cum_info_cat.MonteCarloOpt_err,{'Color',ColorCode(6,:), 'LineStyle','-', 'LineWidth',1},1)
+        hold on
+        shadedErrorBar([],Data.cum_info_cat.MonteCarloOpt_bcorr, Data.cum_info_cat.MonteCarloOpt_err,{'Color',ColorCode(1,:), 'LineStyle','-', 'LineWidth',1},1)
+        hold on
+        plot(1:WinNum_cumInfo, Data.category_entropy(1:WinNum_cumInfo), 'LineWidth',1, 'LineStyle','-.','Color', [0.8 0.5 0.3])
+        hold off
+        title('Semantic cumulative information')
+        
+        subplot(3,1,3)
+        plot(1:WinNum_cumInfo,Data.cum_info_cat.MonteCarloOpt_raw*100 ./ Data.cum_info_stim.MonteCarloOpt_raw,'LineWidth',2, 'Color',ColorCode(1,:))
+        hold on
+        plot(1:WinNum_cumInfo,Data.cum_info_cat.MonteCarloOpt_bcorr*100 ./ Data.cum_info_stim.MonteCarloOpt_bcorr,'LineWidth',2, 'Color',ColorCode(1,:), 'LineStyle', '--')
+        hold on
+        plot(Data.category_entropy*100 ./ Data.stim_entropy, 'LineStyle','-.','Color','r')
+        legend('% Semantic Information', ' % Semantic  Information biais corrected',' % Semantic Information upper-bound given dataset size', 'Location','NorthEast');
+        hold on
+        line([0 WinNum], [0 0], 'LineStyle','-.','Color','k')
+        hold on
+        ylim([-0.5 log2(NbStims)+1])
+        Xtickposition=get(gca,'XTick');
+        set(gca,'XTickLabel', Xtickposition*ParamModel.NeuroBin)
         xlabel('Time ms')
-        ylabel('Category Information in bits')
+        ylabel('% Semantic Cumulative Information')
+        title('Percentage of cumulative information about semantic categories')
+        hold off
     end
     
     
@@ -639,10 +700,16 @@ if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_In
 
         end
     end
+    %% Save what we have for now
+    if saveonline
+        if exist(Calfilename, 'file')==2
+            save(Calfilename,'Data','ParamModel','-append');
+        else
+            save(Calfilename,'Data','ParamModel');
+        end
+    end
+    
 end
-
-
-
 
 %% get rid of temporary files for parallel computing
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
@@ -650,13 +717,4 @@ if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HO
     system(['rm -r ' parcluster.JobStorageLocation])
 end
 
-
-%% Save what we have for now
-if saveonline
-    if exist(Calfilename, 'file')==2
-        save(Calfilename,'Data','ParamModel','-append');
-    else
-        save(Calfilename,'Data','ParamModel');
-    end
-end
 end

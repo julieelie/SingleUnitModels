@@ -1,7 +1,7 @@
-function [calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
-%[calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
-%[calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath,Kth_i, SWITCH, ParamModel,Cellname)
-% [calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath,ValidKth_i, SWITCH, ParamModel,Cellname)
+function [Calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+%[Calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+%[Calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath,Kth_i, SWITCH, ParamModel,Cellname)
+% [Calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath,ValidKth_i, SWITCH, ParamModel,Cellname)
 % [OptimalFreqCutOff] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 % [PG_Index,FanoFactor_Index, Wins] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %% Get the environment to figure out on which machine/cluster we are
@@ -74,7 +74,7 @@ if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
         ... spectrogram
 end
 if ~isfield(ParamModel,'MaxWin_cumInfo') || isempty(ParamModel.MaxWin_cumInfo)
-    ParamModel.MaxWin_cumInfo = 600; %end point of the last anaysis window for...
+    ParamModel.MaxWin_cumInfo = 50; %end point of the last anaysis window for...
     ... the calculation of cumulative information
 end
 if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
