@@ -13,19 +13,20 @@ Cum_boot=10;
 
 %% jackknife the calculations
 fprintf('**** Jackknife Exact calculation and Markov with 5 bins memory *****\n');
-load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'P_YgivenS','P_YgivenS_BootJK', 'Nb_Win','Cum_boot','NTrials','Icum_ExactMem0_5','Icum_EstMarkov5');
-Nb_Win = length(P_YgivenS);
+load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell), 'Nb_Win','Cum_boot','NTrials');
+InputData = load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'P_YgivenS','P_YgivenS_BootJK');
+Nb_Win = length(InputData.P_YgivenS);
 Icum_ExactMem0_5_JK_mean = nan(Cum_boot,Nb_Win);
 Icum_ExactMem0_5_JK_var = nan(Cum_boot,Nb_Win);
 Icum_EstMarkov5_JK_mean = nan(Cum_boot,Nb_Win);
 Icum_EstMarkov5_JK_var = nan(Cum_boot,Nb_Win);
 NTrials=10;
 parfor bb=1:Cum_boot
-    Nb_Sets = size(P_YgivenS_BootJK{bb},1);
+    Nb_Sets = size(InputData.P_YgivenS_BootJK{bb},1);
     Icum_ExactMem0_5_JK_Set = nan(Nb_Sets, Nb_Win);
     Icum_EstMarkov5_JK_Set = nan(Nb_Sets, Nb_Win);
     for jkk=1:Nb_Sets
-        P_YgivenS_JK_local = P_YgivenS_BootJK{bb}(jkk,:);
+        P_YgivenS_JK_local = InputData.P_YgivenS_BootJK{bb}(jkk,:);
         HY_Markov5 = nan(1,Nb_Win);
         for tt=2:Nb_Win
             tstart = tic;
@@ -46,11 +47,12 @@ parfor bb=1:Cum_boot
             fprintf('Markov + Exact calculation: total elapsed time: %d s\n(Bootstrap %d/%d Time point %d/%d)\n',telapsed,bb,Cum_boot, tt, Nb_Win)
         end
     end
+    LocalInput = load(sprintf('%sInfoCumInfoSpikeCount_AN_JK_KDE_%s.mat',Storage_path,Cell),'Icum_ExactMem0_5','Icum_EstMarkov5');
     % Calculate the Jack-knife biais corrected values of information and their errors
-    Icum_ExactMem0_5_JK_Setcorrected = NTrials .* repmat(Icum_ExactMem0_5,Nb_Sets,1) - (NTrials-1) .* Icum_ExactMem0_5_JK_Set;
+    Icum_ExactMem0_5_JK_Setcorrected = NTrials .* repmat(LocalInput.Icum_ExactMem0_5,Nb_Sets,1) - (NTrials-1) .* Icum_ExactMem0_5_JK_Set;
     Icum_ExactMem0_5_JK_mean(bb,:) = mean(Icum_ExactMem0_5_JK_Setcorrected,1);
     Icum_ExactMem0_5_JK_var(bb,:) = var(Icum_ExactMem0_5_JK_Setcorrected,0,1);
-    Icum_EstMarkov5_JK_Setcorrected = NTrials .* repmat(Icum_EstMarkov5,Nb_Sets,1) - (NTrials-1) .* Icum_EstMarkov5_JK_Set;
+    Icum_EstMarkov5_JK_Setcorrected = NTrials .* repmat(LocalInput.Icum_EstMarkov5,Nb_Sets,1) - (NTrials-1) .* Icum_EstMarkov5_JK_Set;
     Icum_EstMarkov5_JK_mean(bb,:) = mean(Icum_EstMarkov5_JK_Setcorrected,1);
     Icum_EstMarkov5_JK_var(bb,:) = var(Icum_EstMarkov5_JK_Setcorrected,0,1);
 end
