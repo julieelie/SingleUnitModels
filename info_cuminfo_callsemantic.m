@@ -132,6 +132,7 @@ end
 %% Initialize output variables for the calculation of instantaneous information
 Rate4InfoStim = nan(NbStims,WinNum);
 Rate4InfoStim_Boot = cell(1,ParamModel.NbBoot_Info);
+CsteRate4InfoStim_Boot = cell(1,ParamModel.NbBoot_Info);
 Stim_entropy = nan(1,WinNum);
 Category_entropy = nan(1,WinNum);
 Stim_info = nan(1,WinNum);
@@ -141,6 +142,8 @@ P_YgivenS = cell(1,WinNum);
 P_YgivenC = cell(1,WinNum);
 P_YgivenS_Bootstrap = cell(1,ParamModel.NbBoot_CumInfo);
 P_YgivenC_Bootstrap = cell(1,ParamModel.NbBoot_CumInfo);
+P_YgivenS_Bootstrap_csteRate = cell(1,ParamModel.NbBoot_CumInfo);
+P_YgivenC_Bootstrap_csteRate = cell(1,ParamModel.NbBoot_CumInfo);
 stim_info_JKBoot_infT_mean = nan(ParamModel.NbBoot_Info,WinNum);
 category_info_JKBoot_infT_mean = nan(ParamModel.NbBoot_Info,WinNum);
 
@@ -150,6 +153,10 @@ Stim_info_JKBoot = cell(ParamModel.NbBoot_Info,1);
 Category_info_JKBoot = cell(ParamModel.NbBoot_Info,1);
 stim_info_JKBoot_infT_var = nan(ParamModel.NbBoot_Info,WinNum);
 category_info_JKBoot_infT_var = nan(ParamModel.NbBoot_Info,WinNum);
+stim_info_JKBoot_infT_csteRate_var = nan(ParamModel.NbBoot_Info,1);
+category_info_JKBoot_infT_csteRate_var = nan(ParamModel.NbBoot_Info,1);
+stim_info_JKBoot_infT_csteRate_mean = nan(ParamModel.NbBoot_Info,1);
+category_info_JKBoot_infT_csteRate_mean=nan(ParamModel.NbBoot_Info,1);
     
 
 
@@ -173,10 +180,30 @@ parfor ww = 1:WinNum
     Category_entropy(ww) = Local_Output.cat_entropy; 
    fprintf('Instantaneous Info: Done bin %d/%d after %f sec\n', ww, WinNum, toc(Tstart));
 end
+
+% Calculate the info if the neural coding was using an average rate for
+% each stimulus
+Tstart2=tic;
+if size(PSTH,1)==NbStims
+    PSTH_Local = cell2mat(PSTH);
+else
+    PSTH_Local = cell2mat(PSTH');
+end
+CsteRate = mean(PSTH_Local(:,1:ParamModel.MaxWin),2);
+PSTH_cste = repmat(CsteRate,1,ParamModel.NeuroBin);
+% Calculating info about the stims and the categories for actual values of spike rates
+[Local_Output] = info_model_Calculus_wrapper2(PSTH_cste, 1, ParamModel.NeuroBin,VocType,ParamModel.Response_samprate);
+CsteRate4InfoStim = Local_Output.InputdataStim;
+Stim_info_csteRate = Local_Output.stim_value;
+Category_info_csteRate = Local_Output.cat_value;
+P_YgivenS_csteRate = Local_Output.P_YgivenS;
+P_YgivenC_csteRate = Local_Output.P_YgivenC;
+fprintf('Instantaneous Info: Done constant Rate after %f sec\n', toc(Tstart2));
+
     
 % Bootstrapping the calculation of information with Jackknife estimations of spike rate
 %parfor
-parfor bb=1:ParamModel.NbBoot_Info
+for bb=1:ParamModel.NbBoot_Info
     fprintf(1,'%d/%d bootstrap instantaneous info with Jackknife estimates of spike rates\n', bb, ParamModel.NbBoot_Info);
     
     % Choosing a different set of JK trials for the stims for each bootstrap
@@ -195,11 +222,16 @@ parfor bb=1:ParamModel.NbBoot_Info
     Category_info_JKSets = nan(NJKsets,WinNum);
     P_YgivenS_JKSets = cell(NJKsets, WinNum);
     P_YgivenC_JKSets = cell(NJKsets, WinNum);
+    CsteRate4InfoStim_Boot{bb} = cell(NJKsets,1);
+    Stim_info_csteRate_JKSets = nan(NJKsets,1);
+    Category_info_csteRate_JKSets = nan(NJKsets,1);
+    P_YgivenS_csteRate_JKSets = cell(NJKsets, 1);
+    P_YgivenC_csteRate_JKSets = cell(NJKsets, 1);
 
     % Loop through JK sets for that bootstrap
     for jk = 1:NJKsets
         % systematically choose without replacement a different set of JK trials for the stims for each bootstrap
-        JackKnifePSTH = cell(1,NbStims);
+        JackKnifePSTH = cell(NbStims,1);
         for st = 1:NbStims
             PSTH_Local = JackKnifeTrials{st};
             JackKnifePSTH{st} = PSTH_Local(ParamModel.SetIndices_JK{bb}(jk,st),:);
@@ -223,6 +255,20 @@ parfor bb=1:ParamModel.NbBoot_Info
                 P_YgivenC_JKSets{jk,ww_in} = Local_Output.P_YgivenC;
             end
         end
+        
+        % Calculate the info if the neural coding was using an average rate for
+        % each stimulus
+        PSTH_Local = cell2mat(JackKnifePSTH);
+        CsteRate = mean(PSTH_Local(:,1:ParamModel.MaxWin),2);
+        PSTH_cste = repmat(CsteRate,1,ParamModel.NeuroBin);
+        % Calculating info about the stims and the categories for actual values of spike rates
+        [Local_Output] = info_model_Calculus_wrapper2(PSTH_cste, 1, ParamModel.NeuroBin,VocType,ParamModel.Response_samprate);
+        CsteRate4InfoStim_Boot{bb}{jk} = Local_Output.InputdataStim;
+        Stim_info_csteRate_JKSets(jk) = Local_Output.stim_value;
+        Category_info_csteRate_JKSets(jk) = Local_Output.cat_value;
+        P_YgivenS_csteRate_JKSets{jk} = Local_Output.P_YgivenS;
+        P_YgivenC_csteRate_JKSets{jk} = Local_Output.P_YgivenC;
+        fprintf('Instantaneous Info: Done constant Rate Boostrap %d/%d set %d/%d\n', bb,ParamModel.NbBoot_Info,jk,NJKsets);
     end
     % Estimate information for infinite number of trials
     % ordonnée à l'origine: b = (y1*x2 - y2*x1)/(x2-x1) = I1 - N2 * (I2 -
@@ -238,9 +284,18 @@ parfor bb=1:ParamModel.NbBoot_Info
     stim_info_JKBoot_infT_var(bb,:) = var(stim_info_JKBoot_infT{bb},0,1);
     category_info_JKBoot_infT_var(bb,:) = var(category_info_JKBoot_infT{bb}, 0,1);
     
+    stim_info_JKBoot_infT_csteRate = ParamModel.Mean_Ntrials_perstim .* repmat(Stim_info_csteRate,NJKsets,1) - (ParamModel.Mean_Ntrials_perstim - 1) .* Stim_info_csteRate_JKSets;
+    category_info_JKBoot_infT_csteRate = ParamModel.Mean_Ntrials_perstim .* repmat(Category_info_csteRate,NJKsets,1) - (ParamModel.Mean_Ntrials_perstim - 1) .* Category_info_csteRate_JKSets;
+    stim_info_JKBoot_infT_csteRate_var(bb) = var(stim_info_JKBoot_infT_csteRate,0,1);
+    category_info_JKBoot_infT_csteRate_var(bb) = var(category_info_JKBoot_infT_csteRate, 0,1);
+    stim_info_JKBoot_infT_csteRate_mean(bb) = mean(stim_info_JKBoot_infT_csteRate,1);
+    category_info_JKBoot_infT_csteRate_mean(bb) = mean(category_info_JKBoot_infT_csteRate,1);
+    
     if bb <= ParamModel.NbBoot_CumInfo
         P_YgivenS_Bootstrap{bb} = P_YgivenS_JKSets;
         P_YgivenC_Bootstrap{bb} = P_YgivenC_JKSets;
+        P_YgivenS_Bootstrap_csteRate{bb} = P_YgivenS_csteRate_JKSets;
+        P_YgivenC_Bootstrap_csteRate{bb} = P_YgivenC_csteRate_JKSets;
     end
 end
 stim_info_bcorr = mean(stim_info_JKBoot_infT_mean,1);
@@ -248,15 +303,25 @@ category_info_bcorr = mean(category_info_JKBoot_infT_mean,1);
 stim_info_err = (mean(stim_info_JKBoot_infT_var,1)).^0.5;
 category_info_err = (mean(category_info_JKBoot_infT_var,1)).^0.5;
 
+stim_info_bcorr_csteRate = mean(stim_info_JKBoot_infT_csteRate_mean);
+category_info_bcorr_csteRate = mean(category_info_JKBoot_infT_csteRate_mean);
+stim_info_err_csteRate = (mean(stim_info_JKBoot_infT_csteRate_var,1)).^0.5;
+category_info_err_csteRate = (mean(category_info_JKBoot_infT_csteRate_var,1)).^0.5;
+
 
 
 % Stuff in results in structure
 InputData.VocType = VocType;
 InputData.Rate4InfoStim_Boot = Rate4InfoStim_Boot;
 InputData.Rate4InfoStim = Rate4InfoStim;
+InputData.CsteRate4InfoStim_Boot = CsteRate4InfoStim_Boot;
+InputData.CsteRate4InfoStim = CsteRate4InfoStim;
 
 Data.P_YgivenS_Bootstrap = P_YgivenS_Bootstrap;
 Data.P_YgivenC_Bootstrap = P_YgivenC_Bootstrap;
+
+Data.P_YgivenS_Bootstrap_csteRate = P_YgivenS_Bootstrap_csteRate;
+Data.P_YgivenC_Bootstrap_csteRate = P_YgivenC_Bootstrap_csteRate;
 
 Data.P_YgivenS = P_YgivenS;
 Data.P_YgivenC = P_YgivenC;
@@ -264,6 +329,13 @@ Data.stim_info_bcorr = stim_info_bcorr;
 Data.category_info_bcorr = category_info_bcorr;
 Data.stim_info_err = stim_info_err;
 Data.category_info_err = category_info_err;
+
+Data.P_YgivenS_csteRate = P_YgivenS_csteRate;
+Data.P_YgivenC_csteRate = P_YgivenC_csteRate;
+Data.stim_info_bcorr_csteRate = stim_info_bcorr_csteRate;
+Data.category_info_bcorr_csteRate = category_info_bcorr_csteRate;
+Data.stim_info_err_csteRate = stim_info_err_csteRate;
+Data.category_info_err_csteRate = category_info_err_csteRate;
 
 
 Data.stim_entropy = Stim_entropy;
@@ -433,6 +505,51 @@ if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_In
         Data.cum_info_cat.MonteCarloOpt_raw(1) = Data.category_info(1);
         Data.cum_info_cat.MonteCarloOpt_bcorr(1) = Data.category_info_bcorr(1);
         Data.cum_info_cat.MonteCarloOpt_err(1) = Data.category_info_err(1);
+        
+        %% Save what we have for now
+        if saveonline
+            if exist(Calfilename, 'file')==2
+                save(Calfilename,'Data','ParamModel','-append');
+            else
+                save(Calfilename,'Data','ParamModel');
+            end
+        end
+        %% Cumulative information if the neuron was using a constant rate coding
+        P_YgivenS_local = cell(WinNum_cumInfo,1);
+        P_YgivenS_Bootstrap_local = cell(1,ParamModel.NbBoot_CumInfo);
+        P_YgivenC_local = cell(WinNum_cumInfo,1);
+        P_YgivenC_Bootstrap_local = cell(1,ParamModel.NbBoot_CumInfo);
+        for ww=1:WinNum_cumInfo
+            P_YgivenS_local{ww} = Data.P_YgivenS_csteRate;
+            P_YgivenC_local{ww} = Data.P_YgivenC_csteRate;
+        end
+        for bb=1:ParamModel.NbBoot_CumInfo
+            NJKsets = size(ParamModel.SetIndices_JK{bb},1);
+            P_YgivenS_Bootstrap_local{bb} = cell(NJKsets, WinNum_cumInfo);
+            P_YgivenC_Bootstrap_local{bb} = cell(NJKsets, WinNum_cumInfo);
+            for jk=1:NJKsets
+                for ww=1:WinNum_cumInfo
+                    P_YgivenS_Bootstrap_local{bb}{jk,ww} = Data.P_YgivenS_Bootstrap_csteRate{bb}{jk};
+                    P_YgivenC_Bootstrap_local{bb}{jk,ww} = Data.P_YgivenC_Bootstrap_csteRate{bb}{jk};
+                end
+            end
+        end
+        
+        % Cumulative information for stimuli
+        [~, Data.cum_info_stim.MonteCarloOpt_bcorr_csteRate, Data.cum_info_stim.MonteCarloOpt_err_csteRate, ~] = cumulative_info_poisson_model_MCJK_wrapper(P_YgivenS_local, P_YgivenS_Bootstrap_local, ParamModel.Mean_Ntrials_perstim, WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
+        
+        % Filling in the first value of cumulative info with information
+        % value at bin 1
+        Data.cum_info_stim.MonteCarloOpt_bcorr_csteRate(1) = Data.stim_info_bcorr_csteRate(1);
+        Data.cum_info_stim.MonteCarloOpt_err_csteRate(1) = Data.stim_info_err_csteRate(1);
+        
+        % Cumulative information for categories
+        [~, Data.cum_info_cat.MonteCarloOpt_bcorr_csteRate, Data.cum_info_cat.MonteCarloOpt_err_csteRate, ~] = cumulative_info_poisson_model_MCJK_wrapper(P_YgivenC_local, P_YgivenC_Bootstrap_local, ParamModel.Mean_Ntrials_perstim,WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
+        
+        % Filling in the first value of cumulative info with information
+        % value at bin 1
+        Data.cum_info_cat.MonteCarloOpt_bcorr_csteRate(1) = Data.category_info_bcorr_csteRate(1);
+        Data.cum_info_cat.MonteCarloOpt_err_csteRate(1) = Data.category_info_err_csteRate(1);
         
         %% Save what we have for now
         if saveonline
@@ -699,16 +816,16 @@ if ~isempty(ParamModel.ExactHist) || ~isempty(ParamModel.MarkovParameters_Cum_In
             Data.cum_info_cat.(sprintf('%s',ModelTypeMarJK)) = Cum_info_cat_LastMarkov_Bootstrap;
 
         end
-    end
-    %% Save what we have for now
-    if saveonline
-        if exist(Calfilename, 'file')==2
-            save(Calfilename,'Data','ParamModel','-append');
-        else
-            save(Calfilename,'Data','ParamModel');
+    
+        %% Save what we have for now
+        if saveonline
+            if exist(Calfilename, 'file')==2
+                save(Calfilename,'Data','ParamModel','-append');
+            else
+                save(Calfilename,'Data','ParamModel');
+            end
         end
     end
-    
 end
 
 %% get rid of temporary files for parallel computing

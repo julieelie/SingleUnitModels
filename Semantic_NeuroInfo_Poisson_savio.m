@@ -74,7 +74,7 @@ if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
         ... spectrogram
 end
 if ~isfield(ParamModel,'MaxWin_cumInfo') || isempty(ParamModel.MaxWin_cumInfo)
-    ParamModel.MaxWin_cumInfo = 300; %end point of the last anaysis window for...
+    ParamModel.MaxWin_cumInfo = 600; %end point of the last anaysis window for...
     ... the calculation of cumulative information
 end
 if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)

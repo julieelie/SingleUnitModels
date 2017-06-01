@@ -1,7 +1,7 @@
 function [Info]=info_model_Calculus_wrapper2(PSTH, FirstTimePoint, LastTimePoint, CatList, Response_samprate)
 
 
-NbStim = length(PSTH);
+NbStim = size(PSTH,1);
 % Change the grouping parameter to a vector if not a vector
 if nargin<4
     fprintf(1,'No input for categories\nNo information about category is calculated\n');
@@ -34,11 +34,12 @@ MaxY = 2*(LastTimePoint - FirstTimePoint +1)*1000/Response_samprate; % response 
 
 % Format the input
 Info.InputdataStim = nan(1,NbStim);
-if size(PSTH,1)==NbStim
+if iscell(PSTH)
     PSTH_Local = cell2mat(PSTH);
 else
-    PSTH_Local = cell2mat(PSTH');
+    PSTH_Local = PSTH;
 end
+
 Info.InputdataStim = sum(PSTH_Local(:,FirstTimePoint:LastTimePoint),2);
 
 % Entropy of the stimulus dataset
