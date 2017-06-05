@@ -203,7 +203,7 @@ fprintf('Instantaneous Info: Done constant Rate after %f sec\n', toc(Tstart2));
     
 % Bootstrapping the calculation of information with Jackknife estimations of spike rate
 %parfor
-for bb=1:ParamModel.NbBoot_Info
+parfor bb=1:ParamModel.NbBoot_Info
     fprintf(1,'%d/%d bootstrap instantaneous info with Jackknife estimates of spike rates\n', bb, ParamModel.NbBoot_Info);
     
     % Choosing a different set of JK trials for the stims for each bootstrap
