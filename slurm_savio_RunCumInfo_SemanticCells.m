@@ -25,14 +25,14 @@ load('/auto/tdrive/julie/NeuralData/SemanticGLMModel/FanoFactor_CoherenceOptPSTH
 
 %% Set up the variables for slurm
 JobParams = struct;
-JobParams.Name = 'Info';
+JobParams.Name = CIType;
 JobParams.Partition = 'savio2';
 JobParams.Account = 'fc_birdpow';
 JobParams.Qos = 'savio_normal';
 JobParams.NTasks = 1;
 JobParams.CPU = 24;
 JobParams.Type = CIType;
-jobParams.TimeLimit = '12:00:00';
+jobParams.TimeLimit = '00:05:00';
 SlurmParams.cmd = 'Semantic_NeuroInfo_Poisson_savio(''%s'', ''%s'');';
 SlurmParams.resultsDirectory='/global/scratch/jelie/MatFiles/ModMatInfo';
 
