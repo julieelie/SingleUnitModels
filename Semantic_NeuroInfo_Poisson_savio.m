@@ -1,9 +1,9 @@
-function [Calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+function [Calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, CIType, SWITCH, ParamModel,Cellname)
 %[Calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
-%[Calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath,Kth_i, SWITCH, ParamModel,Cellname)
-% [Calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath,ValidKth_i, SWITCH, ParamModel,Cellname)
+%[Calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath,CIType, SWITCH, ParamModel,Cellname)
 % [OptimalFreqCutOff] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 % [PG_Index,FanoFactor_Index, Wins] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
+min_nargin = 2;
 %% Get the environment to figure out on which machine/cluster we are
 fprintf(1,'The environment is: %s\n',getenv('HOSTNAME'))
 
@@ -36,10 +36,14 @@ if nargin<1
 end
 
 %% Deal with input parameters
-% if nargin<2
-%     Kth_i = 1; % This would correspond to nearest neighbor=Ntrials/2;
-% end
-if nargin<2
+if nargin<(min_nargin)
+    SWITCH.InfoCal=1;
+else
+    if strcmp(CIType, 'Info')
+        SWITCH.InfoCal=1;
+    end
+end
+if nargin<(min_nargin+1)
     SWITCH = struct();
 end
 if ~isfield(SWITCH,'FanoFactor') || isempty(SWITCH.FanoFactor)
@@ -51,9 +55,12 @@ end
 if ~isfield(SWITCH,'InfoCal') || isempty(SWITCH.InfoCal)
     SWITCH.InfoCal=1;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
 end
+if ~isfield(SWITCH,'CumInfoCal') || isempty(SWITCH.CumInfoCal)
+    SWITCH.CumInfoCal=1;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
+end
 
 
-if nargin<3
+if nargin<(min_nargin+2)
     ParamModel = struct();
 end
 if ~isfield(ParamModel,'LINK') || isempty(ParamModel.LINK)
@@ -69,12 +76,12 @@ if  ~isfield(ParamModel,'MinWin') || isempty(ParamModel.MinWin)
     ParamModel.MinWin = 10; % end point of the first analysis window (spectrogram and neural response)
 end
 if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
-    ParamModel.MaxWin = 600; %end point of the last anaysis window for...
+    ParamModel.MaxWin = 50; %end point of the last anaysis window for...
     ... neural response and end point of the largest analysis window for...
         ... spectrogram
 end
 if ~isfield(ParamModel,'MaxWin_cumInfo') || isempty(ParamModel.MaxWin_cumInfo)
-    ParamModel.MaxWin_cumInfo = 600; %end point of the last anaysis window for...
+    ParamModel.MaxWin_cumInfo = 50; %end point of the last anaysis window for...
     ... the calculation of cumulative information
 end
 if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
@@ -93,15 +100,15 @@ end
 
 % Number of bootstraps
 if ~isfield(ParamModel, 'NbBoot_Info') || isempty(ParamModel.NbBoot_Info)
-    ParamModel.NbBoot_Info = 20;
+    ParamModel.NbBoot_Info = 2; %20
 end
 
 if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
-    ParamModel.NbBoot_CumInfo = 20;
+    ParamModel.NbBoot_CumInfo = 2; %20
 end
 
 
-if nargin<4
+if nargin<(min_nargin+3)
     [path,Cellname,ext]=fileparts(MatfilePath);
 end
 
@@ -343,40 +350,12 @@ end
 
 %% Calculate information about stimuli along time
 if SWITCH.InfoCal
-    ParamModel.MarkovParameters_Cum_Info = [];% supressing the calculation of Markov approximation for the cumulative information
-    ParamModel.ExactHist = [];% supressing the exact calculation of the cumulative information
     ParamModel.Response_samprate = Res.Response_samprate;
-    ParamModel.MaxNumSamples_MCopt_Cum_Info = 5*10^6;
-    ParamModel.NumSamples_MC_Cum_Info = [];
     
     
     % Find out the number of trials per stimulus and feed-in PSTH and
     % PSTH_JackKnife
     Ntrials_perstim = nan(length(DataSel),1);
-    
-    % First retrieve the PSTH calculated with the same # of nearest
-    % neighbour Ntrial/d where d=1:Ntrials
-%     if Kth_i<5 % Treating Neigh = NT/2, NT/3, NT/4, NT/5
-%         for vv=1:nvoc
-%             Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
-%             NNT = size(Res.PSTH_GaussFiltered{DataSel(vv)},1); % This is the number of nearest neighbor tested for full PSTH
-%             PSTH_GaussFilteredK{vv} = Res.PSTH_GaussFiltered{DataSel(vv)}(NNT-Kth_i,:);
-%             NNT_JK = length(Res.JackKnife_GaussFiltered{DataSel(vv)}); % This is the number of nearest neighbor tested for JK PSTH
-%             JK_GaussFilteredK{vv} = Res.JackKnife_GaussFiltered{DataSel(vv)}{NNT_JK-Kth_i};
-%             Kth_Neigh(vv) = Res.Kth_Neigh{DataSel(vv)}(NNT-Kth_i);
-%             Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{DataSel(vv)}(NNT_JK-Kth_i);
-%         end
-%     else % Treating Neigh =1 = NT/NT
-%         for vv=1:nvoc
-%             Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
-%             PSTH_GaussFilteredK{vv} = Res.PSTH_GaussFiltered{DataSel(vv)}(1,:);
-%             JK_GaussFilteredK{vv} = Res.JackKnife_GaussFiltered{DataSel(vv)}{1};
-%             Kth_Neigh(vv) = Res.Kth_Neigh{DataSel(vv)}(1);
-%             Kth_Neigh_JK(vv) = Res.Kth_Neigh_JK{DataSel(vv)}(1);
-%         end
-%     end
-    
-    % Find out # of trials per stim
     for vv=1:nvoc
             Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
     end
@@ -392,17 +371,11 @@ if SWITCH.InfoCal
     
     % Calculate information
     %Calfilename_localKth = sprintf('%s_Kth%d_%s',calfilename_local(1:(end-4)),Kth_i,calfilename_local((end-4):end));
-    [ParamModel, Data, InputData, Wins]=info_cuminfo_callsemantic(Res.PSTH_KDE_Filtered(DataSel),Res.JackKnife_KDE_Filtered(DataSel),Res.VocType(DataSel), ParamModel,Calfilename_local);
-     
-%     InputData.Kth_Neigh = Kth_Neigh;
-%     InputData.Kth_Neigh_JK = Kth_Neigh_JK;
-%     if exist(Calfilename_localKth, 'file') == 2
-%         fprintf(1,'appending to the file\n');
-%         save(Calfilename_localKth,'Data', 'InputData','Wins','ParamModel','-append');
-%     else
-%         save(Calfilename_localKth,'Data', 'InputData','Wins','ParamModel');
-%     end
-
+    [ParamModel, Data, InputData, Wins]=info_callsemantic(Res.PSTH_KDE_Filtered(DataSel),Res.JackKnife_KDE_Filtered(DataSel),Res.VocType(DataSel), ParamModel,Calfilename_local);
+    
+    % save the wave sections
+    Data.SectionWave = Res.SectionWave(DataSel);
+    
     if exist(Calfilename_local, 'file') == 2
         fprintf(1,'appending to the file\n');
         save(Calfilename_local,'Data', 'InputData','Wins','ParamModel','-append');
@@ -421,7 +394,43 @@ if SWITCH.InfoCal
     
 end
 
-%return
+%% Calculate cumulative information about stimuli along time
+if SWITCH.CumInfoCal
+    if exist(Calfilename_local, 'file') == 2
+        fprintf(1,'loading the data\n');
+        load(Calfilename_local,'Data', 'InputData','ParamModel');
+    else
+        fprintf(1,'No Data available for this cell, run the calculation of information first!\n');
+    end
+    if nargin<2
+        fprintf('No input for the type of cumulative information!!!\n');
+        return
+    else
+        ParamModel.CIType = CIType;
+    end
+    ParamModel.Response_samprate = Res.Response_samprate;
+    ParamModel.MaxNumSamples_MCopt_Cum_Info = 5*10^6;
+    
+    % Find out the number of trials per stimulus
+    Ntrials_perstim = nan(length(DataSel),1);
+    % Find out # of trials per stim
+    for vv=1:nvoc
+            Ntrials_perstim(vv) = length(Res.Trials{DataSel(vv)});
+    end
+    ParamModel.Mean_Ntrials_perstim = mean(Ntrials_perstim);
+    if mean(Ntrials_perstim - 1) ~= (mean(Ntrials_perstim) - 1)
+        fprintf('check number of trials something weirds going on...\n')
+        return
+    end
+        
+    % add as input to the parameters the set of indices for predetermined
+    % JK sets
+    ParamModel.SetIndices_JK = Res.SetIndices_JK;
+    
+    % Calculate cumulative information
+    [Calfilename_local_final]=cuminfo_callsemantic(Data, ParamModel,  Calfilename_local);
+    fprintf('Data saved to %s\n', Calfilename_local_final)
+end
    
 
 %%
