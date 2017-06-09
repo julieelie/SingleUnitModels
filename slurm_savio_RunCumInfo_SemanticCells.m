@@ -3,7 +3,7 @@ addpath('/auto/k1/queued/')
 addpath(genpath('/auto/fhome/julie/Code/SingleUnitModels'));
 addpath(genpath('/auto/fhome/julie/Code/GeneralCode'));
 addpath('/auto/fhome/julie/Code/tlab/src/slurmbot/matlab')
-CIType = 'Info'; % CIS=Cumulative information for stimuli, CIC = Cumulative Information for Semantic Categories, CISR= Cumulative information for stimuli with fixed rates
+CIType = 'CIS'; % CIS=Cumulative information for stimuli, CIC = Cumulative Information for Semantic Categories, CISR= Cumulative information for stimuli with fixed rates
 % CICR= Cumulative information for semantic categories with fixed rates,
 % CICRand = Cumulative information for random categories % Info =
 % Instantaneous Information
@@ -32,7 +32,7 @@ JobParams.Qos = 'savio_normal';
 JobParams.NTasks = 1;
 JobParams.CPU = 24;
 JobParams.Type = CIType;
-jobParams.TimeLimit = '00:05:00';
+jobParams.TimeLimit = '72:00:00'; %00:05:00 for 'Info'
 SlurmParams.cmd = 'Semantic_NeuroInfo_Poisson_savio(''%s'', ''%s'');';
 SlurmParams.resultsDirectory='/global/scratch/jelie/MatFiles/ModMatInfo';
 
