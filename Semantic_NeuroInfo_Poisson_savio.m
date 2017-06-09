@@ -56,7 +56,7 @@ if ~isfield(SWITCH,'InfoCal') || isempty(SWITCH.InfoCal)
     SWITCH.InfoCal=1;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
 end
 if ~isfield(SWITCH,'CumInfoCal') || isempty(SWITCH.CumInfoCal)
-    SWITCH.CumInfoCal=1;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
+    SWITCH.CumInfoCal=0;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
 end
 
 
@@ -76,12 +76,12 @@ if  ~isfield(ParamModel,'MinWin') || isempty(ParamModel.MinWin)
     ParamModel.MinWin = 10; % end point of the first analysis window (spectrogram and neural response)
 end
 if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
-    ParamModel.MaxWin = 50; %end point of the last anaysis window for...
+    ParamModel.MaxWin = 600; %end point of the last anaysis window for...
     ... neural response and end point of the largest analysis window for...
         ... spectrogram
 end
 if ~isfield(ParamModel,'MaxWin_cumInfo') || isempty(ParamModel.MaxWin_cumInfo)
-    ParamModel.MaxWin_cumInfo = 50; %end point of the last anaysis window for...
+    ParamModel.MaxWin_cumInfo = 600; %end point of the last anaysis window for...
     ... the calculation of cumulative information
 end
 if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
@@ -100,11 +100,11 @@ end
 
 % Number of bootstraps
 if ~isfield(ParamModel, 'NbBoot_Info') || isempty(ParamModel.NbBoot_Info)
-    ParamModel.NbBoot_Info = 2; %20
+    ParamModel.NbBoot_Info = 20; %20
 end
 
 if ~isfield(ParamModel, 'NbBoot_CumInfo') || isempty(ParamModel.NbBoot_CumInfo)
-    ParamModel.NbBoot_CumInfo = 2; %20
+    ParamModel.NbBoot_CumInfo = 20; %20
 end
 
 
