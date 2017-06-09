@@ -32,6 +32,7 @@ JobParams.Qos = 'savio_normal';
 JobParams.NTasks = 1;
 JobParams.CPU = 24;
 JobParams.Type = CIType;
+jobParams.TimeLimit = '12:00:00';
 SlurmParams.cmd = 'Semantic_NeuroInfo_Poisson_savio(''%s'', "%s");';
 SlurmParams.resultsDirectory='/global/scratch/jelie/MatFiles/ModMatInfo';
 
