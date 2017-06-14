@@ -42,6 +42,11 @@ if nargin<(min_nargin)
 else
     if strcmp(CIType, 'Info')
         SWITCH.InfoCal=1;
+        SWITCH.CumInfoCal=0;
+    end
+    if strfind(CIType, 'CI')
+        SWITCH.InfoCal=0;
+        SWITCH.CumInfoCal=1;
     end
 end
 fprintf(1,'You are running Semantic_NeuroInfo_Poisson_savio with the type of information set up as %s\n', CIType);
