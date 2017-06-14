@@ -51,7 +51,7 @@ else
 end
 fprintf(1,'You are running Semantic_NeuroInfo_Poisson_savio with the type of information set up as %s\n', CIType);
 
-if nargin<(min_nargin+1)
+if ~exist('SWITCH', 'var')
     SWITCH = struct();
 end
 if ~isfield(SWITCH,'FanoFactor') || isempty(SWITCH.FanoFactor)
