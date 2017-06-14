@@ -1,12 +1,15 @@
+function slurm_savio_RunCumInfo_SemanticCells(CIType)
 %% Set up the paths, retrieve list of cells already done, list of all cells
 addpath('/auto/k1/queued/')
 addpath(genpath('/auto/fhome/julie/Code/SingleUnitModels'));
 addpath(genpath('/auto/fhome/julie/Code/GeneralCode'));
 addpath('/auto/fhome/julie/Code/tlab/src/slurmbot/matlab')
-CIType = 'CIS'; % CIS=Cumulative information for stimuli, CIC = Cumulative Information for Semantic Categories, CISR= Cumulative information for stimuli with fixed rates
+if nargin==0
+    CIType = 'CIS'; % CIS=Cumulative information for stimuli, CIC = Cumulative Information for Semantic Categories, CISR= Cumulative information for stimuli with fixed rates
 % CICR= Cumulative information for semantic categories with fixed rates,
 % CICRand = Cumulative information for random categories % Info =
 % Instantaneous Information
+end
 
 cd /auto/tdrive/julie/k6/julie/matfile/ModMatInfo/
 %DoneFile=dir('InfoPoissonGF_*');
@@ -21,7 +24,13 @@ cd /auto/tdrive/julie/k6/julie/matfile/ModMatInfo/
 % system('scp TheunissenLab:/auto/tdrive/julie/k6/julie/matfile/DoneFile.mat /global/home/users/jelie/MatFiles/DoneFile.mat')
 % load('/global/home/users/jelie/MatFiles/DoneFile.mat');
 
-load('/auto/tdrive/julie/NeuralData/SemanticGLMModel/FanoFactor_CoherenceOptPSTHBin_SemCell.mat','List_SemanticCellspath');
+if strcmp(CIType, 'Info')
+    load('/auto/tdrive/julie/NeuralData/SemanticGLMModel/FanoFactor_CoherenceOptPSTHBin_SemCell.mat','List_SemanticCellspath');
+    Local_list = List_SemanticCellspath;
+elseif strcmp(CIType, 'CIC') || strcmp(CIType, 'CICR') || strcmp(CIType, 'CISR') || strcmp(CIType, 'CICRand') 
+    load('/auto/tdrive/julie/k6/julie/matfile/ModMatInfo/600msInfoCumInfoMCJKRRand/ListFilesCumInfoSignif.mat','ValidStimCumInfoFilenames')
+    Local_list = ValidStimCumInfoFilenames;
+end
 
 %% Set up the variables for slurm
 JobParams = struct;
@@ -32,22 +41,31 @@ JobParams.Qos = 'savio_normal';
 JobParams.NTasks = 1;
 JobParams.CPU = 24;
 JobParams.Type = CIType;
-jobParams.TimeLimit = '72:00:00'; %00:05:00 for 'Info'
+if strcmp(CIType, 'Info')
+    jobParams.TimeLimit = '00:05:00';
+else
+    jobParams.TimeLimit = '72:00:00';
+end
 SlurmParams.cmd = 'Semantic_NeuroInfo_Poisson_savio(''%s'', ''%s'');';
 SlurmParams.resultsDirectory='/global/scratch/jelie/MatFiles/ModMatInfo';
 
 %% Set up variables to identify cells to run and order
-MatfileToDo = cell(length(List_SemanticCellspath),1);
-MatNameToDo = cell(length(List_SemanticCellspath),1);
+MatfileToDo = cell(length(Local_list),1);
+MatNameToDo = cell(length(Local_list),1);
 
 %% Create jobs' files
 cd /auto/tdrive/julie/k6/julie/matfile/ModMatInfo/JobToDoSavio
-for ff=1:length(List_SemanticCellspath)
-    fprintf(1,'checking file %d/%d\n',ff,length(List_SemanticCellspath));
-    [P,TheFile,ext]=fileparts(List_SemanticCellspath{ff});
-    BegPath=strfind(P,'k6');
-    MatfileToDo{ff}= fullfile('/auto/tdrive/julie/k6/julie/matfile/FirstVoc1sMat',['FirstVoc1s' TheFile(8:end) ext]);
-    MatNameToDo{ff}=['FirstVoc1s' TheFile(8:end) ext];
+for ff=1:length(Local_list)
+    fprintf(1,'checking file %d/%d\n',ff,length(Local_list));
+    [P,TheFile,ext]=fileparts(Local_list{ff});
+    if strfind(TheFile, 'InfoPoissonKDEF')
+        MatfileToDo{ff}= fullfile('/auto/tdrive/julie/k6/julie/matfile/FirstVoc1sMat',['FirstVoc1s' TheFile(16:end) ext]);
+        MatNameToDo{ff}=['FirstVoc1s' TheFile(16:end) ext];
+    else
+        BegPath=strfind(P,'k6');
+        MatfileToDo{ff}= fullfile('/auto/tdrive/julie/k6/julie/matfile/FirstVoc1sMat',['FirstVoc1s' TheFile(8:end) ext]);
+        MatNameToDo{ff}=['FirstVoc1s' TheFile(8:end) ext];
+    end
     JobParams.Name = MatNameToDo{ff};
     JobParams.out = fullfile(SlurmParams.resultsDirectory,sprintf('slurm_out_%s_%s_%%j.txt', JobParams.Name, JobParams.Type));
     JobParams.err = JobParams.out;

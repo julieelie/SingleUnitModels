@@ -7,6 +7,7 @@ min_nargin = 2;
 %% Get the environment to figure out on which machine/cluster we are
 fprintf(1,'The environment is: %s\n',getenv('HOSTNAME'))
 
+
 if ~isempty(strfind(getenv('HOSTNAME'),'ln')) || ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
     Savio=1;
     fprintf(1, 'We are on savio!\n')
@@ -43,6 +44,8 @@ else
         SWITCH.InfoCal=1;
     end
 end
+fprintf(1,'You are running Semantic_NeuroInfo_Poisson_savio with the type of information set up as %s\n', CIType);
+
 if nargin<(min_nargin+1)
     SWITCH = struct();
 end
