@@ -101,6 +101,7 @@ if strcmp(ParamModel.CIType, 'CIS')
             Data.cum_info_stim.MonteCarloOpt_Samples(1:Old_Stop)  = Old.Data.cum_info_stim.MonteCarloOpt_Samples(1:Old_Stop);
         end
     catch %No data, run from the first time point
+        fprintf(1, 'No data, run from the first time point');
         % Cumulative information for stimuli
         [Data.cum_info_stim.MonteCarloOpt_raw, Data.cum_info_stim.MonteCarloOpt_bcorr, Data.cum_info_stim.MonteCarloOpt_err, Data.cum_info_stim.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenS, Data.P_YgivenS_Bootstrap, ParamModel.Mean_Ntrials_perstim, WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
         
