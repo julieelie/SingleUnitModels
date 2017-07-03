@@ -64,4 +64,10 @@ end
 fprintf('Calculations stop at %d with an error of: %.2f\n', tt, Icum_EstMonteCarloOpt_err(tt))
 telapsed2 = toc(tstart2);
 fprintf('MC Opt total elapsed time: %d s\n', telapsed2)
+
+%% get rid of temporary files for parallel computing
+if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
+    delete(MyParPool);
+    system(['rm -r ' parcluster.JobStorageLocation])
+end
 end

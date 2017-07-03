@@ -364,11 +364,4 @@ if FIG
 %     hold off
 end
 
-
-%% get rid of temporary files for parallel computing
-if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
-    delete(MyParPool);
-    system(['rm -r ' parcluster.JobStorageLocation])
-end
-
 end
