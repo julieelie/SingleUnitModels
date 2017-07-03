@@ -24,7 +24,7 @@ cd /auto/tdrive/julie/k6/julie/matfile/ModMatInfo/
 % system('scp TheunissenLab:/auto/tdrive/julie/k6/julie/matfile/DoneFile.mat /global/home/users/jelie/MatFiles/DoneFile.mat')
 % load('/global/home/users/jelie/MatFiles/DoneFile.mat');
 
-if strcmp(CIType, 'Info')
+if strcmp(CIType, 'Info') || strcmp(CIType, 'CIS')
     load('/auto/tdrive/julie/NeuralData/SemanticGLMModel/FanoFactor_CoherenceOptPSTHBin_SemCell.mat','List_SemanticCellspath');
     Local_list = List_SemanticCellspath;
 elseif strcmp(CIType, 'CIC') || strcmp(CIType, 'CICR') || strcmp(CIType, 'CISR') || strcmp(CIType, 'CICRand') 
