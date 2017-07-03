@@ -125,8 +125,10 @@ end
 %Res=load('/Users/elie/Documents/MATLAB/data/matfile/WholeVocMat/WholeVoc_Site2_L1100R1450_e21_s0_ss1.mat')
 %Res=load('/Users/elie/Documents/MATLAB/data/matfile/WholeVocMat/WholeVoc_Site2_L2000R1600_e27_s1_ss1.mat')
 if Savio %savio Cluster
-    Dir_local='/global/scratch/jelie/MatFiles/';
-    Res=loadfromTdrive_savio(MatfilePath, Dir_local);
+    Dir_local='/global/scratch/jelie/MatFiles/FirstVoc1sMat/';
+    [~, File, ext] = fileparts(MatfilePath);
+    Res = load(fullfile(Dir_local, [File ext]));
+    %Res=loadfromTdrive_savio(MatfilePath, Dir_local);
 elseif Me
     Dir_local='/Users/elie/Documents/CODE/data/matfile/FirstVoc1sMat/';
     if ~exist('ext','var')
