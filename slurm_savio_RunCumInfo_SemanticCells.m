@@ -31,7 +31,7 @@ elseif strcmp(CIType, 'CIC') || strcmp(CIType, 'CICR') || strcmp(CIType, 'CISR')
     load('/auto/tdrive/julie/k6/julie/matfile/ModMatInfo/600msInfoCumInfoMCJKRRand/ListFilesCumInfoSignif.mat','ValidStimCumInfoFilenames')
     Local_list = ValidStimCumInfoFilenames;
 end
-FID = fopen('/auto/tdrive/julie/k6/julie/matfile/ModMatInfo/JobToDoSavio/DoneCells07/03/2017.txt');
+FID = fopen('/auto/tdrive/julie/k6/julie/matfile/ModMatInfo/JobToDoSavio/DoneCells07032017.txt');
 DoneFiles = textscan(FID, '%s');
 
 %% Set up the variables for slurm
