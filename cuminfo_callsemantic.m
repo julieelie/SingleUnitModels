@@ -58,14 +58,6 @@ Data.Wins_cumInfo = ParamModel.MinWin:ParamModel.Increment:ParamModel.MaxWin_cum
 % # of bins in the data
 WinNum_cumInfo = length(Data.Wins_cumInfo);
 
-%% Configure Parallel computing
-if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
-    MyParPool = parpool(min(ParamModel.NbBoot_Info,str2num(getenv('SLURM_CPUS_ON_NODE'))),'IdleTimeout', Inf);
-    system('mkdir -p /global/scratch/$USER/$SLURM_JOB_ID')
-    [~,JobID] = system('echo $SLURM_JOB_ID');
-    parcluster.JobStorageLocation = ['/global/scratch/jelie/' JobID];    
-end
-
 
 %% Now calculating cumulative information if requested by the presence of input parameters
 fprintf(1,'Starting calculation of cumulative information\n')
