@@ -33,7 +33,7 @@ end
 TimerVal=tic;
 
 if nargin<1
-    MatfilePath = '/auto/tdrive/julie/k6/julie/matfile/FirstVoc1s_Site3_L1250R1650_e13_s0_ss1.VariousKNeigh.mat';
+    MatfilePath = '/auto/tdrive/julie/k6/julie/matfile/FirstVoc1s_Site3_L1250R1650_e13_s0_ss1.mat';
 end
 
 %% Deal with input parameters

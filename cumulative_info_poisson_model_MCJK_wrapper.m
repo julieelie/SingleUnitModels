@@ -1,13 +1,16 @@
-function [Icum_EstMonteCarloOpt, Icum_EstMonteCarloOpt_bcorr, Icum_EstMonteCarloOpt_err, MC_Samp] = cumulative_info_poisson_model_MCJK_wrapper(P_YgivenS, P_YgivenS_BootJK, NTrials,Nb_Win, Cum_boot, MaxMCParameter, IncrMCParameter, ConvThresh, Verbose)
+function [Icum_EstMonteCarloOpt, Icum_EstMonteCarloOpt_bcorr, Icum_EstMonteCarloOpt_err, MC_Samp] = cumulative_info_poisson_model_MCJK_wrapper(P_YgivenS, P_YgivenS_BootJK, NTrials,Nb_Win, Cum_boot, MaxMCParameter, FirstStep, IncrMCParameter, ConvThresh, Verbose)
 %% Treat input arguments
-if nargin<9
+if nargin<10
     Verbose = 0;
 end
-if nargin<8
+if nargin<9
     ConvThresh = 0.2;
 end
-if nargin<7
+if nargin<8
     IncrMCParameter = 10^5;
+end
+if nargin<7
+    FirstStep=1;
 end
 if nargin<6
     MaxMCParameter = 5*10^6;
@@ -30,9 +33,9 @@ MC_Samp = nan(1,Nb_Win);
     ...(3*ConvThresh) that cumulative_info_poisson_model_calculus_MCJK is trying to match...
     ... with as many samples as necessary, up to MaxMCParameter samples
 tstart2 = tic;
-fprintf('**** Monte Carlo with optimal # samples and Jackknife *****\n');
+fprintf('**** Monte Carlo with optimal # samples and Jackknife from time step %d *****\n', FirstStep);
 Error_local = 0;
-tt=1;
+tt=FirstStep;
 while ((Error_local<=(3*ConvThresh)) && (tt<Nb_Win))
     tt= tt+1;
     tstart = tic;

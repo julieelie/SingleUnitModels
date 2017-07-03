@@ -76,14 +76,48 @@ if strcmp(ParamModel.CIType, 'CIS')
     % Initializing output variables
     Data.cum_info_stim = struct();
     
-    % Cumulative information for stimuli
-    [Data.cum_info_stim.MonteCarloOpt_raw, Data.cum_info_stim.MonteCarloOpt_bcorr, Data.cum_info_stim.MonteCarloOpt_err, Data.cum_info_stim.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenS, Data.P_YgivenS_Bootstrap, ParamModel.Mean_Ntrials_perstim, WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
-    
-    % Filling in the first value of cumulative info with information
-    % value at bin 1
-    Data.cum_info_stim.MonteCarloOpt_raw(1) = Data.stim_info(1);
-    Data.cum_info_stim.MonteCarloOpt_bcorr(1) = Data.stim_info_bcorr(1);
-    Data.cum_info_stim.MonteCarloOpt_err(1) = Data.stim_info_err(1);
+    % Check what was already calculated in the 600ms folder
+    if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
+        Path2Old = '/global/scratch/jelie/MatFiles/ModMatInfo/600msInfoCumInfoMCJK_CISCIC_old';
+    elseif ismac()
+        Path2Old = '/Users/elie/Documents/CODE/data/matfile/ModMatInfo/600msInfoCumInfoMCJK';
+    else
+        Path2Old = '/auto/tdrive/julie/k6/julie/matfile/ModMatInfo/600msInfoCumInfoMCJK';
+    end
+    [~,File,Ext] = fileparts( Calfilename);
+    try
+        Old = load(fullfile(Path2Old, [File Ext]));
+        Old_Stop = find(isnan(Old.Data.cum_info_stim.MonteCarloOpt_bcorr),1) -1;
+        % Check if the code run because of high error rate
+        ConvThresh = 0.2; % Taken from cumulative_info_poisson_model_MCJK_wrapper
+        if Old.Data.cum_info_stim.MonteCarloOpt_err(Old_Stop) > ConvThresh*3 % The code stopped because the error was too high there is nothing more to calculate
+            Data.cum_info_stim.MonteCarloOpt_raw = Old.Data.cum_info_stim.MonteCarloOpt_raw;
+            Data.cum_info_stim.MonteCarloOpt_bcorr = Old.Data.cum_info_stim.MonteCarloOpt_bcorr;
+            Data.cum_info_stim.MonteCarloOpt_err = Old.Data.cum_info_stim.MonteCarloOpt_err;
+            Data.cum_info_stim.MonteCarloOpt_Samples  = Old.Data.cum_info_stim.MonteCarloOpt_Samples;
+            fprintf(1, 'Using all data previously caculated and no further calculation as error upper bound reached\n');
+        else % run from the first non calculated time point
+             % Cumulative information for stimuli
+             FirstT = Old_Stop+1;
+            [Data.cum_info_stim.MonteCarloOpt_raw, Data.cum_info_stim.MonteCarloOpt_bcorr, Data.cum_info_stim.MonteCarloOpt_err, Data.cum_info_stim.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenS, Data.P_YgivenS_Bootstrap, ParamModel.Mean_Ntrials_perstim, WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info,FirstT);
+             fprintf(1, 'Using all data previously caculated (up to %d) and pursue calculations\n',Old_Stop);
+            
+            % Filling in the first values of cumulative info
+            Data.cum_info_stim.MonteCarloOpt_raw(1:Old_Stop) = Old.Data.cum_info_stim.MonteCarloOpt_raw(1:Old_Stop);
+            Data.cum_info_stim.MonteCarloOpt_bcorr(1:Old_Stop) = Old.Data.cum_info_stim.MonteCarloOpt_bcorr(1:Old_Stop);
+            Data.cum_info_stim.MonteCarloOpt_err(1:Old_Stop) = Old.Data.cum_info_stim.MonteCarloOpt_err(1:Old_Stop);
+            Data.cum_info_stim.MonteCarloOpt_Samples(1:Old_Stop)  = Old.Data.cum_info_stim.MonteCarloOpt_Samples(1:Old_Stop);
+        end
+    catch %No data, run from the first time point
+        % Cumulative information for stimuli
+        [Data.cum_info_stim.MonteCarloOpt_raw, Data.cum_info_stim.MonteCarloOpt_bcorr, Data.cum_info_stim.MonteCarloOpt_err, Data.cum_info_stim.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenS, Data.P_YgivenS_Bootstrap, ParamModel.Mean_Ntrials_perstim, WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
+        
+        % Filling in the first value of cumulative info with information
+        % value at bin 1
+        Data.cum_info_stim.MonteCarloOpt_raw(1) = Data.stim_info(1);
+        Data.cum_info_stim.MonteCarloOpt_bcorr(1) = Data.stim_info_bcorr(1);
+        Data.cum_info_stim.MonteCarloOpt_err(1) = Data.stim_info_err(1);
+    end
      %% Save what we have for now
      Calfilename_local = [Calfilename(1:end-4) '_CIS.mat'];
      if exist(Calfilename_local, 'file')==2
