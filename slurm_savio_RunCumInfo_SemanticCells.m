@@ -31,6 +31,8 @@ elseif strcmp(CIType, 'CIC') || strcmp(CIType, 'CICR') || strcmp(CIType, 'CISR')
     load('/auto/tdrive/julie/k6/julie/matfile/ModMatInfo/600msInfoCumInfoMCJKRRand/ListFilesCumInfoSignif.mat','ValidStimCumInfoFilenames')
     Local_list = ValidStimCumInfoFilenames;
 end
+FID = fopen('/auto/tdrive/julie/k6/julie/matfile/ModMatInfo/JobToDoSavio/DoneCells07/03/2017.txt');
+DoneFiles = textscan(FID, '%s');
 
 %% Set up the variables for slurm
 JobParams = struct;
@@ -66,12 +68,22 @@ for ff=1:length(Local_list)
         MatfileToDo{ff}= fullfile('/auto/tdrive/julie/k6/julie/matfile/FirstVoc1sMat',['FirstVoc1s' TheFile(8:end) ext]);
         MatNameToDo{ff}=['FirstVoc1s' TheFile(8:end) ext];
     end
-    JobParams.Name = MatNameToDo{ff};
-    JobParams.out = fullfile(SlurmParams.resultsDirectory,sprintf('slurm_out_%s_%s_%%j.txt', JobParams.Name, JobParams.Type));
-    JobParams.err = JobParams.out;
-    icmd = sprintf(SlurmParams.cmd, MatfileToDo{ff},  JobParams.Type);
-    fprintf(1,'creating file slurm_sbatch with command %s\n',icmd);
-    slurm_sbatch_savio(icmd,JobParams);
+    DC = 0;
+    for dd=1:length(DoneFiles{1})
+        if strfind(DoneFiles{1}(dd), MatNameToDo{ff})
+            DC=1;
+        end
+    end
+    if ~DC
+        JobParams.Name = MatNameToDo{ff};
+        JobParams.out = fullfile(SlurmParams.resultsDirectory,sprintf('slurm_out_%s_%s_%%j.txt', JobParams.Name, JobParams.Type));
+        JobParams.err = JobParams.out;
+        icmd = sprintf(SlurmParams.cmd, MatfileToDo{ff},  JobParams.Type);
+        fprintf(1,'creating file slurm_sbatch with command %s\n',icmd);
+        slurm_sbatch_savio(icmd,JobParams);
+    else
+        fprintf(1, '!!!! File already done!!!!');
+    end
 end
 
 fprintf(1,'DONE Creating all Jobs'' files!!!\n');
