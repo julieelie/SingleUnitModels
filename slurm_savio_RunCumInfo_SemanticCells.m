@@ -33,6 +33,7 @@ elseif strcmp(CIType, 'CIC') || strcmp(CIType, 'CICR') || strcmp(CIType, 'CISR')
 end
 FID = fopen('/auto/tdrive/julie/k6/julie/matfile/ModMatInfo/JobToDoSavio/DoneCells07032017.txt');
 DoneFiles = textscan(FID, '%s');
+DoneFiles = DoneFiles{1};
 
 %% Set up the variables for slurm
 JobParams = struct;
@@ -60,7 +61,7 @@ cd /auto/tdrive/julie/k6/julie/matfile/ModMatInfo/JobToDoSavio
 for ff=1:length(Local_list)
     fprintf(1,'checking file %d/%d\n',ff,length(Local_list));
     [P,TheFile,ext]=fileparts(Local_list{ff});
-    if strfind(TheFile, 'InfoPoissonKDEF')
+    if ~isempty(strfind(TheFile, 'InfoPoissonKDEF'))
         MatfileToDo{ff}= fullfile('/auto/tdrive/julie/k6/julie/matfile/FirstVoc1sMat',['FirstVoc1s' TheFile(16:end) ext]);
         MatNameToDo{ff}=['FirstVoc1s' TheFile(16:end) ext];
     else
@@ -69,8 +70,9 @@ for ff=1:length(Local_list)
         MatNameToDo{ff}=['FirstVoc1s' TheFile(8:end) ext];
     end
     DC = 0;
-    for dd=1:length(DoneFiles{1})
-        if strfind(DoneFiles{1}(dd), MatNameToDo{ff})
+    for dd=1:length(DoneFiles)
+        Var_local = strfind(DoneFiles(dd), MatNameToDo{ff});
+        if ~isempty(Var_local{1})
             DC=1;
         end
     end
