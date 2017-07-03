@@ -35,11 +35,11 @@ end
 %% Set up the variables for slurm
 JobParams = struct;
 JobParams.Name = CIType;
-JobParams.Partition = 'savio2';
-JobParams.Account = 'fc_birdpow';
+JobParams.Partition = 'savio';
+JobParams.Account = 'ac_birdpow';
 JobParams.Qos = 'savio_normal';
 JobParams.NTasks = 1;
-JobParams.CPU = 24;
+JobParams.CPU = 20;
 JobParams.Type = CIType;
 if strcmp(CIType, 'Info')
     jobParams.TimeLimit = '00:05:00';
