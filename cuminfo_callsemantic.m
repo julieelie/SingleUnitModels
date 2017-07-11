@@ -19,8 +19,8 @@ if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
 end
 if ~isfield(ParamModel,'NeuroBin') || isempty(ParamModel.NeuroBin)
     ParamModel.NeuroBin = 10; % size of the window (ms) within which the neural response is analyzed
-                               % The end of the window of analysis is
-                               % determined by the Increment and ResDelay (see below).
+    % The end of the window of analysis is
+    % determined by the Increment and ResDelay (see below).
 end
 if ~isfield(ParamModel,'ResDelay') || isempty(ParamModel.ResDelay)
     ParamModel.ResDelay = 0; % Delay in ms between the end of the...
@@ -82,25 +82,26 @@ if strcmp(ParamModel.CIType, 'CIS')
         Old_Stop = find(isnan(Old.Data.cum_info_stim.MonteCarloOpt_bcorr),1) -1;
         ConvThresh = 0.2; % Taken from cumulative_info_poisson_model_MCJK_wrapper
         if isempty(Old_Stop) && isreal(Old.Data.cum_info_stim.MonteCarloOpt_bcorr(ParamModel.MaxWin_cumInfo/ParamModel.Increment)) %The code already run until the end!
-                Data.cum_info_stim.MonteCarloOpt_raw = Old.Data.cum_info_stim.MonteCarloOpt_raw;
-                Data.cum_info_stim.MonteCarloOpt_bcorr = Old.Data.cum_info_stim.MonteCarloOpt_bcorr;
-                Data.cum_info_stim.MonteCarloOpt_err = Old.Data.cum_info_stim.MonteCarloOpt_err;
-                Data.cum_info_stim.MonteCarloOpt_Samples  = Old.Data.cum_info_stim.MonteCarloOpt_Samples;
-                fprintf(1, 'Using all data previously calculated and no further calculation since it run until \n');
+            Old_Stop = length(Old.Data.cum_info_stim.MonteCarloOpt_bcorr);
+            Data.cum_info_stim.MonteCarloOpt_raw = Old.Data.cum_info_stim.MonteCarloOpt_raw;
+            Data.cum_info_stim.MonteCarloOpt_bcorr = Old.Data.cum_info_stim.MonteCarloOpt_bcorr;
+            Data.cum_info_stim.MonteCarloOpt_err = Old.Data.cum_info_stim.MonteCarloOpt_err;
+            Data.cum_info_stim.MonteCarloOpt_Samples  = Old.Data.cum_info_stim.MonteCarloOpt_Samples;
+            fprintf(1, 'Using all data previously calculated and no further calculation since it run until %d\n', Old_Stop);
         elseif isempty(Old_Stop) && isreal(Old.Data.cum_info_stim.MonteCarloOpt_bcorr(end)) %The code already run but need to run further
-             % Cumulative information for stimuli
-             Old_Stop = length(Old.Data.cum_info_stim.MonteCarloOpt_bcorr);
-             FirstT = Old_Stop+1;
-             fprintf(1, 'Using all data previously caculated (up to %d) and pursue calculations from %d\n',Old_Stop, FirstT);
+            % Cumulative information for stimuli
+            Old_Stop = length(Old.Data.cum_info_stim.MonteCarloOpt_bcorr);
+            FirstT = Old_Stop+1;
+            fprintf(1, 'Using all data previously caculated (up to %d) and pursue calculations from %d\n',Old_Stop, FirstT);
             [Data.cum_info_stim.MonteCarloOpt_raw, Data.cum_info_stim.MonteCarloOpt_bcorr, Data.cum_info_stim.MonteCarloOpt_err, Data.cum_info_stim.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenS, Data.P_YgivenS_Bootstrap, ParamModel.Mean_Ntrials_perstim, WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info,FirstT);
-             
+            
             
             % Filling in the first values of cumulative info
             Data.cum_info_stim.MonteCarloOpt_raw(1:Old_Stop) = Old.Data.cum_info_stim.MonteCarloOpt_raw(1:Old_Stop);
             Data.cum_info_stim.MonteCarloOpt_bcorr(1:Old_Stop) = Old.Data.cum_info_stim.MonteCarloOpt_bcorr(1:Old_Stop);
             Data.cum_info_stim.MonteCarloOpt_err(1:Old_Stop) = Old.Data.cum_info_stim.MonteCarloOpt_err(1:Old_Stop);
             Data.cum_info_stim.MonteCarloOpt_Samples(1:Old_Stop)  = Old.Data.cum_info_stim.MonteCarloOpt_Samples(1:Old_Stop);
-        % Check if the code run because of high error rate
+            % Check if the code run because of high error rate
         elseif Old.Data.cum_info_stim.MonteCarloOpt_err(Old_Stop) > ConvThresh*3 % The code stopped because the error was too high there is nothing more to calculate
             Data.cum_info_stim.MonteCarloOpt_raw = Old.Data.cum_info_stim.MonteCarloOpt_raw;
             Data.cum_info_stim.MonteCarloOpt_bcorr = Old.Data.cum_info_stim.MonteCarloOpt_bcorr;
@@ -108,11 +109,11 @@ if strcmp(ParamModel.CIType, 'CIS')
             Data.cum_info_stim.MonteCarloOpt_Samples  = Old.Data.cum_info_stim.MonteCarloOpt_Samples;
             fprintf(1, 'Using all data previously calculated and no further calculation as error upper bound reached\n');
         else % run from the first non calculated time point
-             % Cumulative information for stimuli
-             FirstT = Old_Stop+1;
-             fprintf(1, 'Using all data previously caculated (up to %d) and pursue calculations from %d\n',Old_Stop, FirstT);
+            % Cumulative information for stimuli
+            FirstT = Old_Stop+1;
+            fprintf(1, 'Using all data previously caculated (up to %d) and pursue calculations from %d\n',Old_Stop, FirstT);
             [Data.cum_info_stim.MonteCarloOpt_raw, Data.cum_info_stim.MonteCarloOpt_bcorr, Data.cum_info_stim.MonteCarloOpt_err, Data.cum_info_stim.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenS, Data.P_YgivenS_Bootstrap, ParamModel.Mean_Ntrials_perstim, WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info,FirstT);
-             
+            
             
             % Filling in the first values of cumulative info
             Data.cum_info_stim.MonteCarloOpt_raw(1:Old_Stop) = Old.Data.cum_info_stim.MonteCarloOpt_raw(1:Old_Stop);
@@ -131,18 +132,18 @@ if strcmp(ParamModel.CIType, 'CIS')
         Data.cum_info_stim.MonteCarloOpt_bcorr(1) = Data.stim_info_bcorr(1);
         Data.cum_info_stim.MonteCarloOpt_err(1) = Data.stim_info_err(1);
     end
-     %% Save what we have for now
-     Calfilename_local = [Calfilename(1:end-4) '_CIS.mat'];
-     if exist(Calfilename_local, 'file')==2
-         save(Calfilename_local,'Data','ParamModel','-append');
-     else
-         save(Calfilename_local,'Data','ParamModel');
-     end
-     
-     %% Data for figure
-     if FIG
-         LocalData = Data.cum_info_stim;
-     end
+    %% Save what we have for now
+    Calfilename_local = [Calfilename(1:end-4) '_CIS.mat'];
+    if exist(Calfilename_local, 'file')==2
+        save(Calfilename_local,'Data','ParamModel','-append');
+    else
+        save(Calfilename_local,'Data','ParamModel');
+    end
+    
+    %% Data for figure
+    if FIG
+        LocalData = Data.cum_info_stim;
+    end
 end
 
 if strcmp(ParamModel.CIType, 'CIC')
@@ -166,9 +167,9 @@ if strcmp(ParamModel.CIType, 'CIC')
         save(Calfilename_local,'Data','ParamModel');
     end
     %% Data for figure
-     if FIG
-         LocalData = Data.cum_info_cat;
-     end
+    if FIG
+        LocalData = Data.cum_info_cat;
+    end
 end
 
 if strcmp(ParamModel.CIType, 'CICRand')
@@ -193,9 +194,9 @@ if strcmp(ParamModel.CIType, 'CICRand')
     end
     
     %% Data for figure
-     if FIG
-         LocalData = Data.cum_info_catRand;
-     end
+    if FIG
+        LocalData = Data.cum_info_catRand;
+    end
 end
 
 %% Cumulative information if the neuron was using a constant rate coding
@@ -203,7 +204,7 @@ if strcmp(ParamModel.CIType, 'CISR')
     fprintf(1,'Cumulative information for stimuli with fixed rate\n')
     % Initializing output variables
     Data.cum_info_stim_csteRate = struct();
-
+    
     P_YgivenS_local = cell(WinNum_cumInfo,1);
     P_YgivenS_Bootstrap_local = cell(1,ParamModel.NbBoot_CumInfo);
     for ww=1:WinNum_cumInfo
@@ -235,16 +236,16 @@ if strcmp(ParamModel.CIType, 'CISR')
     end
     
     %% Data for figure
-     if FIG
-         LocalData = Data.cum_info_stim_csteRate;
-     end
+    if FIG
+        LocalData = Data.cum_info_stim_csteRate;
+    end
 end
 
 if strcmp(ParamModel.CIType, 'CICR')
     fprintf(1,'Cumulative information for semantic with fixed rate\n')
     % Initializing output variables
     Data.cum_info_cat_csteRate = struct();
-
+    
     P_YgivenC_local = cell(WinNum_cumInfo,1);
     P_YgivenC_Bootstrap_local = cell(1,ParamModel.NbBoot_CumInfo);
     for ww=1:WinNum_cumInfo
@@ -275,10 +276,10 @@ if strcmp(ParamModel.CIType, 'CICR')
         save(Calfilename_local,'Data','ParamModel');
     end
     
-     %% Data for figure
-     if FIG
-         LocalData = Data.cum_info_cat_csteRate;
-     end
+    %% Data for figure
+    if FIG
+        LocalData = Data.cum_info_cat_csteRate;
+    end
 end
 
 
@@ -334,55 +335,55 @@ if FIG
     elseif strcmp(ParamModel.CIType, 'CISR')
         title('Stimulus  Cumulative information with fixed rates')
     end
-        
-        
-%     subplot(3,1,2)
-%     Biais_MC = Data.cum_info_cat.MonteCarloOpt_raw - Data.cum_info_cat.MonteCarloOpt_bcorr;
-%     plot(1:WinNum,Data.category_info_bcorr,'LineWidth',2, 'Color',ColorCode(5,:))
-%     hold on
-%     plot(1:WinNum_cumInfo, Data.cum_info_cat.MonteCarloOpt_raw, 'LineWidth',2, 'Color',ColorCode(6,:))
-%     hold on
-%     plot(1:WinNum_cumInfo,Data.cum_info_cat.MonteCarloOpt_bcorr, 'LineWidth',2, 'Color',ColorCode(1,:))
-%     hold on
-%     plot(1:WinNum_cumInfo, Biais_MC, 'LineWidth',2, 'Color', [ColorCode(6,:) 0.5])
-%     hold on
-%     line(1:WinNum_cumInfo, Data.category_entropy(1:WinNum_cumInfo), 'LineStyle','-.','Color','r')
-%     legend('Information','Cumulative Information','Biais corrected Cumulative Information', 'Biais on cumulative information', 'Information upper-bound given dataset size', 'Location','NorthEast');
-%     hold on
-%     line([0 WinNum_cumInfo], [0 0], 'LineStyle','-.','Color','k')
-%     hold on
-%     ylim([-0.5 log2(NbStims)+2])
-%     Xtickposition=get(gca,'XTick');
-%     set(gca,'XTickLabel', Xtickposition*ParamModel.NeuroBin)
-%     xlabel('Time (ms)')
-%     ylabel('Information (bits)')
-%     shadedErrorBar([],Data.category_info_bcorr, Data.category_info_err,{'Color',ColorCode(5,:), 'LineStyle','-', 'LineWidth',1},1)
-%     hold on
-%     shadedErrorBar([],Data.cum_info_cat.MonteCarloOpt_raw, Data.cum_info_cat.MonteCarloOpt_err,{'Color',ColorCode(6,:), 'LineStyle','-', 'LineWidth',1},1)
-%     hold on
-%     shadedErrorBar([],Data.cum_info_cat.MonteCarloOpt_bcorr, Data.cum_info_cat.MonteCarloOpt_err,{'Color',ColorCode(1,:), 'LineStyle','-', 'LineWidth',1},1)
-%     hold on
-%     plot(1:WinNum_cumInfo, Data.category_entropy(1:WinNum_cumInfo), 'LineWidth',1, 'LineStyle','-.','Color', [0.8 0.5 0.3])
-%     hold off
-%     title('Semantic cumulative information')
-%     
-%     subplot(3,1,3)
-%     plot(1:WinNum_cumInfo,Data.cum_info_cat.MonteCarloOpt_raw*100 ./ Data.cum_info_stim.MonteCarloOpt_raw,'LineWidth',2, 'Color',ColorCode(1,:))
-%     hold on
-%     plot(1:WinNum_cumInfo,Data.cum_info_cat.MonteCarloOpt_bcorr*100 ./ Data.cum_info_stim.MonteCarloOpt_bcorr,'LineWidth',2, 'Color',ColorCode(1,:), 'LineStyle', '--')
-%     hold on
-%     plot(Data.category_entropy*100 ./ Data.stim_entropy, 'LineStyle','-.','Color','r')
-%     legend('% Semantic Information', ' % Semantic  Information biais corrected',' % Semantic Information upper-bound given dataset size', 'Location','NorthEast');
-%     hold on
-%     line([0 WinNum], [0 0], 'LineStyle','-.','Color','k')
-%     hold on
-%     ylim([-0.5 log2(NbStims)+1])
-%     Xtickposition=get(gca,'XTick');
-%     set(gca,'XTickLabel', Xtickposition*ParamModel.NeuroBin)
-%     xlabel('Time ms')
-%     ylabel('% Semantic Cumulative Information')
-%     title('Percentage of cumulative information about semantic categories')
-%     hold off
+    
+    
+    %     subplot(3,1,2)
+    %     Biais_MC = Data.cum_info_cat.MonteCarloOpt_raw - Data.cum_info_cat.MonteCarloOpt_bcorr;
+    %     plot(1:WinNum,Data.category_info_bcorr,'LineWidth',2, 'Color',ColorCode(5,:))
+    %     hold on
+    %     plot(1:WinNum_cumInfo, Data.cum_info_cat.MonteCarloOpt_raw, 'LineWidth',2, 'Color',ColorCode(6,:))
+    %     hold on
+    %     plot(1:WinNum_cumInfo,Data.cum_info_cat.MonteCarloOpt_bcorr, 'LineWidth',2, 'Color',ColorCode(1,:))
+    %     hold on
+    %     plot(1:WinNum_cumInfo, Biais_MC, 'LineWidth',2, 'Color', [ColorCode(6,:) 0.5])
+    %     hold on
+    %     line(1:WinNum_cumInfo, Data.category_entropy(1:WinNum_cumInfo), 'LineStyle','-.','Color','r')
+    %     legend('Information','Cumulative Information','Biais corrected Cumulative Information', 'Biais on cumulative information', 'Information upper-bound given dataset size', 'Location','NorthEast');
+    %     hold on
+    %     line([0 WinNum_cumInfo], [0 0], 'LineStyle','-.','Color','k')
+    %     hold on
+    %     ylim([-0.5 log2(NbStims)+2])
+    %     Xtickposition=get(gca,'XTick');
+    %     set(gca,'XTickLabel', Xtickposition*ParamModel.NeuroBin)
+    %     xlabel('Time (ms)')
+    %     ylabel('Information (bits)')
+    %     shadedErrorBar([],Data.category_info_bcorr, Data.category_info_err,{'Color',ColorCode(5,:), 'LineStyle','-', 'LineWidth',1},1)
+    %     hold on
+    %     shadedErrorBar([],Data.cum_info_cat.MonteCarloOpt_raw, Data.cum_info_cat.MonteCarloOpt_err,{'Color',ColorCode(6,:), 'LineStyle','-', 'LineWidth',1},1)
+    %     hold on
+    %     shadedErrorBar([],Data.cum_info_cat.MonteCarloOpt_bcorr, Data.cum_info_cat.MonteCarloOpt_err,{'Color',ColorCode(1,:), 'LineStyle','-', 'LineWidth',1},1)
+    %     hold on
+    %     plot(1:WinNum_cumInfo, Data.category_entropy(1:WinNum_cumInfo), 'LineWidth',1, 'LineStyle','-.','Color', [0.8 0.5 0.3])
+    %     hold off
+    %     title('Semantic cumulative information')
+    %
+    %     subplot(3,1,3)
+    %     plot(1:WinNum_cumInfo,Data.cum_info_cat.MonteCarloOpt_raw*100 ./ Data.cum_info_stim.MonteCarloOpt_raw,'LineWidth',2, 'Color',ColorCode(1,:))
+    %     hold on
+    %     plot(1:WinNum_cumInfo,Data.cum_info_cat.MonteCarloOpt_bcorr*100 ./ Data.cum_info_stim.MonteCarloOpt_bcorr,'LineWidth',2, 'Color',ColorCode(1,:), 'LineStyle', '--')
+    %     hold on
+    %     plot(Data.category_entropy*100 ./ Data.stim_entropy, 'LineStyle','-.','Color','r')
+    %     legend('% Semantic Information', ' % Semantic  Information biais corrected',' % Semantic Information upper-bound given dataset size', 'Location','NorthEast');
+    %     hold on
+    %     line([0 WinNum], [0 0], 'LineStyle','-.','Color','k')
+    %     hold on
+    %     ylim([-0.5 log2(NbStims)+1])
+    %     Xtickposition=get(gca,'XTick');
+    %     set(gca,'XTickLabel', Xtickposition*ParamModel.NeuroBin)
+    %     xlabel('Time ms')
+    %     ylabel('% Semantic Cumulative Information')
+    %     title('Percentage of cumulative information about semantic categories')
+    %     hold off
 end
 
 end
