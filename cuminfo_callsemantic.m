@@ -80,19 +80,39 @@ if strcmp(ParamModel.CIType, 'CIS')
     try
         Old = load(fullfile(Path2Old, [File Ext]));
         Old_Stop = find(isnan(Old.Data.cum_info_stim.MonteCarloOpt_bcorr),1) -1;
-        % Check if the code run because of high error rate
         ConvThresh = 0.2; % Taken from cumulative_info_poisson_model_MCJK_wrapper
-        if Old.Data.cum_info_stim.MonteCarloOpt_err(Old_Stop) > ConvThresh*3 % The code stopped because the error was too high there is nothing more to calculate
+        if isempty(Old_Stop) && isreal(Old.Data.cum_info_stim.MonteCarloOpt_bcorr(ParamModel.MaxWin_cumInfo/ParamModel.Increment)) %The code already run until the end!
+                Data.cum_info_stim.MonteCarloOpt_raw = Old.Data.cum_info_stim.MonteCarloOpt_raw;
+                Data.cum_info_stim.MonteCarloOpt_bcorr = Old.Data.cum_info_stim.MonteCarloOpt_bcorr;
+                Data.cum_info_stim.MonteCarloOpt_err = Old.Data.cum_info_stim.MonteCarloOpt_err;
+                Data.cum_info_stim.MonteCarloOpt_Samples  = Old.Data.cum_info_stim.MonteCarloOpt_Samples;
+                fprintf(1, 'Using all data previously calculated and no further calculation since it run until \n');
+        elseif isempty(Old_Stop) && isreal(Old.Data.cum_info_stim.MonteCarloOpt_bcorr(end)) %The code already run but need to run further
+             % Cumulative information for stimuli
+             Old_Stop = length(Old.Data.cum_info_stim.MonteCarloOpt_bcorr);
+             FirstT = Old_Stop+1;
+             fprintf(1, 'Using all data previously caculated (up to %d) and pursue calculations from %d\n',Old_Stop, FirstT);
+            [Data.cum_info_stim.MonteCarloOpt_raw, Data.cum_info_stim.MonteCarloOpt_bcorr, Data.cum_info_stim.MonteCarloOpt_err, Data.cum_info_stim.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenS, Data.P_YgivenS_Bootstrap, ParamModel.Mean_Ntrials_perstim, WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info,FirstT);
+             
+            
+            % Filling in the first values of cumulative info
+            Data.cum_info_stim.MonteCarloOpt_raw(1:Old_Stop) = Old.Data.cum_info_stim.MonteCarloOpt_raw(1:Old_Stop);
+            Data.cum_info_stim.MonteCarloOpt_bcorr(1:Old_Stop) = Old.Data.cum_info_stim.MonteCarloOpt_bcorr(1:Old_Stop);
+            Data.cum_info_stim.MonteCarloOpt_err(1:Old_Stop) = Old.Data.cum_info_stim.MonteCarloOpt_err(1:Old_Stop);
+            Data.cum_info_stim.MonteCarloOpt_Samples(1:Old_Stop)  = Old.Data.cum_info_stim.MonteCarloOpt_Samples(1:Old_Stop);
+        % Check if the code run because of high error rate
+        elseif Old.Data.cum_info_stim.MonteCarloOpt_err(Old_Stop) > ConvThresh*3 % The code stopped because the error was too high there is nothing more to calculate
             Data.cum_info_stim.MonteCarloOpt_raw = Old.Data.cum_info_stim.MonteCarloOpt_raw;
             Data.cum_info_stim.MonteCarloOpt_bcorr = Old.Data.cum_info_stim.MonteCarloOpt_bcorr;
             Data.cum_info_stim.MonteCarloOpt_err = Old.Data.cum_info_stim.MonteCarloOpt_err;
             Data.cum_info_stim.MonteCarloOpt_Samples  = Old.Data.cum_info_stim.MonteCarloOpt_Samples;
-            fprintf(1, 'Using all data previously caculated and no further calculation as error upper bound reached\n');
+            fprintf(1, 'Using all data previously calculated and no further calculation as error upper bound reached\n');
         else % run from the first non calculated time point
              % Cumulative information for stimuli
              FirstT = Old_Stop+1;
+             fprintf(1, 'Using all data previously caculated (up to %d) and pursue calculations from %d\n',Old_Stop, FirstT);
             [Data.cum_info_stim.MonteCarloOpt_raw, Data.cum_info_stim.MonteCarloOpt_bcorr, Data.cum_info_stim.MonteCarloOpt_err, Data.cum_info_stim.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenS, Data.P_YgivenS_Bootstrap, ParamModel.Mean_Ntrials_perstim, WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info,FirstT);
-             fprintf(1, 'Using all data previously caculated (up to %d) and pursue calculations\n',Old_Stop);
+             
             
             % Filling in the first values of cumulative info
             Data.cum_info_stim.MonteCarloOpt_raw(1:Old_Stop) = Old.Data.cum_info_stim.MonteCarloOpt_raw(1:Old_Stop);
