@@ -89,7 +89,7 @@ if ~isfield(ParamModel,'MaxWin') || isempty(ParamModel.MaxWin)
         ... spectrogram
 end
 if ~isfield(ParamModel,'MaxWin_cumInfo') || isempty(ParamModel.MaxWin_cumInfo)
-    ParamModel.MaxWin_cumInfo = 600; %end point of the last anaysis window for...
+    ParamModel.MaxWin_cumInfo = 300; %end point of the last anaysis window for...
     ... the calculation of cumulative information
 end
 if ~isfield(ParamModel,'Increment') || isempty(ParamModel.Increment)
@@ -408,7 +408,7 @@ end
 if SWITCH.CumInfoCal
     if exist(Calfilename_local, 'file') == 2
         fprintf(1,'loading the data\n');
-        load(Calfilename_local,'Data', 'InputData','ParamModel');
+        load(Calfilename_local,'Data', 'InputData');
     else
         fprintf(1,'No Data available for this cell, run the calculation of information first!\n');
     end
