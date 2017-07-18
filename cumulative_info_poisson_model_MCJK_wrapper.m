@@ -24,7 +24,7 @@ end
 
 %% Configure Parallel computing
 if ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))
-    delete(gcp)
+    delete(gcp('nocreate'))
     MyParPool = parpool(str2num(getenv('SLURM_CPUS_ON_NODE')),'IdleTimeout', Inf);
     system('mkdir -p /global/scratch/$USER/$SLURM_JOB_ID')
     [~,JobID] = system('echo $SLURM_JOB_ID');
