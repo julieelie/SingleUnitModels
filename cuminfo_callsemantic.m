@@ -81,7 +81,7 @@ if strcmp(ParamModel.CIType, 'CIS')
         Old = load(fullfile(Path2Old, [File Ext]));
         Old_Stop = find(isnan(Old.Data.cum_info_stim.MonteCarloOpt_bcorr),1) -1;
         ConvThresh = 0.2; % Taken from cumulative_info_poisson_model_MCJK_wrapper
-        if isempty(Old_Stop) && isreal(Old.Data.cum_info_stim.MonteCarloOpt_bcorr(ParamModel.MaxWin_cumInfo/ParamModel.Increment)) %The code already run until the end!
+        if isempty(Old_Stop) && length(Old.Data.cum_info_stim.MonteCarloOpt_bcorr)==(ParamModel.MaxWin_cumInfo/ParamModel.Increment) && isreal(Old.Data.cum_info_stim.MonteCarloOpt_bcorr(ParamModel.MaxWin_cumInfo/ParamModel.Increment)) %The code already run until the end!
             Old_Stop = length(Old.Data.cum_info_stim.MonteCarloOpt_bcorr);
             Data.cum_info_stim.MonteCarloOpt_raw = Old.Data.cum_info_stim.MonteCarloOpt_raw;
             Data.cum_info_stim.MonteCarloOpt_bcorr = Old.Data.cum_info_stim.MonteCarloOpt_bcorr;
@@ -157,7 +157,7 @@ if strcmp(ParamModel.CIType, 'CIC')
         Old = load(fullfile(Path2Old, [File Ext]));
         Old_Stop = find(isnan(Old.Data.cum_info_cat.MonteCarloOpt_bcorr),1) -1;
         ConvThresh = 0.2; % Taken from cumulative_info_poisson_model_MCJK_wrapper
-        if isempty(Old_Stop) && isreal(Old.Data.cum_info_cat.MonteCarloOpt_bcorr(ParamModel.MaxWin_cumInfo/ParamModel.Increment)) %The code already run until the end!
+        if isempty(Old_Stop) && length(Old.Data.cum_info_cat.MonteCarloOpt_bcorr)==(ParamModel.MaxWin_cumInfo/ParamModel.Increment) && isreal(Old.Data.cum_info_cat.MonteCarloOpt_bcorr(ParamModel.MaxWin_cumInfo/ParamModel.Increment)) %The code already run until the end!
             Old_Stop = length(Old.Data.cum_info_cat.MonteCarloOpt_bcorr);
             Data.cum_info_cat.MonteCarloOpt_raw = Old.Data.cum_info_cat.MonteCarloOpt_raw;
             Data.cum_info_cat.MonteCarloOpt_bcorr = Old.Data.cum_info_cat.MonteCarloOpt_bcorr;
@@ -262,7 +262,7 @@ if strcmp(ParamModel.CIType, 'CISR')
          Old_Stop = find(isnan(Old.Data.cum_info_stim.MonteCarloOpt_bcorr_csteRate),1) -1;
          ConvThresh = 0.2; % Taken from cumulative_info_poisson_model_MCJK_wrapper
         
-         if isempty(Old_Stop) && isreal(Old.Data.cum_info_stim.MonteCarloOpt_bcorr_csteRate(ParamModel.MaxWin_cumInfo/ParamModel.Increment)) 
+         if isempty(Old_Stop) && length(Old.Data.cum_info_stim.MonteCarloOpt_bcorr_csteRate)==(ParamModel.MaxWin_cumInfo/ParamModel.Increment) && isreal(Old.Data.cum_info_stim.MonteCarloOpt_bcorr_csteRate(ParamModel.MaxWin_cumInfo/ParamModel.Increment)) 
              %The code already run until the end!
              Old_Stop = length(Old.Data.cum_info_stim.MonteCarloOpt_bcorr_csteRate);
              Data.cum_info_stim_csteRate.MonteCarloOpt_bcorr = Old.Data.cum_info_stim.MonteCarloOpt_bcorr_csteRate;
@@ -388,7 +388,7 @@ if strcmp(ParamModel.CIType, 'CICR')
         Old_Stop = find(isnan(Old.Data.cum_info_cat.MonteCarloOpt_bcorr_csteRate),1) -1;
         ConvThresh = 0.2; % Taken from cumulative_info_poisson_model_MCJK_wrapper
         
-        if isempty(Old_Stop) && isreal(Old.Data.cum_info_cat.MonteCarloOpt_bcorr_csteRate(ParamModel.MaxWin_cumInfo/ParamModel.Increment))
+        if isempty(Old_Stop) && length(Old.Data.cum_info_cat.MonteCarloOpt_bcorr_csteRate)==(ParamModel.MaxWin_cumInfo/ParamModel.Increment) && isreal(Old.Data.cum_info_cat.MonteCarloOpt_bcorr_csteRate(ParamModel.MaxWin_cumInfo/ParamModel.Increment))
             %The code already run until the end!
             Old_Stop = length(Old.Data.cum_info_cat.MonteCarloOpt_bcorr_csteRate);
             Data.cum_info_cat_csteRate.MonteCarloOpt_bcorr = Old.Data.cum_info_cat.MonteCarloOpt_bcorr_csteRate;
