@@ -131,8 +131,8 @@ if strcmp(ParamModel.CIType, 'CIS')
         Data.cum_info_stim.MonteCarloOpt_err(1) = Data.stim_info_err(1);
     end
     %% Save what we have for now
-    Calfilename_local = fullfile(Path2Old, [File Ext]); % This line is used when calculating the CIS in 2 steps (for cells with long calculation times)
-    %Calfilename_local = [Calfilename(1:end-4) '_CIS.mat'];
+    %Calfilename_local = fullfile(Path2Old, [File Ext]); % This line is used when calculating the CIS in 2 steps (for cells with long calculation times)
+    Calfilename_local = [Calfilename(1:end-4) '_CIS.mat'];
     if exist(Calfilename_local, 'file')==2
         save(Calfilename_local,'Data','ParamModel','-append');
     else
