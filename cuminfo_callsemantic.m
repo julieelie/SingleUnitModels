@@ -78,7 +78,11 @@ if strcmp(ParamModel.CIType, 'CIS')
     
     % Check what was already calculated in the 600ms folder
     try
-        Old = load(fullfile(Path2Old, [File Ext]));
+        Old = load(fullfile(Path2Old, [File Ext]), 'Data');
+        FNames = fieldnames(Old.Data) ;
+        Keep = find(strcmp(FNames, 'cum_info_stim'));
+        FNames = FNames([1:(Keep-1) (Keep+1):end]);
+        Old.Data = rmfield(Old.Data, FNames);
         Old_Stop = find(isnan(Old.Data.cum_info_stim.MonteCarloOpt_bcorr),1) -1;
         ConvThresh = 0.2; % Taken from cumulative_info_poisson_model_MCJK_wrapper
         if isempty(Old_Stop) && length(Old.Data.cum_info_stim.MonteCarloOpt_bcorr)==(ParamModel.MaxWin_cumInfo/ParamModel.Increment) && isreal(Old.Data.cum_info_stim.MonteCarloOpt_bcorr(ParamModel.MaxWin_cumInfo/ParamModel.Increment)) %The code already run until the end!
@@ -153,6 +157,10 @@ if strcmp(ParamModel.CIType, 'CIC')
     % Check what was already calculated in the 600ms folder
     try
         Old = load(fullfile(Path2Old, [File Ext]));
+        FNames = fieldnames(Old.Data) ;
+        Keep = find(strcmp(FNames, 'cum_info_cat'));
+        FNames = FNames([1:(Keep-1) (Keep+1):end]);
+        Old.Data = rmfield(Old.Data, FNames);
         Old_Stop = find(isnan(Old.Data.cum_info_cat.MonteCarloOpt_bcorr),1) -1;
         ConvThresh = 0.2; % Taken from cumulative_info_poisson_model_MCJK_wrapper
         if isempty(Old_Stop) && length(Old.Data.cum_info_cat.MonteCarloOpt_bcorr)==(ParamModel.MaxWin_cumInfo/ParamModel.Increment) && isreal(Old.Data.cum_info_cat.MonteCarloOpt_bcorr(ParamModel.MaxWin_cumInfo/ParamModel.Increment)) %The code already run until the end!
@@ -255,6 +263,10 @@ if strcmp(ParamModel.CIType, 'CISR')
      % Check what was already calculated in the 600ms folder
      try
          Old = load(fullfile(Path2Old, [File Ext]));
+         FNames = fieldnames(Old.Data) ;
+         Keep = find(strcmp(FNames, 'cum_info_stim'));
+         FNames = FNames([1:(Keep-1) (Keep+1):end]);
+         Old.Data = rmfield(Old.Data, FNames);
          Old_Stop = find(isnan(Old.Data.cum_info_stim.MonteCarloOpt_bcorr_csteRate),1) -1;
          ConvThresh = 0.2; % Taken from cumulative_info_poisson_model_MCJK_wrapper
         
@@ -379,6 +391,10 @@ if strcmp(ParamModel.CIType, 'CICR')
     % Check what was already calculated in the 600ms folder
     try
         Old = load(fullfile(Path2Old, [File Ext]));
+        FNames = fieldnames(Old.Data) ;
+        Keep = find(strcmp(FNames, 'cum_info_cat'));
+        FNames = FNames([1:(Keep-1) (Keep+1):end]);
+        Old.Data = rmfield(Old.Data, FNames);
         Old_Stop = find(isnan(Old.Data.cum_info_cat.MonteCarloOpt_bcorr_csteRate),1) -1;
         ConvThresh = 0.2; % Taken from cumulative_info_poisson_model_MCJK_wrapper
         
