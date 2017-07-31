@@ -123,7 +123,7 @@ if strcmp(ParamModel.CIType, 'CIS')
             Data.cum_info_stim.MonteCarloOpt_err(1:Old_Stop) = Old.Data.cum_info_stim.MonteCarloOpt_err(1:Old_Stop);
             Data.cum_info_stim.MonteCarloOpt_Samples(1:Old_Stop)  = Old.Data.cum_info_stim.MonteCarloOpt_Samples(1:Old_Stop);
         end
-    catch %No data, run from the first time point
+    catch ME %No data, run from the first time point
         fprintf(1, 'No data, run from the first time point');
         % Cumulative information for stimuli
         [Data.cum_info_stim.MonteCarloOpt_raw, Data.cum_info_stim.MonteCarloOpt_bcorr, Data.cum_info_stim.MonteCarloOpt_err, Data.cum_info_stim.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenS, Data.P_YgivenS_Bootstrap, ParamModel.Mean_Ntrials_perstim, WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
@@ -133,6 +133,7 @@ if strcmp(ParamModel.CIType, 'CIS')
         Data.cum_info_stim.MonteCarloOpt_raw(1) = Data.stim_info(1);
         Data.cum_info_stim.MonteCarloOpt_bcorr(1) = Data.stim_info_bcorr(1);
         Data.cum_info_stim.MonteCarloOpt_err(1) = Data.stim_info_err(1);
+        rethrow(ME)
     end
     %% Save what we have for now
     Calfilename_local = fullfile(Path2Old, [File Ext]); % This line is used when calculating the CIS in 2 steps (for cells with long calculation times)
@@ -200,7 +201,7 @@ if strcmp(ParamModel.CIType, 'CIC')
             Data.cum_info_cat.MonteCarloOpt_err(1:Old_Stop) = Old.Data.cum_info_cat.MonteCarloOpt_err(1:Old_Stop);
             Data.cum_info_cat.MonteCarloOpt_Samples(1:Old_Stop)  = Old.Data.cum_info_cat.MonteCarloOpt_Samples(1:Old_Stop);
         end
-    catch %No data, run from the first time point
+    catch ME %No data, run from the first time point
         fprintf(1, 'No data, run from the first time point');
         % Cumulative information for categories
         [Data.cum_info_cat.MonteCarloOpt_raw, Data.cum_info_cat.MonteCarloOpt_bcorr, Data.cum_info_cat.MonteCarloOpt_err, Data.cum_info_cat.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenC, Data.P_YgivenC_Bootstrap, ParamModel.Mean_Ntrials_perstim,WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
@@ -210,6 +211,7 @@ if strcmp(ParamModel.CIType, 'CIC')
         Data.cum_info_cat.MonteCarloOpt_raw(1) = Data.category_info(1);
         Data.cum_info_cat.MonteCarloOpt_bcorr(1) = Data.category_info_bcorr(1);
         Data.cum_info_cat.MonteCarloOpt_err(1) = Data.category_info_err(1);
+        rethrow(ME)
     end
     
    
@@ -339,7 +341,7 @@ if strcmp(ParamModel.CIType, 'CISR')
              Data.cum_info_stim_csteRate.MonteCarloOpt_err(1:Old_Stop) = Old.Data.cum_info_stim.MonteCarloOpt_err_csteRate(1:Old_Stop);
              
          end
-     catch %No data, run from the first time point
+     catch ME %No data, run from the first time point
          fprintf(1, 'No data, run from the first time point');
          
          % Cumulative information for stimuli ctse rate
@@ -365,6 +367,8 @@ if strcmp(ParamModel.CIType, 'CISR')
          % value at bin 1
          Data.cum_info_stim_csteRate.MonteCarloOpt_bcorr(1) = Data.stim_info_bcorr_csteRate(1);
          Data.cum_info_stim_csteRate.MonteCarloOpt_err(1) = Data.stim_info_err_csteRate(1);
+         
+         rethrow(ME)
      end
      
      
@@ -467,7 +471,7 @@ if strcmp(ParamModel.CIType, 'CICR')
             Data.cum_info_cat_csteRate.MonteCarloOpt_err(1:Old_Stop) = Old.Data.cum_info_cat.MonteCarloOpt_err_csteRate(1:Old_Stop);
             
         end
-    catch %No data, run from the first time point
+    catch  ME%No data, run from the first time point
         fprintf(1, 'No data, run from the first time point');
         
         P_YgivenC_local = cell(WinNum_cumInfo,1);
@@ -492,6 +496,8 @@ if strcmp(ParamModel.CIType, 'CICR')
         % value at bin 1
         Data.cum_info_cat_csteRate.MonteCarloOpt_bcorr(1) = Data.category_info_bcorr_csteRate(1);
         Data.cum_info_cat_csteRate.MonteCarloOpt_err(1) = Data.category_info_err_csteRate(1);
+        
+        rethrow(ME)
     end
     
     
