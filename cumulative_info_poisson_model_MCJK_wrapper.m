@@ -57,7 +57,7 @@ while ((Error_local<=(3*ConvThresh)) && (tt<Nb_Win))
     
     % Monte Carlo estimation with full memory
     [Icum_EstMonteCarloOpt(tt),~, ~, Icum_EstMonteCarloOpt_bcorr(tt),Icum_EstMonteCarloOpt_err(tt),MC_Samp(tt)]=cumulative_info_poisson_model_calculus_MCJK(P_YgivenS_local, P_YgivenS_JK_local,NTrials,'ConvThresh',ConvThresh, 'MaxMCParameter',MaxMCParameter, 'IncrMCParameter', IncrMCParameter, 'Verbose',Verbose);
-    fprintf('# MC samples %d Error:%.2f\n', MC_Samp(tt),Icum_EstMonteCarloOpt_err(tt));
+    fprintf('# MC value: %.2f MC samples %d Error:%.2f\n', Icum_EstMonteCarloOpt(tt), MC_Samp(tt),Icum_EstMonteCarloOpt_err(tt));
     telapsed = toc(tstart);
     fprintf('Elapsed time: %d s\n', telapsed)
     Error_local=Icum_EstMonteCarloOpt_err(tt);
