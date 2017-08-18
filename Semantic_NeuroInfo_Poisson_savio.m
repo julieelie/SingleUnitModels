@@ -61,10 +61,10 @@ if ~isfield(SWITCH,'BestBin') || isempty(SWITCH.BestBin)
     SWITCH.BestBin=0;
 end
 if ~isfield(SWITCH,'InfoCal') || isempty(SWITCH.InfoCal)
-    SWITCH.InfoCal=1;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
+    SWITCH.InfoCal=0;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
 end
 if ~isfield(SWITCH,'CumInfoCal') || isempty(SWITCH.CumInfoCal)
-    SWITCH.CumInfoCal=0;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
+    SWITCH.CumInfoCal=1;%Set to 1 if you want to calculate information on spike trains and change the name of the output file so they indicate "Info"
 end
 
 
