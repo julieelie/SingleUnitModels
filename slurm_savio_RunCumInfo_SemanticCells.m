@@ -58,36 +58,54 @@ MatNameToDo = cell(length(Local_list),1);
 
 %% Create jobs' files
 cd /auto/tdrive/julie/k6/julie/matfile/ModMatInfo/JobToDoSavio
-for ff=1:length(Local_list)
-    fprintf(1,'checking file %d/%d\n',ff,length(Local_list));
-    [P,TheFile,ext]=fileparts(Local_list{ff});
-    if ~isempty(strfind(TheFile, 'InfoPoissonKDEF'))
-        MatfileToDo{ff}= fullfile('/auto/tdrive/julie/k6/julie/matfile/FirstVoc1sMat',['FirstVoc1s' TheFile(16:end) ext]);
-        MatNameToDo{ff}=['FirstVoc1s' TheFile(16:end) ext];
-    else
-        BegPath=strfind(P,'k6');
-        MatfileToDo{ff}= fullfile('/auto/tdrive/julie/k6/julie/matfile/FirstVoc1sMat',['FirstVoc1s' TheFile(8:end) ext]);
-        MatNameToDo{ff}=['FirstVoc1s' TheFile(8:end) ext];
+if strcmp(CIType, 'CIS')
+    for ff=1:length(Local_list)
+        fprintf(1,'checking file %d/%d\n',ff,length(Local_list));
+        [P,TheFile,ext]=fileparts(Local_list{ff});
+        if ~isempty(strfind(TheFile, 'InfoPoissonKDEF'))
+            MatfileToDo{ff}= fullfile('/auto/tdrive/julie/k6/julie/matfile/FirstVoc1sMat',['FirstVoc1s' TheFile(16:end) ext]);
+            MatNameToDo{ff}=['FirstVoc1s' TheFile(16:end) ext];
+        else
+            BegPath=strfind(P,'k6');
+            MatfileToDo{ff}= fullfile('/auto/tdrive/julie/k6/julie/matfile/FirstVoc1sMat',['FirstVoc1s' TheFile(8:end) ext]);
+            MatNameToDo{ff}=['FirstVoc1s' TheFile(8:end) ext];
+        end
+    %     DC = 0;
+    %     for dd=1:length(DoneFiles)
+    %         Var_local = strfind(DoneFiles(dd), MatNameToDo{ff});
+    %         if ~isempty(Var_local{1})
+    %             DC=1;
+    %         end
+    %     end
+    %     if ~DC
+            JobParams.Name = MatNameToDo{ff};
+            JobParams.out = fullfile(SlurmParams.resultsDirectory,sprintf('slurm_out_%s_%s_%%j.txt', JobParams.Name, JobParams.Type));
+            JobParams.err = JobParams.out;
+            icmd = sprintf(SlurmParams.cmd, MatfileToDo{ff},  JobParams.Type);
+            fprintf(1,'creating file slurm_sbatch with command %s\n',icmd);
+            slurm_sbatch_savio(icmd,JobParams);
+    %     else
+    %         fprintf(1, '!!!! File already done!!!!');
+    %     end
     end
-%     DC = 0;
-%     for dd=1:length(DoneFiles)
-%         Var_local = strfind(DoneFiles(dd), MatNameToDo{ff});
-%         if ~isempty(Var_local{1})
-%             DC=1;
-%         end
-%     end
-%     if ~DC
+elseif strcmp(CIType, 'CIC')
+     for ff=1:length(Local_list)
+        fprintf(1,'checking file %d/%d\n',ff,length(Local_list));
+        TheFile=Local_list(ff).name;
+        Ind = strfind(TheFile, '_CIS');
+        MatfileToDo{ff}= fullfile('/auto/tdrive/julie/k6/julie/matfile/FirstVoc1sMat',['FirstVoc1s' TheFile(16:(Ind-1)) '.mat']);
+        MatNameToDo{ff}=['FirstVoc1s' TheFile(16:(Ind-1)) '.mat'];
+        
         JobParams.Name = MatNameToDo{ff};
         JobParams.out = fullfile(SlurmParams.resultsDirectory,sprintf('slurm_out_%s_%s_%%j.txt', JobParams.Name, JobParams.Type));
         JobParams.err = JobParams.out;
         icmd = sprintf(SlurmParams.cmd, MatfileToDo{ff},  JobParams.Type);
         fprintf(1,'creating file slurm_sbatch with command %s\n',icmd);
         slurm_sbatch_savio(icmd,JobParams);
-%     else
-%         fprintf(1, '!!!! File already done!!!!');
-%     end
+        
+     end
 end
-
+    
 fprintf(1,'DONE Creating all Jobs'' files!!!\n');
 
 % %% Find the jobs of the interesting cells
