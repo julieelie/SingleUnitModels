@@ -133,7 +133,8 @@ if strcmp(ParamModel.CIType, 'CIS')
         Data.cum_info_stim.MonteCarloOpt_raw(1) = Data.stim_info(1);
         Data.cum_info_stim.MonteCarloOpt_bcorr(1) = Data.stim_info_bcorr(1);
         Data.cum_info_stim.MonteCarloOpt_err(1) = Data.stim_info_err(1);
-        rethrow(ME)
+%         fprintf('This is the error:\n')
+%         ME
     end
     %% Save what we have for now
     %Calfilename_local = fullfile(Path2Old, [File Ext]); % This line is used when calculating the CIS in 2 steps (for cells with long calculation times)
@@ -211,7 +212,8 @@ if strcmp(ParamModel.CIType, 'CIC')
         Data.cum_info_cat.MonteCarloOpt_raw(1) = Data.category_info(1);
         Data.cum_info_cat.MonteCarloOpt_bcorr(1) = Data.category_info_bcorr(1);
         Data.cum_info_cat.MonteCarloOpt_err(1) = Data.category_info_err(1);
-        rethrow(ME)
+%         fprintf('This is the error:\n')
+%         ME
     end
     
    
@@ -368,7 +370,8 @@ if strcmp(ParamModel.CIType, 'CISR')
          Data.cum_info_stim_csteRate.MonteCarloOpt_bcorr(1) = Data.stim_info_bcorr_csteRate(1);
          Data.cum_info_stim_csteRate.MonteCarloOpt_err(1) = Data.stim_info_err_csteRate(1);
          
-         rethrow(ME)
+%          fprintf('This is the error:\n')
+%         ME
      end
      
      
@@ -496,8 +499,9 @@ if strcmp(ParamModel.CIType, 'CICR')
         % value at bin 1
         Data.cum_info_cat_csteRate.MonteCarloOpt_bcorr(1) = Data.category_info_bcorr_csteRate(1);
         Data.cum_info_cat_csteRate.MonteCarloOpt_err(1) = Data.category_info_err_csteRate(1);
-        
-        rethrow(ME)
+%         
+%         fprintf('This is the error:\n')
+%         ME
     end
     
     
