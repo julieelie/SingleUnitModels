@@ -88,7 +88,7 @@ if strcmp(CIType, 'CIS')
     %         fprintf(1, '!!!! File already done!!!!');
     %     end
     end
-elseif strcmp(CIType, 'CIC')
+elseif strcmp(CIType, 'CIC') || strcmp(CIType, 'CISR')
      for ff=1:length(Local_list)
         fprintf(1,'checking file %d/%d\n',ff,length(Local_list));
         TheFile=Local_list(ff).name;
@@ -102,7 +102,6 @@ elseif strcmp(CIType, 'CIC')
         icmd = sprintf(SlurmParams.cmd, MatfileToDo{ff},  JobParams.Type);
         fprintf(1,'creating file slurm_sbatch with command %s\n',icmd);
         slurm_sbatch_savio(icmd,JobParams);
-        
      end
 end
     
