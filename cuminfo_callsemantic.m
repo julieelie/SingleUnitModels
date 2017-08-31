@@ -378,8 +378,8 @@ if strcmp(ParamModel.CIType, 'CISR')
      
     
     %% Save what we have for now
-     Calfilename_local = fullfile(Path2Old, [File Ext]); % This line is used when calculating the CISR in 2 steps (for cells with long calculation times)
-    %Calfilename_local = [Calfilename(1:end-4) '_CISR.mat'];
+     %Calfilename_local = fullfile(Path2Old, [File Ext]); % This line is used when calculating the CISR in 2 steps (for cells with long calculation times)
+    Calfilename_local = [Calfilename(1:end-4) '_CISR.mat'];
     if exist(Calfilename_local, 'file')==2
         save(Calfilename_local,'Data','ParamModel','-append');
     else
