@@ -88,7 +88,7 @@ if strcmp(CIType, 'CIS')
     %         fprintf(1, '!!!! File already done!!!!');
     %     end
     end
-elseif strcmp(CIType, 'CIC') || strcmp(CIType, 'CISR') || strcmp(CIType, 'CICR') || strcmp(CIType, 'CISRand')
+elseif strcmp(CIType, 'CIC') || strcmp(CIType, 'CISR') || strcmp(CIType, 'CICR') || strcmp(CIType, 'CICRand')
      for ff=1:length(Local_list)
         fprintf(1,'checking file %d/%d\n',ff,length(Local_list));
         TheFile=Local_list(ff).name;
