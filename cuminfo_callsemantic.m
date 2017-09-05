@@ -236,17 +236,72 @@ if strcmp(ParamModel.CIType, 'CICRand')
     fprintf(1,'Cumulative information for random categories\n')
     % Initializing output variables
     Data.cum_info_catRand = struct();
-    % Cumulative information for categories
-    [Data.cum_info_catRand.MonteCarloOpt_raw, Data.cum_info_catRand.MonteCarloOpt_bcorr, Data.cum_info_catRand.MonteCarloOpt_err, Data.cum_info_catRand.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenCRand, Data.P_YgivenCRand_Bootstrap, ParamModel.Mean_Ntrials_perstim,WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
     
-    % Filling in the first value of cumulative info with information
-    % value at bin 1
-    Data.cum_info_catRand.MonteCarloOpt_raw(1) = Data.category_info(1);
-    Data.cum_info_catRand.MonteCarloOpt_bcorr(1) = Data.category_info_bcorr(1);
-    Data.cum_info_catRand.MonteCarloOpt_err(1) = Data.category_info_err(1);
+    
+     % Check what was already calculated in the 600ms folder
+    try
+        Old = load(fullfile(Path2Old, [File Ext]));
+        FNames = fieldnames(Old.Data) ;
+        Keep = find(strcmp(FNames, 'cum_info_catRand'));
+        FNames = FNames([1:(Keep-1) (Keep+1):end]);
+        Old.Data = rmfield(Old.Data, FNames);
+        Old_Stop = find(isnan(Old.Data.cum_info_catRand.MonteCarloOpt_bcorr),1) -1;
+        ConvThresh = 0.2; % Taken from cumulative_info_poisson_model_MCJK_wrapper
+        if isempty(Old_Stop) && length(Old.Data.cum_info_catRand.MonteCarloOpt_bcorr)==(ParamModel.MaxWin_cumInfo/ParamModel.Increment) && isreal(Old.Data.cum_info_catRand.MonteCarloOpt_bcorr(ParamModel.MaxWin_cumInfo/ParamModel.Increment)) %The code already run until the end!
+            Old_Stop = length(Old.Data.cum_info_catRand.MonteCarloOpt_bcorr);
+            Data.cum_info_catRand.MonteCarloOpt_raw = Old.Data.cum_info_catRand.MonteCarloOpt_raw;
+            Data.cum_info_catRand.MonteCarloOpt_bcorr = Old.Data.cum_info_catRand.MonteCarloOpt_bcorr;
+            Data.cum_info_catRand.MonteCarloOpt_err = Old.Data.cum_info_catRand.MonteCarloOpt_err;
+            Data.cum_info_catRand.MonteCarloOpt_Samples  = Old.Data.cum_info_catRand.MonteCarloOpt_Samples;
+            fprintf(1, 'Using all data previously calculated and no further calculation since it run until %d\n', Old_Stop);
+        elseif isempty(Old_Stop) && isreal(Old.Data.cum_info_catRand.MonteCarloOpt_bcorr(end)) %The code already run but need to run further
+            % Cumulative information for stimuli
+            Old_Stop = length(Old.Data.cum_info_catRand.MonteCarloOpt_bcorr);
+            fprintf(1, 'Using all data previously caculated (up to %d) and pursue calculations from %d\n',Old_Stop, Old_Stop+1);
+            [Data.cum_info_catRand.MonteCarloOpt_raw, Data.cum_info_catRand.MonteCarloOpt_bcorr, Data.cum_info_catRand.MonteCarloOpt_err, Data.cum_info_catRand.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenCRand, Data.P_YgivenCRand_Bootstrap, ParamModel.Mean_Ntrials_perstim,WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info,Old_Stop);
+            
+            % Filling in the first values of cumulative info
+            Data.cum_info_catRand.MonteCarloOpt_raw(1:Old_Stop) = Old.Data.cum_info_catRand.MonteCarloOpt_raw(1:Old_Stop);
+            Data.cum_info_catRand.MonteCarloOpt_bcorr(1:Old_Stop) = Old.Data.cum_info_catRand.MonteCarloOpt_bcorr(1:Old_Stop);
+            Data.cum_info_catRand.MonteCarloOpt_err(1:Old_Stop) = Old.Data.cum_info_catRand.MonteCarloOpt_err(1:Old_Stop);
+            Data.cum_info_catRand.MonteCarloOpt_Samples(1:Old_Stop)  = Old.Data.cum_info_catRand.MonteCarloOpt_Samples(1:Old_Stop);
+            % Check if the code run because of high error rate
+        elseif Old.Data.cum_info_catRand.MonteCarloOpt_err(Old_Stop) > ConvThresh*3 % The code stopped because the error was too high there is nothing more to calculate
+            Data.cum_info_catRand.MonteCarloOpt_raw = Old.Data.cum_info_catRand.MonteCarloOpt_raw;
+            Data.cum_info_catRand.MonteCarloOpt_bcorr = Old.Data.cum_info_catRand.MonteCarloOpt_bcorr;
+            Data.cum_info_catRand.MonteCarloOpt_err = Old.Data.cum_info_catRand.MonteCarloOpt_err;
+            Data.cum_info_catRand.MonteCarloOpt_Samples  = Old.Data.cum_info_catRand.MonteCarloOpt_Samples;
+            fprintf(1, 'Using all data previously calculated and no further calculation as error upper bound reached\n');
+        else % run from the first non calculated time point
+            % Cumulative information for categories
+            fprintf(1, 'Using all data previously caculated (up to %d) and pursue calculations from %d\n',Old_Stop, Old_Stop+1);
+            [Data.cum_info_catRand.MonteCarloOpt_raw, Data.cum_info_catRand.MonteCarloOpt_bcorr, Data.cum_info_catRand.MonteCarloOpt_err, Data.cum_info_catRand.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenCRand, Data.P_YgivenCRand_Bootstrap, ParamModel.Mean_Ntrials_perstim,WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info,Old_Stop);
+            
+            
+            % Filling in the first values of cumulative info
+            Data.cum_info_catRand.MonteCarloOpt_raw(1:Old_Stop) = Old.Data.cum_info_catRand.MonteCarloOpt_raw(1:Old_Stop);
+            Data.cum_info_catRand.MonteCarloOpt_bcorr(1:Old_Stop) = Old.Data.cum_info_catRand.MonteCarloOpt_bcorr(1:Old_Stop);
+            Data.cum_info_catRand.MonteCarloOpt_err(1:Old_Stop) = Old.Data.cum_info_catRand.MonteCarloOpt_err(1:Old_Stop);
+            Data.cum_info_catRand.MonteCarloOpt_Samples(1:Old_Stop)  = Old.Data.cum_info_catRand.MonteCarloOpt_Samples(1:Old_Stop);
+        end
+    catch ME %No data, run from the first time point
+        fprintf(1, 'No data, run from the first time point');
+        % Cumulative information for categories
+        [Data.cum_info_catRand.MonteCarloOpt_raw, Data.cum_info_catRand.MonteCarloOpt_bcorr, Data.cum_info_catRand.MonteCarloOpt_err, Data.cum_info_catRand.MonteCarloOpt_Samples] = cumulative_info_poisson_model_MCJK_wrapper(Data.P_YgivenCRand, Data.P_YgivenCRand_Bootstrap, ParamModel.Mean_Ntrials_perstim,WinNum_cumInfo, ParamModel.NbBoot_CumInfo, ParamModel.MaxNumSamples_MCopt_Cum_Info);
+        
+        % Filling in the first value of cumulative info with information
+        % value at bin 1
+        Data.cum_info_catRand.MonteCarloOpt_raw(1) = Data.category_info(1);
+        Data.cum_info_catRand.MonteCarloOpt_bcorr(1) = Data.category_info_bcorr(1);
+        Data.cum_info_catRand.MonteCarloOpt_err(1) = Data.category_info_err(1);
+%         fprintf('This is the error:\n')
+%         ME
+    end
+   
     
     %% Save what we have for now
-    Calfilename_local = [Calfilename(1:end-4) '_CICRand.mat'];
+    Calfilename_local = fullfile(Path2Old, [File Ext]); % This line is used when calculating the CIC in 2 steps (for cells with long calculation times)
+    %Calfilename_local = [Calfilename(1:end-4) '_CICRand.mat'];
     if exist(Calfilename_local, 'file')==2
         save(Calfilename_local,'Data','ParamModel','-append');
     else
