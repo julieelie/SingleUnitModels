@@ -1,4 +1,4 @@
-function [Calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, CIType, SWITCH, ParamModel,Cellname)
+function [PG_Index,FanoFactor_Index, Wins, Ymean, Yvar] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %[Calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
 %[Calfilename_local] = Semantic_NeuroInfo_Poisson_savio(MatfilePath,CIType, SWITCH, ParamModel,Cellname)
 % [OptimalFreqCutOff] = Semantic_NeuroInfo_Poisson_savio(MatfilePath, SWITCH, ParamModel,Cellname)
@@ -39,7 +39,7 @@ end
 %% Deal with input parameters
 if nargin<(min_nargin)
     SWITCH.InfoCal=1;
-else
+elseif nargin>min_nargin && exist('CIType','var')
     if strcmp(CIType, 'Info')
         SWITCH.InfoCal=1;
         SWITCH.CumInfoCal=0;
@@ -49,7 +49,9 @@ else
         SWITCH.CumInfoCal=1;
     end
 end
-fprintf(1,'You are running Semantic_NeuroInfo_Poisson_savio with the type of information set up as %s\n', CIType);
+if exist('CIType','var')
+    fprintf(1,'You are running Semantic_NeuroInfo_Poisson_savio with the type of information set up as %s\n', CIType);
+end
 
 if ~exist('SWITCH', 'var')
     SWITCH = struct();
@@ -349,7 +351,8 @@ end
 
 %% Estimate Poisson assumption for data at the choosen bining
 if SWITCH.FanoFactor
-    [PG_Index,FanoFactor_Index, Wins] = PoissonGaussianNeuralResponses(Res.Trials(DataSel),ParamModel,SWITCH,Cellname);
+    [PG_Index,FanoFactor_Index, Wins,Ymean,Yvar] = PoissonGaussianNeuralResponses(Res.Trials(DataSel),ParamModel,SWITCH,Cellname);
+   % [PG_Index,FanoFactor_Index, Wins,~,~] = PoissonGaussianNeuralResponses(Res.Trials(DataSel),ParamModel,SWITCH,Cellname);
     if PrevData
         save(Calfilename_local,'PG_Index', 'FanoFactor_Index','Wins','-append');
     else

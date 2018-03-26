@@ -1,4 +1,4 @@
-function [PG_Index, FanoFactor_Index, Wins] = PoissonGaussianNeuralResponses(Trials,ParamModel,SWITCH, Cellname, Spectro)
+function [PG_Index, FanoFactor_Index, Wins, Ymean, Yvar] = PoissonGaussianNeuralResponses(Trials,ParamModel,SWITCH, Cellname, Spectro)
 FIG=0;
 if nargin<2
     ParamModel = struct();
@@ -56,6 +56,8 @@ NbStim = length(Trials);
 %% Initialize output variables
 PG_Index = nan(WinNum,1);
 FanoFactor_Index = nan(WinNum,1);
+Ymean = nan(WinNum,NbStim);
+Yvar = nan(WinNum,NbStim);
 
 %% Now loop through window sizes and look at spike rate distributions
 for ww = 1:WinNum
@@ -100,6 +102,8 @@ for ww = 1:WinNum
         ymean(ss)=mean(y{ss});
         yvar(ss)=var(y{ss});
     end
+    Ymean(ww,:) = ymean;
+    Yvar(ww,:) = yvar;
     
     % Investigate how poisson or gaussian neural responses are for this
     % neuron
