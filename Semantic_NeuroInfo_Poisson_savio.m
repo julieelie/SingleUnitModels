@@ -8,7 +8,7 @@ min_nargin = 2;
 fprintf(1,'The environment is: %s\n',getenv('HOSTNAME'))
 
 
-if ~isempty(strfind(getenv('HOSTNAME'),'ln')) || ~isempty(strfind(getenv('HOSTNAME'),'.savio')) || ~isempty(strfind(getenv('HOSTNAME'),'.brc'))%savio Cluster
+if contains(getenv('HOSTNAME'),'ln') || contains(getenv('HOSTNAME'),'.savio') || contains(getenv('HOSTNAME'),'.brc')%savio Cluster
     Savio=1;
     fprintf(1, 'We are on savio!\n')
     addpath(genpath('/global/home/users/jelie/CODE/SingleUnitModels'));
@@ -44,7 +44,7 @@ elseif nargin>min_nargin && exist('CIType','var')
         SWITCH.InfoCal=1;
         SWITCH.CumInfoCal=0;
     end
-    if strfind(CIType, 'CI')
+    if contains(CIType, 'CI')
         SWITCH.InfoCal=0;
         SWITCH.CumInfoCal=1;
     end
